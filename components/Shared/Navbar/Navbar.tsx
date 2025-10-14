@@ -9,7 +9,7 @@ const Navbar = () => {
   const [activeButton, setActiveButton] = useState("login");
 
   return (
-    <nav className="p-2.5 bg-[#022735BF]">
+    <nav className="p-2.5 bg-[#022735BF] fixed top-0 left-0 right-0 z-40">
       <div className="relative flex items-center justify-between">
         <div className="flex-shrink-0">
           <Link href="/">
