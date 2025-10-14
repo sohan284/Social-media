@@ -10,15 +10,15 @@ const Navbar = () => {
 
   return (
     <nav className="p-2.5 bg-[#022735BF]">
-      <div className="flex items-center justify-between ">
-        {/* Left: Logo */}
-        <Link href="/">
-          <Image src="/logo.svg" alt="logo" width={40} height={40} />
-        </Link>
+      <div className="relative flex items-center justify-between">
+        <div className="flex-shrink-0">
+          <Link href="/">
+            <Image src="/logo.svg" alt="logo" width={40} height={40} />
+          </Link>
+        </div>
 
-        {/* Center: Search */}
-        <div className="relative flex-1 flex justify-center">
-          <div className="relative w-full max-w-xl">
+        <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-xl">
+          <div className="relative">
             <GoSearch className="text-2xl absolute top-1/2 left-5 -translate-y-1/2 text-[#BEBEBE]" />
             <input
               type="text"
@@ -28,11 +28,10 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Right: Buttons */}
-        <div className="flex items-center gap-2 bg-[#2F6544] rounded-full p-1">
+        <div className="flex items-center bg-[#2F6544] rounded-full flex-shrink-0">
           <button
             onClick={() => setActiveButton("login")}
-            className={`px-6 py-2 rounded-full transition-all duration-300 ${
+            className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
               activeButton === "login"
                 ? "bg-white text-black"
                 : "bg-transparent text-white"
@@ -42,7 +41,7 @@ const Navbar = () => {
           </button>
           <button
             onClick={() => setActiveButton("signup")}
-            className={`px-6 py-2 rounded-full transition-all duration-300 ${
+            className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
               activeButton === "signup"
                 ? "bg-white text-black"
                 : "bg-transparent text-white"
