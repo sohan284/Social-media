@@ -4,6 +4,7 @@ import { FiX } from "react-icons/fi";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
+import Image from "next/image";
 
 export default function HomeLayout({
   children,
@@ -55,11 +56,15 @@ export default function HomeLayout({
 
         {/* RIGHT SIDEBAR */}
         <aside
-          style={{ backgroundImage: `url(${bg.src})` }}
-          className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 w-[370px] h-[calc(100vh)] p-4 shadow-md overflow-y-auto"
+          style={{
+            backgroundImage: `url(${bg.src})`,
+            scrollbarGutter: "stable both-edges",
+          }}
+          className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 w-[370px] h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll"
         >
-          <h3 className="font-semibold text-[#022735] mb-3">Trending Today</h3>
-          <ul className="space-y-3 text-sm text-gray-700">ggwp will here</ul>
+          <div className="mt-16 ">
+            <SidebarNavLink />
+          </div>
         </aside>
       </div>
     </div>
