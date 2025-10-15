@@ -1,7 +1,10 @@
 import React from 'react'
+import Login from '../../../../../components/Features/Auth/Login'
 
 export default function LoginPage() {
   return (
-    <div>LoginPage</div>
+    <div>
+      <Login />
+    </div>
   )
 }
