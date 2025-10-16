@@ -1,10 +1,13 @@
+"use client";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 import { FaRegComment } from "react-icons/fa";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 import { VscThumbsup } from "react-icons/vsc";
+import CommentSection from "./CommentSection";
 
 const Post = () => {
+  const [showComments, setShowComments] = useState(false);
   return (
     <div>
       <div className="border border-slate-600 p-6 w-full rounded">
@@ -45,10 +48,20 @@ const Post = () => {
         </div>
         {/* Reactions */}
         <div className="flex items-center gap-4 mt-4">
-          <button className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full"><VscThumbsup size={20} /> 255</button>
-          <button className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full"><FaRegComment size={20} /> 255</button>
-          <button className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full"><FaRegShareFromSquare size={20} /> 255</button>
+          <button className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full">
+            <VscThumbsup size={20} /> 255
+          </button>
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full"
+          >
+            <FaRegComment size={20} /> 255
+          </button>
+          <button className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full">
+            <FaRegShareFromSquare size={20} /> 255
+          </button>
         </div>
+        {/* {showComments && <CommentSection />} */}
       </div>
     </div>
   );
