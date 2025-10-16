@@ -2,11 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { GoSearch } from "react-icons/go";
 
 const Navbar = () => {
   const [activeButton, setActiveButton] = useState("login");
+
+  const router = useRouter();
 
   return (
     <nav className="p-2.5 bg-[#022735BF] fixed top-0 left-0 right-0 z-40">
@@ -30,7 +33,10 @@ const Navbar = () => {
 
         <div className="flex items-center bg-[#2F6544] rounded-full flex-shrink-0">
           <button
-            onClick={() => setActiveButton("login")}
+            onClick={() => {
+              setActiveButton("login");
+              router.push("/auth/login");
+            }}
             className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
               activeButton === "login"
                 ? "bg-white text-black"
@@ -40,7 +46,10 @@ const Navbar = () => {
             Login
           </button>
           <button
-            onClick={() => setActiveButton("signup")}
+            onClick={() => {
+              setActiveButton("signup");
+              router.push("/auth/sign-up");
+            }}
             className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
               activeButton === "signup"
                 ? "bg-white text-black"
