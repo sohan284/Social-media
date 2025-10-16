@@ -5,6 +5,7 @@ import bg from "../../../public/main-bg.jpg";
 import { useForm } from "react-hook-form";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
+import Link from "next/link";
 
 type LoginForm = {
   email: string;
@@ -115,12 +116,12 @@ const Login = () => {
             </button>
 
             <div className="flex justify-between text-xs sm:text-sm mt-3">
-              <a href="#" className="text-red-400 hover:underline">
+              <Link href="forgot-password" className="text-red-400 hover:underline">
                 Forgot Password?
-              </a>
-              <a href="#" className="text-[#299616] hover:underline">
+              </Link>
+              <Link href="/auth/sign-up" className="text-[#299616] hover:underline">
                 Sign Up
-              </a>
+              </Link>
             </div>
 
             <button
