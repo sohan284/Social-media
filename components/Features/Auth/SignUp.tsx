@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import bg from "../../../public/main-bg.jpg";
 import { useForm } from "react-hook-form";
 import { FcGoogle } from "react-icons/fc";
@@ -57,7 +56,6 @@ const SignUp = () => {
     handleSubmit,
     reset,
     watch,
-    setValue,
     formState: { errors },
   } = useForm<SignUpForm>();
 
@@ -83,7 +81,7 @@ const SignUp = () => {
     setCurrentStep(2);
   };
 
-  const handleVerificationSubmit = (code: string) => {
+  const handleVerificationSubmit = () => {
       setCurrentStep(3);
   };
 
@@ -197,7 +195,7 @@ const SignUp = () => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const code = formData.get("verificationCode") as string;
-        if (code) handleVerificationSubmit(code);
+        if (code) handleVerificationSubmit();
       }}>
         <input
           name="verificationCode"
@@ -209,7 +207,7 @@ const SignUp = () => {
         />
         
         <div className="mt-4 text-sm">
-          <p className="text-white mb-1">Didn't get an email?</p>
+          <p className="text-white mb-1">Didn&apos;t get an email?</p>
           {resendTimer > 0 ? (
             <p className="text-white">Resend in {resendTimer}</p>
           ) : (
@@ -324,7 +322,7 @@ const SignUp = () => {
     <div className="max-w-[600px]  text-center text-white">
       <h2 className="text-[2rem] font-semibold mb-2">Interests</h2>
       <p className="text-sm mb-8">
-        Pick things you'd like to see in your home feed
+        Pick things you&apos;d like to see in your home feed
       </p>
 
       <div className="space-y-8">

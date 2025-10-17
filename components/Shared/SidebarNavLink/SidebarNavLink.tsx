@@ -71,6 +71,7 @@ const SidebarNavLink = () => {
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2 rounded-2xl">
         {menuItems.map((item) => (
           <Link
+            key={item.label}
             href={item.href}
             className="text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out"
           >
@@ -99,6 +100,7 @@ const SidebarNavLink = () => {
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2.5 rounded-2xl">
         {menuItemsTwo.map((item) => (
           <Link
+            key={item.label}
             href={item.href}
             className="text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out"
           >

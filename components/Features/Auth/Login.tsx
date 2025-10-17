@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import Image from "next/image";
 import bg from "../../../public/main-bg.jpg";
 import { useForm } from "react-hook-form";
 import { FcGoogle } from "react-icons/fc";
@@ -198,7 +197,7 @@ const Login = () => {
             <>
               <h2 className="text-[2rem] font-semibold mb-2">Reset your Password</h2>
               <p className="text-sm mb-6">
-                Enter your email address or user name and we'll send you a link to reset your password.
+                Enter your email address or user name and we&apos;ll send you a link to reset your password.
               </p>
 
               <form onSubmit={resetStep1Form.handleSubmit(onResetStep1Submit)} className="space-y-4">

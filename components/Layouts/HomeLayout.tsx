@@ -4,7 +4,6 @@ import { FiX } from "react-icons/fi";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
-import Image from "next/image";
 
 export default function HomeLayout({
   children,

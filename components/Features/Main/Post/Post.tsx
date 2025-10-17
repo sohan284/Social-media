@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { FaRegComment } from "react-icons/fa";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 import { VscThumbsup } from "react-icons/vsc";
-import CommentSection from "./CommentSection";
 
 const Post = () => {
   const [showComments, setShowComments] = useState(false);
