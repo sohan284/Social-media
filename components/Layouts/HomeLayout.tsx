@@ -4,6 +4,7 @@ import { FiX } from "react-icons/fi";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
+import { usePathname } from "next/navigation";
 
 export default function HomeLayout({
   children,
@@ -11,6 +12,8 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const pathname = usePathname();
 
   return (
     <div className="flex flex-col">
@@ -55,17 +58,19 @@ export default function HomeLayout({
         </main>
 
         {/* RIGHT SIDEBAR */}
-        <aside
-          style={{
-            backgroundImage: `url(${bg.src})`,
-            scrollbarGutter: "stable both-edges",
-          }}
-          className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 w-[370px] h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll"
-        >
-          <div className="mt-16 ">
-            <SidebarNavLink />
-          </div>
-        </aside>
+        {pathname === "/create-post" ? null : (
+          <aside
+            style={{
+              backgroundImage: `url(${bg.src})`,
+              scrollbarGutter: "stable both-edges",
+            }}
+            className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 w-[370px] h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll"
+          >
+            <div className="mt-16 ">
+              <SidebarNavLink />
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );
