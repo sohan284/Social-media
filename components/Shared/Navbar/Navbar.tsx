@@ -26,6 +26,8 @@ const Navbar = () => {
     }, 300);
   };
 
+  const user = true;
+
   return (
     <nav className="py-2.5 px-4 bg-[#022735BF] fixed top-0 left-0 right-0 z-40">
       <div className="relative flex items-center justify-between">
@@ -46,52 +48,65 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* <div className="flex items-center bg-[#2F6544] rounded-full flex-shrink-0">
-          <button
-            onClick={() => {
-              setActiveButton("login");
-              router.push("/auth/login");
-            }}
-            className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
-              activeButton === "login"
-                ? "bg-white text-black"
-                : "bg-transparent text-white"
-            }`}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => {
-              setActiveButton("signup");
-              router.push("/auth/sign-up");
-            }}
-            className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
-              activeButton === "signup"
-                ? "bg-white text-black"
-                : "bg-transparent text-white"
-            }`}
-          >
-            Signup
-          </button>
-        </div> */}
-        <div className="flex items-center gap-4 text-white">
-          <button className="flex items-center gap-3 text-sm cursor-pointer"><FiPlus size={24} /> Create Post</button>
-          <button className="cursor-pointer"><AiOutlineMessage size={24} /></button>
-          <button className="cursor-pointer"><NotificationIcon /></button>
-          {/* profile */}
-          <button 
-            className="cursor-pointer"
-            onClick={() => setIsProfileSidebarOpen(true)}
-          >
-            <Image src="/profile.jpg" alt="profile" width={30} height={30} className="rounded-full h-[30px] w-[30px] object-cover" />
-          </button>
-        </div>
+        {user ? (
+          <div className="flex items-center gap-4 text-white">
+            <button className="flex items-center gap-3 text-sm cursor-pointer">
+              <FiPlus size={24} /> Create Post
+            </button>
+            <button className="cursor-pointer">
+              <AiOutlineMessage size={24} />
+            </button>
+            <button className="cursor-pointer">
+              <NotificationIcon />
+            </button>
+            {/* profile */}
+            <button
+              className="cursor-pointer"
+              onClick={() => setIsProfileSidebarOpen(true)}
+            >
+              <Image
+                src="/profile.jpg"
+                alt="profile"
+                width={30}
+                height={30}
+                className="rounded-full h-[30px] w-[30px] object-cover"
+              />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center bg-[#2F6544] rounded-full flex-shrink-0">
+            <button
+              onClick={() => {
+                setActiveButton("login");
+                router.push("/auth/login");
+              }}
+              className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
+                activeButton === "login"
+                  ? "bg-white text-black"
+                  : "bg-transparent text-white"
+              }`}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => {
+                setActiveButton("signup");
+                router.push("/auth/sign-up");
+              }}
+              className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
+                activeButton === "signup"
+                  ? "bg-white text-black"
+                  : "bg-transparent text-white"
+              }`}
+            >
+              Signup
+            </button>
+          </div>
+        )}
       </div>
-      
+
       {/* Profile Sidebar */}
-      {isProfileSidebarOpen && (
-        <ProfileSidebar onClose={handleCloseSidebar} />
-      )}
+      {isProfileSidebarOpen && <ProfileSidebar onClose={handleCloseSidebar} />}
     </nav>
   );
 };
