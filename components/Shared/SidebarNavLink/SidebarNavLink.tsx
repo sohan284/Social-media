@@ -10,7 +10,7 @@ import DatabaseIcon from "../../Icons/DatabaseIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus } from "react-icons/fi";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 const menuItems = [
   {
     icon: <GoHome size={24} />,
@@ -68,6 +68,7 @@ const menuItemsTwo = [
 
 const SidebarNavLink = () => {
   const pathname =  usePathname()
+  const router  = useRouter()
   return (
     <nav className={`space-y-3 text-gray-700 ${pathname === '/' ? 'mt-16' : 'py-10'}`}>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2 rounded-2xl">
@@ -83,7 +84,7 @@ const SidebarNavLink = () => {
       </div>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-1.5 px-2.5 rounded-2xl">
         <h3 className="text-base text-[#BCB3B3] px-8 mb-7">Communities</h3>
-        <button className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
+        <button onClick={() => router.push('/main/create-community')} className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
           <FiPlus size={24} /> Create Communities
         </button>
         <button className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">

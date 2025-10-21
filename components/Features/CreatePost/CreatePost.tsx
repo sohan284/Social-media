@@ -109,7 +109,6 @@ const CreatePost = () => {
       className=" bg-cover bg-center bg-no-repeat p-4"
     >
       <div className="bg-[#06133FBF] max-w-[1220px] backdrop-blur-[17.5px] mx-auto border border-white/10 rounded-2xl">
-
         <div className="p-6 md:p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
             {/* Post Type Tabs */}
