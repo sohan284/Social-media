@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AiOutlineMessage } from "react-icons/ai";
 import { GoSearch } from "react-icons/go";
-import { IoNotifications } from "react-icons/io5";
 import NotificationIcon from "../../Icons/NotificationIcon";
 import { FiPlus } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
@@ -50,7 +49,7 @@ const Navbar = () => {
 
         {user ? (
           <div className="flex items-center gap-4 text-white">
-            <button onClick={() => router.push("/create-post")} className="flex items-center gap-3 text-sm cursor-pointer">
+            <button onClick={() => router.push("/main/create-post")} className="flex items-center gap-3 text-sm cursor-pointer">
               <FiPlus size={24} /> Create Post
             </button>
             <button className="cursor-pointer">

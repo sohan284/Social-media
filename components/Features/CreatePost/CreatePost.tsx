@@ -3,8 +3,6 @@
 import React, { useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
-  FiPlus,
-  FiX,
   FiImage,
   FiLink,
   FiType,
@@ -12,7 +10,6 @@ import {
   FiSend,
 } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
-import bg from "../../../public/main-bg.jpg";
 
 interface FormData {
   title: string;
@@ -108,13 +105,7 @@ const CreatePost = () => {
   ] as const;
 
   return (
-    <div
-      style={{
-        backgroundImage: `url(${bg.src})`,
-        scrollbarGutter: "stable both-edges",
-      }}
-      className=" bg-cover bg-center bg-no-repeat min-h-screen p-4"
-    >
+    <div className=" bg-cover bg-center bg-no-repeat  p-4">
       <div className="bg-[#06133FBF] max-w-[1220px] backdrop-blur-[17.5px] mx-auto border border-white/10 rounded-2xl">
 
         <div className="p-6 md:p-8">
