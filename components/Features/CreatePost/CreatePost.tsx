@@ -3,8 +3,6 @@
 import React, { useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
-  FiPlus,
-  FiX,
   FiImage,
   FiLink,
   FiType,
@@ -12,7 +10,6 @@ import {
   FiSend,
 } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
-import bg from "../../../public/main-bg.jpg";
 
 interface FormData {
   title: string;

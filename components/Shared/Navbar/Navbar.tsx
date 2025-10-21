@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AiOutlineMessage } from "react-icons/ai";
 import { GoSearch } from "react-icons/go";
-import { IoNotifications } from "react-icons/io5";
 import NotificationIcon from "../../Icons/NotificationIcon";
 import { FiPlus } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
