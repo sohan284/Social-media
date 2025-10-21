@@ -50,7 +50,7 @@ const Navbar = () => {
 
         {user ? (
           <div className="flex items-center gap-4 text-white">
-            <button onClick={() => router.push("/create-post")} className="flex items-center gap-3 text-sm cursor-pointer">
+            <button onClick={() => router.push("/main/create-post")} className="flex items-center gap-3 text-sm cursor-pointer">
               <FiPlus size={24} /> Create Post
             </button>
             <button className="cursor-pointer">

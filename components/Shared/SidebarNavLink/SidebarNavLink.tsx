@@ -10,6 +10,7 @@ import DatabaseIcon from "../../Icons/DatabaseIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus } from "react-icons/fi";
+import { usePathname } from "next/navigation";
 const menuItems = [
   {
     icon: <GoHome size={24} />,
@@ -66,8 +67,9 @@ const menuItemsTwo = [
 ];
 
 const SidebarNavLink = () => {
+  const pathname =  usePathname()
   return (
-    <nav className="space-y-3 text-gray-700 mt-16">
+    <nav className={`space-y-3 text-gray-700 ${pathname === '/' ? 'mt-16' : 'py-10'}`}>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2 rounded-2xl">
         {menuItems.map((item) => (
           <Link
