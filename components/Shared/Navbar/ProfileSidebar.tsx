@@ -10,7 +10,7 @@ interface ProfileSidebarProps {
 const profileItems = [
   {
     label: "Edit Profile",
-    href: "main/edit-profile",
+    href: "/main/edit-profile",
     icon: FiEdit3,
   },
   {
@@ -57,6 +57,8 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
     }, 300);
   };
 
+  const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
+
   return (
     <div
       className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all ${
@@ -101,7 +103,7 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
               return (
                 <Link
                   key={index}
-                  href={item.href}
+                  href={safeHref(item.href)}
                   className="w-full text-sm text-left p-3 hover:bg-[#06133FBF] rounded-lg transition-colors duration-200 flex items-center gap-3"
                 >
                   <IconComponent size={20} className="text-white" />
