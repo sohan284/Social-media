@@ -28,7 +28,7 @@ const StoryItem: React.FC<StoryItemProps> = ({ story, onClick }) => {
           className="object-cover"
         />
         {!story.isViewed && (
-          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full p-0.5">
+          <div className="absolute inset-0  rounded-full p-0.5">
             <div className="w-full h-full rounded-full overflow-hidden">
               <Image
                 src={story.storyImage}
