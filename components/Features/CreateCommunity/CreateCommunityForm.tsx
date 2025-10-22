@@ -14,17 +14,70 @@ type FormValues = {
 
 const CreateCommunityForm = () => {
   const [step, setStep] = useState(1);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [iconPreview, setIconPreview] = useState<string | null>(null);
   const { register, handleSubmit, watch } = useForm<FormValues>({
     defaultValues: { visibility: "public" },
   });
 
-  const onSubmit = (data: FormValues) => {
-    console.log(data);
-    alert("Community Created!");
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const formData = new FormData();
+
+      formData.append('name', data.name);
+      formData.append('description', data.description);
+      formData.append('visibility', data.visibility);
+
+      if (data.banner && data.banner.length > 0) {
+        formData.append('banner', data.banner[0]);
+      }
+      if (data.icon && data.icon.length > 0) {
+        formData.append('icon', data.icon[0]);
+      }
+
+      console.log('Form data with binary files:', formData);
+      // TODO: Send the form data to the server
+
+      alert("Community Created!");
+    } catch (error) {
+      console.error('Error creating community:', error);
+      alert("Error creating community. Please try again.");
+    }
   };
 
   const name = watch("name") || "Community Name";
   const description = watch("description") || "Your community description";
+
+  const handleFileChange = (file: File | null, type: 'banner' | 'icon') => {
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (type === 'banner') {
+          setBannerPreview(result);
+        } else {
+          setIconPreview(result);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (type === 'banner') {
+        setBannerPreview(null);
+      } else {
+        setIconPreview(null);
+      }
+    }
+  };
 
   return (
     <div className="flex items-center justify-center  bg-cover bg-center text-white p-4">
@@ -105,8 +158,18 @@ const CreateCommunityForm = () => {
                     type="file"
                     accept="image/*"
                     {...register("banner")}
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'banner')}
                     className="block w-full text-sm text-gray-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                   />
+                  {bannerPreview && (
+                    <div className="mt-2">
+                      <img
+                        src={bannerPreview}
+                        alt="Banner preview"
+                        className="w-full h-32 object-cover rounded-lg border border-white/20"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -115,8 +178,18 @@ const CreateCommunityForm = () => {
                     type="file"
                     accept="image/*"
                     {...register("icon")}
+                    onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'icon')}
                     className="block w-full text-sm text-gray-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                   />
+                  {iconPreview && (
+                    <div className="mt-2">
+                      <img
+                        src={iconPreview}
+                        alt="Icon preview"
+                        className="w-16 h-16 object-cover rounded-full border border-white/20"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -221,6 +294,30 @@ const CreateCommunityForm = () => {
 
         {/* Right Preview */}
         <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
+          {bannerPreview && (
+            <div className="mb-4">
+              <img
+                src={bannerPreview}
+                alt="Community banner"
+                className="w-full h-24 object-cover rounded-lg"
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-center mb-3">
+            {iconPreview ? (
+              <img
+                src={iconPreview}
+                alt="Community icon"
+                className="w-12 h-12 object-cover rounded-full border-2 border-white/20"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
           <h3 className="font-semibold text-lg">{name}</h3>
           <p className="text-sm text-gray-300 mt-1">{description}</p>
           <div className="flex justify-center gap-2 mt-4 text-xs text-gray-400">
