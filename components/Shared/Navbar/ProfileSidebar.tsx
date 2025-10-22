@@ -10,7 +10,7 @@ interface ProfileSidebarProps {
 const profileItems = [
   {
     label: "Edit Profile",
-    href: "/profile/edit",
+    href: "main/edit-profile",
     icon: FiEdit3,
   },
   {
