@@ -9,6 +9,7 @@ import { GoSearch } from "react-icons/go";
 import NotificationIcon from "../../Icons/NotificationIcon";
 import { FiPlus, FiMenu } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
+import { FaAlignRight } from "react-icons/fa";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -40,7 +41,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             onClick={onMenuToggle}
             className="lg:hidden text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
           >
-            <FiMenu size={24} />
+            <FaAlignRight size={24} />
           </button>
           <div className="flex-shrink-0">
             <Link href="/">

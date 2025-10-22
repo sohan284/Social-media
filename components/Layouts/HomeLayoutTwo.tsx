@@ -59,7 +59,7 @@ export default function HomeLayoutTwo({
         backgroundImage: `url(${bg.src})`,
         scrollbarGutter: "stable both-edges",
       }}
-      className="bg-cover bg-center bg-no-repeat min-h-screen p-4 flex"
+      className="bg-cover bg-center bg-no-repeat min-h-screen flex"
     >
       {isSidebarOpen && (
         <div
@@ -102,14 +102,14 @@ export default function HomeLayoutTwo({
           hidden lg:block
         `}
       >
-        <nav className="space-y-3 text-gray-700 pt-4">
+        <nav className="space-y-3 text-gray-700 pt-4 mt-16">
           <SidebarNavLink />
         </nav>
       </aside>
 
       {/* Main Content */}
       <main
-        className={`flex-1 p-6 overflow-y-auto transition-all duration-300
+        className={`flex-1 overflow-y-auto transition-all duration-300
           lg:ml-[370px]
         `}
       >
