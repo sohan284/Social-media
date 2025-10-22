@@ -59,7 +59,7 @@ export default function HomeLayoutTwo({
         backgroundImage: `url(${bg.src})`,
         scrollbarGutter: "stable both-edges",
       }}
-      className="bg-cover bg-center bg-no-repeat min-h-screen flex"
+      className="bg-cover bg-center bg-no-repeat h-screen flex"
     >
       {isSidebarOpen && (
         <div
@@ -97,7 +97,7 @@ export default function HomeLayoutTwo({
         style={{
           scrollbarGutter: "stable both-edges",
         }}
-        className={`bg-slate-900 fixed left-0 top-0 h-full bg-cover bg-center bg-no-repeat shadow-md z-30 lg:w-[370px] px-6 
+        className={`bg-slate-900/50 backdrop-blur-[17.5px] fixed left-0 top-0 h-full bg-cover bg-center bg-no-repeat shadow-md z-30 lg:w-[370px] px-6 
           hover:overflow-y-auto overflow-y-hidden custom-scroll
           hidden lg:block
         `}
