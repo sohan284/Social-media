@@ -2,12 +2,18 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiEdit3, FiSettings, FiShield, FiHelpCircle, FiLogOut } from "react-icons/fi";
 import Image from "next/image";
 import Link from "next/link";
+import { FaRegCircleUser } from "react-icons/fa6";
 
 interface ProfileSidebarProps {
   onClose: () => void;
 }
 
 const profileItems = [
+  {
+    label: "Profile",
+    href: "/main/profile",
+    icon: FaRegCircleUser,
+  },
   {
     label: "Edit Profile",
     href: "/main/edit-profile",
@@ -61,15 +67,13 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
 
   return (
     <div
-      className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all ${
-        isClosing ? "opacity-0" : "opacity-100"
-      }`}
+      className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all ${isClosing ? "opacity-0" : "opacity-100"
+        }`}
       onClick={handleClose}
     >
       <div
-        className={`fixed top-0 right-0 w-full max-w-xs h-full bg-[#1d293d] transition-transform duration-300 ease-in-out ${
-          isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 w-full max-w-xs h-full bg-[#1d293d] transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="py-2.5 px-4 border-b border-gray-500">
