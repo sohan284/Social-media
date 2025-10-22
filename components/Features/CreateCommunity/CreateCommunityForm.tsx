@@ -220,13 +220,13 @@ const CreateCommunityForm = () => {
         </div>
 
         {/* Right Preview */}
-        {/* <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
+        <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
           <h3 className="font-semibold text-lg">{name}</h3>
           <p className="text-sm text-gray-300 mt-1">{description}</p>
           <div className="flex justify-center gap-2 mt-4 text-xs text-gray-400">
             <span>1 member</span>•<span>1 online</span>
           </div>
-        </div> */}
+        </div>
       </form>
     </div>
   );

@@ -7,10 +7,14 @@ import React, { useState } from "react";
 import { AiOutlineMessage } from "react-icons/ai";
 import { GoSearch } from "react-icons/go";
 import NotificationIcon from "../../Icons/NotificationIcon";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus, FiMenu } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
 
-const Navbar = () => {
+interface NavbarProps {
+  onMenuToggle?: () => void;
+}
+
+const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [activeButton, setActiveButton] = useState("login");
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -30,13 +34,23 @@ const Navbar = () => {
   return (
     <nav className="py-2.5 px-4 bg-[#022735BF] fixed top-0 left-0 right-0 z-40">
       <div className="relative flex items-center justify-between">
-        <div className="flex-shrink-0">
-          <Link href="/">
-            <Image src="/logo.svg" alt="logo" width={40} height={40} />
-          </Link>
+        <div className="flex items-center gap-3">
+          {/* Mobile Menu Toggle */}
+          <button 
+            onClick={onMenuToggle}
+            className="lg:hidden text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
+          >
+            <FiMenu size={24} />
+          </button>
+          <div className="flex-shrink-0">
+            <Link href="/">
+              <Image src="/logo.svg" alt="logo" width={40} height={40} />
+            </Link>
+          </div>
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-xl">
+        {/* Search Bar - Hidden on mobile, visible on tablet and up */}
+        <div className="hidden md:absolute md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl">
           <div className="relative">
             <GoSearch className="text-2xl absolute top-1/2 left-5 -translate-y-1/2 text-[#BEBEBE]" />
             <input
@@ -48,14 +62,27 @@ const Navbar = () => {
         </div>
 
         {user ? (
-          <div className="flex items-center gap-4 text-white">
-            <button onClick={() => router.push("/main/create-post")} className="flex items-center gap-3 text-sm cursor-pointer">
+          <div className="flex items-center gap-2 md:gap-4 text-white">
+            {/* Create Post Button - Hidden on mobile, visible on tablet and up */}
+            <button 
+              onClick={() => router.push("/main/create-post")} 
+              className="hidden md:flex items-center gap-3 text-sm cursor-pointer"
+            >
               <FiPlus size={24} /> Create Post
             </button>
-            <button className="cursor-pointer">
-              <AiOutlineMessage size={24} />
+            
+            {/* Mobile Create Post Button */}
+            <button 
+              onClick={() => router.push("/main/create-post")} 
+              className="md:hidden cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
+            >
+              <FiPlus size={20} />
             </button>
-            <button className="cursor-pointer">
+            
+            <button className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200">
+              <AiOutlineMessage size={20} className="md:w-6 md:h-6" />
+            </button>
+            <button className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200">
               <NotificationIcon />
             </button>
             {/* profile */}
@@ -79,7 +106,7 @@ const Navbar = () => {
                 setActiveButton("login");
                 router.push("/auth/login");
               }}
-              className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
+              className={`px-3 md:px-6 py-2 md:py-3 rounded-full transition-all duration-300 cursor-pointer text-sm md:text-base ${
                 activeButton === "login"
                   ? "bg-white text-black"
                   : "bg-transparent text-white"
@@ -92,7 +119,7 @@ const Navbar = () => {
                 setActiveButton("signup");
                 router.push("/auth/sign-up");
               }}
-              className={`px-6 py-3 rounded-full transition-all duration-300 cursor-pointer ${
+              className={`px-3 md:px-6 py-2 md:py-3 rounded-full transition-all duration-300 cursor-pointer text-sm md:text-base ${
                 activeButton === "signup"
                   ? "bg-white text-black"
                   : "bg-transparent text-white"
