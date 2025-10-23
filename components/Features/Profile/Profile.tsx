@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import ProfileHeader from './_components/ProfileHeader';
 import AvatarModal from './_components/AvatarModal';
 import Post from '../Main/Post/Post';
-import SidebarNavLink from '../../Shared/SidebarNavLink/SidebarNavLink';
+import ProfileSidebar from './_components/ProfileSidebar';
 
 const Profile = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,12 +30,11 @@ const Profile = () => {
                         <Post />
                     </div>
                 </div>
-                <div style={{ scrollbarGutter: "stable both-edges" }} className='h-[90vh] p-4 rounded-lg w-[400px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll'>
-                    <SidebarNavLink />
+                <div style={{ scrollbarGutter: "stable both-edges" }} className='h-[90vh]  rounded-lg w-[500px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll'>
+                    <ProfileSidebar />
                 </div>
             </div>
 
-            {/* Modal rendered at top level to cover full screen */}
             <AvatarModal isOpen={isModalOpen} onClose={closeModal} />
         </>
     );
