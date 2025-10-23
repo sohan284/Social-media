@@ -9,7 +9,7 @@ interface ProfileHeaderProps {
 
 const ProfileHeader = ({ onAvatarClick }: ProfileHeaderProps) => {
     return (
-        <div className='sticky top-18'>
+        <div>
             {/* Header */}
             <div className='flex items-center gap-4'>
                 <div className='relative'>
