@@ -52,3 +52,22 @@ body {
     border-radius: 15px;
    
   }
+
+
+.custom-scroll-marketplace {    
+    scrollbar-color: #e0e0e0;
+  }
+  
+  .custom-scroll-marketplace::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .custom-scroll-marketplace::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scroll-marketplace::-webkit-scrollbar-thumb {
+    background-color: #474747bf;
+    border-radius: 15px;
+   
+  }
