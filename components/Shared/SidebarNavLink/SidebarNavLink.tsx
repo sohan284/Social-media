@@ -37,7 +37,7 @@ const menuItemsTwo = [
   {
     icon: <BsExclamationCircle size={24} className="scale-y-[-1]" />,
     label: "Contact Us",
-    href: "/",
+    href: "/main/contact-us",
   },
   {
     icon: <RiMenuSearchLine size={24} />,
