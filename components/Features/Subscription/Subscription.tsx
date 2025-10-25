@@ -1,9 +1,11 @@
 'use client'
+import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
 import { FiCheck, FiStar, FiAward, FiZap } from 'react-icons/fi';
 
 const Subscription = () => {
+    const router = useRouter()
     const [selectedPlan, setSelectedPlan] = useState('yearly');
 
     const features = [
@@ -98,7 +100,7 @@ const Subscription = () => {
                     </div>
 
                     <div className="text-center mb-8">
-                        <button className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg">
+                        <button onClick={()=> router.push(`/main/checkout?plan=${selectedPlan} &amount=${selectedPlan === 'monthly' ? 99 : 599}`)} className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg">
                             Subscribe Now
                         </button>
                     </div>

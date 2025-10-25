@@ -10,11 +10,12 @@ import {
     useElements,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import { useSearchParams } from "next/navigation";
 
 const publishableKey = 'pk_test_51SDMM6EbRBgxQBnKhhbdORl3dN1inJygwuDNSTGyxKfbv7ClnLoPBVzH7A859X5vPy8OINFnaLzUSXnCdrgJbwJu00EDdd4Nck';
 
 const stripePromise = loadStripe(publishableKey);
-const PaymentForm = () => {
+const PaymentForm = ({ plan, amount }: { plan: string, amount: string }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +24,8 @@ const PaymentForm = () => {
     const [paymentStatus, setPaymentStatus] = useState<
         "idle" | "processing" | "success" | "error"
     >("idle");
+
+    console.log(plan, amount)
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -127,9 +130,9 @@ const PaymentForm = () => {
                     className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 cursor-pointer"
                 >
                     {isLoading ? (
-                        "Processing Payment..."
+                        "Processing..."
                     ) : paymentStatus === "success" ? (
-                        "Payment Successful!"
+                        "Successful!"
                     ) : paymentStatus === "error" ? (
                         "Try Again"
                     ) : (
@@ -142,16 +145,19 @@ const PaymentForm = () => {
 };
 
 const CheckoutForm = () => {
+    const searchParams = useSearchParams()
+    const plan = searchParams.get('plan')
+    const amount = searchParams.get('amount')
     return (
         <div className="max-w-[1220px] mx-auto bg-[#06133FBF] backdrop-blur-[17.5px] rounded-2xl border border-white/10">
             <div className="max-w-[1640px] mx-auto">
                 <div className="flex justify-center">
                     <div className="p-6 rounded-xl w-full max-w-2xl">
                         <h2 className="text-2xl font-bold text-white mb-6">
-                        Get Premium
+                        {plan === 'monthly' ? 'Get Monthly Premium' : 'Get Yearly Premium'}
                         </h2>
                         <Elements stripe={stripePromise}>
-                            <PaymentForm />
+                            <PaymentForm plan={plan || ''} amount={amount || ''} />
                         </Elements>
                     </div>
                 </div>
