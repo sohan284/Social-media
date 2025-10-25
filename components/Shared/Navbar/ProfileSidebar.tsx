@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiEdit3, FiSettings, FiShield, FiHelpCircle, FiLogOut } from "react-icons/fi";
 import Image from "next/image";
 import Link from "next/link";
+import { FaRegCircleUser } from "react-icons/fa6";
 
 interface ProfileSidebarProps {
   onClose: () => void;
@@ -9,8 +10,13 @@ interface ProfileSidebarProps {
 
 const profileItems = [
   {
+    label: "Profile",
+    href: "/main/profile",
+    icon: FaRegCircleUser,
+  },
+  {
     label: "Edit Profile",
-    href: "/profile/edit",
+    href: "/main/edit-profile",
     icon: FiEdit3,
   },
   {
@@ -57,17 +63,17 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
     }, 300);
   };
 
+  const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
+
   return (
     <div
-      className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all ${
-        isClosing ? "opacity-0" : "opacity-100"
-      }`}
+      className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all ${isClosing ? "opacity-0" : "opacity-100"
+        }`}
       onClick={handleClose}
     >
       <div
-        className={`fixed top-0 right-0 w-full max-w-xs h-full bg-[#1d293d] transition-transform duration-300 ease-in-out ${
-          isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 w-full max-w-xs h-full bg-[#1d293d] transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="py-2.5 px-4 border-b border-gray-500">
@@ -101,7 +107,7 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
               return (
                 <Link
                   key={index}
-                  href={item.href}
+                  href={safeHref(item.href)}
                   className="w-full text-sm text-left p-3 hover:bg-[#06133FBF] rounded-lg transition-colors duration-200 flex items-center gap-3"
                 >
                   <IconComponent size={20} className="text-white" />

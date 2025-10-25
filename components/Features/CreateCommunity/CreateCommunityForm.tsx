@@ -14,17 +14,92 @@ type FormValues = {
 
 const CreateCommunityForm = () => {
   const [step, setStep] = useState(1);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState({ banner: false, icon: false });
   const { register, handleSubmit, watch } = useForm<FormValues>({
     defaultValues: { visibility: "public" },
   });
 
-  const onSubmit = (data: FormValues) => {
-    console.log(data);
-    alert("Community Created!");
+  const onSubmit = async (data: FormValues) => {
+    try {
+      const formData = new FormData();
+
+      formData.append('name', data.name);
+      formData.append('description', data.description);
+      formData.append('visibility', data.visibility);
+
+      if (data.banner && data.banner.length > 0) {
+        formData.append('banner', data.banner[0]);
+      }
+      if (data.icon && data.icon.length > 0) {
+        formData.append('icon', data.icon[0]);
+      }
+
+      console.log('Form data with binary files:', formData);
+      // TODO: Send the form data to the server
+
+      alert("Community Created!");
+    } catch (error) {
+      console.error('Error creating community:', error);
+      alert("Error creating community. Please try again.");
+    }
   };
 
   const name = watch("name") || "Community Name";
   const description = watch("description") || "Your community description";
+
+  const handleFileChange = (file: File | null, type: 'banner' | 'icon') => {
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (type === 'banner') {
+          setBannerPreview(result);
+        } else {
+          setIconPreview(result);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (type === 'banner') {
+        setBannerPreview(null);
+      } else {
+        setIconPreview(null);
+      }
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDrag = (e: React.DragEvent, type: 'banner' | 'icon') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(prev => ({ ...prev, [type]: true }));
+    } else if (e.type === "dragleave") {
+      setDragActive(prev => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, type: 'banner' | 'icon') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(prev => ({ ...prev, [type]: false }));
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileChange(e.dataTransfer.files[0], type);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center  bg-cover bg-center text-white p-4">
@@ -71,14 +146,14 @@ const CreateCommunityForm = () => {
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  className="px-5 py-2 bg-red-600 hover:bg-red-500 rounded-md"
+                  className="px-5 py-2 bg-red-600 hover:bg-red-500 rounded-full"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                  className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-full"
                 >
                   Next
                 </button>
@@ -98,25 +173,123 @@ const CreateCommunityForm = () => {
                 </p>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-6">
+                {/* Banner Upload */}
                 <div>
-                  <label className="block mb-1 font-medium">Banner</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    {...register("banner")}
-                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700"
-                  />
+                  <label className="block mb-3 font-medium">Banner</label>
+                  <div
+                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                      dragActive.banner
+                        ? 'border-purple-400 bg-purple-500/20 scale-105'
+                        : 'border-white/30 hover:border-purple-400 hover:bg-white/5'
+                    }`}
+                    onDragEnter={(e) => handleDrag(e, 'banner')}
+                    onDragLeave={(e) => handleDrag(e, 'banner')}
+                    onDragOver={(e) => handleDrag(e, 'banner')}
+                    onDrop={(e) => handleDrop(e, 'banner')}
+                    onClick={() => document.getElementById('banner-upload')?.click()}
+                  >
+                    <input
+                      id="banner-upload"
+                      type="file"
+                      accept="image/*"
+                      {...register("banner")}
+                      onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'banner')}
+                      className="hidden"
+                    />
+                    
+                    {bannerPreview ? (
+                      <div className="relative">
+                        <img
+                          src={bannerPreview}
+                          alt="Banner preview"
+                          className="w-full h-40 object-cover rounded-lg border border-white/20"
+                        />
+                        <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <div className="text-center">
+                            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <p className="text-sm text-white">Click to change</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-lg font-medium text-white">Upload Banner</p>
+                          <p className="text-sm text-gray-300">Drag & drop or click to browse</p>
+                          <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {/* Icon Upload */}
                 <div>
-                  <label className="block mb-1 font-medium">Icon</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    {...register("icon")}
-                    className="block w-full text-sm text-gray-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700"
-                  />
+                  <label className="block mb-3 font-medium">Icon</label>
+                  <div
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 cursor-pointer ${
+                      dragActive.icon
+                        ? 'border-purple-400 bg-purple-500/20 scale-105'
+                        : 'border-white/30 hover:border-purple-400 hover:bg-white/5'
+                    }`}
+                    onDragEnter={(e) => handleDrag(e, 'icon')}
+                    onDragLeave={(e) => handleDrag(e, 'icon')}
+                    onDragOver={(e) => handleDrag(e, 'icon')}
+                    onDrop={(e) => handleDrop(e, 'icon')}
+                    onClick={() => document.getElementById('icon-upload')?.click()}
+                  >
+                    <input
+                      id="icon-upload"
+                      type="file"
+                      accept="image/*"
+                      {...register("icon")}
+                      onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'icon')}
+                      className="hidden"
+                    />
+                    
+                    {iconPreview ? (
+                      <div className="relative">
+                        <img
+                          src={iconPreview}
+                          alt="Icon preview"
+                          className="w-20 h-20 object-cover rounded-full border-2 border-white/20 mx-auto"
+                        />
+                        <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <div className="text-center">
+                            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <p className="text-xs text-white">Change</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="w-10 h-10 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">Upload Icon</p>
+                          <p className="text-xs text-gray-300">Drag & drop or click to browse</p>
+                          <p className="text-xs text-gray-400 mt-1">Square image recommended</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -124,14 +297,14 @@ const CreateCommunityForm = () => {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                  className="px-5 py-2 bg-gray-700 hover:bg-gray-600 rounded-full"
                 >
                   Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="px-5 py-2 bg-green-600 hover:bg-green-500 rounded-md"
+                  className="px-5 py-2 bg-[#104F01] hover:bg-[#104F01]/90 rounded-full"
                 >
                   Next
                 </button>
@@ -220,13 +393,37 @@ const CreateCommunityForm = () => {
         </div>
 
         {/* Right Preview */}
-        {/* <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
+        <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
+          {bannerPreview && (
+            <div className="mb-4">
+              <img
+                src={bannerPreview}
+                alt="Community banner"
+                className="w-full h-24 object-cover rounded-lg"
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-center mb-3">
+            {iconPreview ? (
+              <img
+                src={iconPreview}
+                alt="Community icon"
+                className="w-12 h-12 object-cover rounded-full border-2 border-white/20"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
           <h3 className="font-semibold text-lg">{name}</h3>
           <p className="text-sm text-gray-300 mt-1">{description}</p>
           <div className="flex justify-center gap-2 mt-4 text-xs text-gray-400">
             <span>1 member</span>•<span>1 online</span>
           </div>
-        </div> */}
+        </div>
       </form>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { FiX } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { FiX, FiMenu } from "react-icons/fi";
 import SidebarNavLink from "../../components/Shared/SidebarNavLink/SidebarNavLink";
 import bg from "../../public/main-bg.jpg";
 import Navbar from "../Shared/Navbar/Navbar";
@@ -10,7 +10,48 @@ export default function HomeLayoutTwo({
 }: {
   children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 10);
+    } else {
+      document.body.style.overflow = "unset";
+      setIsOpen(false);
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isSidebarOpen]);
+
+  const handleCloseSidebar = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsSidebarOpen(false);
+      setIsClosing(false);
+    }, 300);
+  };
 
   return (
     <div
@@ -18,42 +59,62 @@ export default function HomeLayoutTwo({
         backgroundImage: `url(${bg.src})`,
         scrollbarGutter: "stable both-edges",
       }}
-      className="bg-cover bg-center bg-no-repeat min-h-screen p-4 flex"
+      className="bg-cover bg-center bg-no-repeat h-screen flex"
     >
-      {/* Sidebar */}
+      {isSidebarOpen && (
+        <div
+          className={`fixed top-0 left-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${isClosing ? "opacity-0" : "opacity-100"
+            }`}
+          onClick={handleCloseSidebar}
+        >
+          <aside
+            style={{
+              scrollbarGutter: "stable both-edges",
+            }}
+            className={`fixed top-0 left-0 hover:overflow-y-auto overflow-y-hidden custom-scroll  lg:w-[370px] h-full bg-slate-900 bg-cover bg-center bg-no-repeat shadow-md transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "-translate-x-full"
+              }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile Menu Toggle */}
+            <div className="flex justify-between items-center mb-4 lg:hidden px-6 pt-4">
+              <h2 className="font-semibold text-lg text-white">Menu</h2>
+              <button
+                onClick={handleCloseSidebar}
+                className="p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
+              >
+                <FiX size={24} className="text-white" />
+              </button>
+            </div>
+
+            <nav className="space-y-3 text-gray-700 px-6">
+              <SidebarNavLink />
+            </nav>
+          </aside>
+        </div>
+      )}
+
       <aside
         style={{
           scrollbarGutter: "stable both-edges",
         }}
-        className={`bg-slate-900 fixed left-0 top-0 h-full bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 z-30 w-[370px] px-6 
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        className={`bg-slate-900/50 backdrop-blur-[17.5px] fixed left-0 top-0 h-full bg-cover bg-center bg-no-repeat shadow-md z-30 lg:w-[370px] px-6 
           hover:overflow-y-auto overflow-y-hidden custom-scroll
-          lg:translate-x-0
+          hidden lg:block
         `}
       >
-        {/* Mobile Menu Toggle */}
-        <div className="flex justify-between items-center mb-4 lg:hidden">
-          <h2 className="font-semibold text-lg text-[#022735]">Menu</h2>
-          <button onClick={() => setIsSidebarOpen(false)}>
-            <FiX size={24} />
-          </button>
-        </div>
-
-        {/* Sidebar Navigation Links */}
-        <nav className="space-y-3 text-gray-700 ">
+        <nav className="space-y-3 text-gray-700 pt-4 mt-16">
           <SidebarNavLink />
         </nav>
       </aside>
 
       {/* Main Content */}
       <main
-        className={`flex-1 ml-[370px] p-6 overflow-y-auto transition-all duration-300
-          ${!isSidebarOpen ? "ml-0" : ""}
+        className={`flex-1 overflow-y-auto transition-all duration-300
           lg:ml-[370px]
         `}
       >
         <div className=" mx-auto mt-16">
-          {/* <Navbar /> */}
+          <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
           {children}
         </div>
       </main>

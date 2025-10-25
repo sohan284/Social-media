@@ -57,7 +57,7 @@ const menuItemsTwo = [
   {
     icon: <SubscriptionIcon />,
     label: "Subscription",
-    href: "/",
+    href: "/main/subscription",
   },
   {
     icon: <DatabaseIcon />,
@@ -69,13 +69,15 @@ const menuItemsTwo = [
 const SidebarNavLink = () => {
   const pathname =  usePathname()
   const router  = useRouter()
+
+  const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
   return (
-    <nav className={`space-y-3 text-gray-700 ${pathname === '/' ? 'mt-16' : 'py-10'}`}>
+    <nav className={`space-y-3 text-gray-700 ${pathname === '/' ? 'mt-16' : 'py-3'}`}>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2 rounded-2xl">
         {menuItems.map((item) => (
           <Link
             key={item.label}
-            href={item.href}
+            href={safeHref(item.href)}
             className="text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out"
           >
             {item.icon} {item.label}
@@ -104,7 +106,7 @@ const SidebarNavLink = () => {
         {menuItemsTwo.map((item) => (
           <Link
             key={item.label}
-            href={item.href}
+            href={safeHref(item.href)}
             className="text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out"
           >
             {item.icon} {item.label}
