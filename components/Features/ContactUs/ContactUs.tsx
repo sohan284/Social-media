@@ -21,7 +21,7 @@ export default function ContactUs() {
   const onSubmit = (data: Inputs) => console.log(data)
 
   return (
-    <div className="container mx-auto px-4 py-8 text-white">
+    <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
       <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
         {/* Header Section */}
         <div className='text-center mb-12'>
