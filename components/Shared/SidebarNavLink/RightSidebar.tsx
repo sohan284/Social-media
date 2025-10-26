@@ -36,16 +36,17 @@ const RightSidebar = () => {
             <div className='bg-[#06133FBF] backdrop-blur-[1px] py-6 px-4 rounded-2xl space-y-4 '>
                 <h1 className='text-white text-lg font-semibold'>Popular Communities</h1>
                 {
-                    communities.map((community) => <div className='flex items-center justify-between'>
-                        <div className='flex items-center gap-2'>
-                            <Image src="/profile.jpg" alt="Profile" width={50} height={50} className='rounded-full object-cover' />
-                            <div>
-                                <h3 className='text-white text-sm font-semibold'>John Doe</h3>
-                                <p className='text-gray-400 text-sm'>{members(community.members)} Members</p>
+                    communities.map((community, index) =>
+                        <div key={index} className='flex items-center justify-between'>
+                            <div className='flex items-center gap-2'>
+                                <Image src="/profile.jpg" alt="Profile" width={50} height={50} className='rounded-full object-cover' />
+                                <div>
+                                    <h3 className='text-white text-sm font-semibold'>John Doe</h3>
+                                    <p className='text-gray-400 text-sm'>{members(community.members)} Members</p>
+                                </div>
                             </div>
-                        </div>
-                        <button className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer'> Join</button>
-                    </div>)
+                            <button className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer'> Join</button>
+                        </div>)
                 }
             </div>
             <div className='bg-[#06133FBF] backdrop-blur-[1px] py-6 px-4 rounded-2xl space-y-4 '>
