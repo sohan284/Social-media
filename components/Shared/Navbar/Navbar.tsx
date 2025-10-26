@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { AiOutlineMessage } from "react-icons/ai";
 import { GoSearch } from "react-icons/go";
 import NotificationIcon from "../../Icons/NotificationIcon";
-import { FiPlus, FiMenu } from "react-icons/fi";
+import { FiPlus } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
 import { FaAlignRight } from "react-icons/fa";
 import MessagePopup from "../../Message/MessagePopup";
