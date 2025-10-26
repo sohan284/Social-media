@@ -37,13 +37,13 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
     >
       {/* Sidebar */}
       <aside
-        className={`fixed md:static top-0 left-0  w-64 h-screen bg-[#06133f] transform transition-transform duration-300 ease-in-out z-40
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+        className={`fixed lg:static top-0 left-0  w-64 h-screen bg-[#06133f] transform transition-transform duration-300 ease-in-out z-40
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <h1 className="text-lg font-semibold mb-5">Virtual Store</h1>
           <button
-            className="md:hidden text-white"
+            className="lg:hidden text-white"
             onClick={() => setIsSidebarOpen(false)}
           >
             <FiX size={24} />
@@ -69,10 +69,9 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         </nav>
       </aside>
 
-      {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -83,7 +82,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         <header className="flex flex-col gap-3 p-3 md:p-4 border-b border-white/10 bg-[#06133f]/90 backdrop-blur-sm sticky top-0 z-20">
           <div className="flex items-center justify-between gap-3">
             <button
-              className="md:hidden text-white"
+              className="lg:hidden text-white"
               onClick={() => setIsSidebarOpen(true)}
             >
               <FiMenu size={24} />
@@ -92,10 +91,10 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
             <input
               type="text"
               placeholder="Search..."
-              className="lg:w-96 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm focus:outline-none placeholder:text-gray-300"
+              className="w-full lg:w-96 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-sm focus:outline-none placeholder:text-gray-300"
             />
 
-            <h2 className="text-lg font-semibold md:hidden">Marketplace</h2>
+            <h2 className="text-lg font-semibold lg:hidden">Marketplace</h2>
 
             {/* Desktop nav */}
             <nav className="hidden lg:flex items-center gap-2 bg-white/10 rounded-full p-1.5">
@@ -115,8 +114,8 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
             </nav>
           </div>
 
-          {/* Mobile nav */}
-          <nav className="flex md:hidden overflow-x-auto gap-2 scrollbar-hide bg-white/10 rounded-full p-2">
+          {/* Mobile and tablet nav */}
+          <nav className="flex lg:hidden overflow-x-auto gap-2 scrollbar-hide bg-white/10 rounded-full p-2">
             {topNavLinks.map((btn) => (
               <Link href={btn.href} key={btn.label}>
                 <button
