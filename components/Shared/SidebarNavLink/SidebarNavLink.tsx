@@ -30,7 +30,7 @@ const menuItems = [
   {
     icon: <StoreIcon />,
     label: "Virtual Store",
-    href: "/",
+    href: "/marketplace",
   },
 ];
 const menuItemsTwo = [
