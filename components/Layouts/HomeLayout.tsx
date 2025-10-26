@@ -5,6 +5,7 @@ import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
 import { usePathname } from "next/navigation";
+import RightSidebar from "../Shared/SidebarNavLink/RightSidebar";
 
 export default function HomeLayout({
   children,
@@ -67,7 +68,7 @@ export default function HomeLayout({
             className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 w-[370px] h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll"
           >
             <div className="mt-16 ">
-              <SidebarNavLink />
+              <RightSidebar />
             </div>
           </aside>
         )}
