@@ -37,9 +37,9 @@ export default function SalePage() {
   const watchFields = watch();
 
   return (
-    <div className=" text-white flex flex-col md:flex-row items-start justify-center gap-8 p-6">
+    <div className=" text-white flex flex-col md:flex-row items-start justify-center gap-8 p-2 md:p-6">
       {/* Left Side - Form */}
-      <div className="w-full md:w-1/2 bg-[#06133FBF] backdrop-blur-[17px] rounded-2xl p-6 border border-white/20 shadow-lg">
+      <div className="w-full md:w-1/2 bg-[#06133FBF] backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
         <h2 className="text-2xl font-semibold mb-4 text-center">Item For Sale</h2>
         <p className="text-sm mb-3 text-gray-300">Required</p>
 
@@ -129,7 +129,7 @@ export default function SalePage() {
       </div>
 
       {/* Right Side - Preview */}
-      <div className="w-full md:w-1/2 bg-[#06133FBF] backdrop-blur-[17px] rounded-2xl p-6 border border-white/20 shadow-lg">
+      <div className="w-full md:w-1/2 bg-[#06133FBF] backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
         <h2 className="text-2xl font-semibold mb-4 text-center">Preview</h2>
 
         <div className="bg-white/10 rounded-lg overflow-hidden">

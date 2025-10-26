@@ -35,7 +35,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const user = true;
 
   return (
-    <nav className="py-2.5 px-4 bg-[#022735] fixed top-0 left-0 right-0 z-40">
+    <nav className="py-2.5 px-2 md:px-4 bg-[#022735] fixed top-0 left-0 right-0 z-40">
       <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}

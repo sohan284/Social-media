@@ -9,7 +9,7 @@ const Post = () => {
   const [showComments, setShowComments] = useState(false);
   return (
     <div>
-      <div className="border border-slate-600 p-6 w-full rounded">
+      <div className="border border-slate-600 md:p-6 p-4 w-full rounded">
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-[7px]">
             <Image
@@ -17,9 +17,9 @@ const Post = () => {
               alt="post"
               width={22}
               height={22}
-              className="h-[22px] w-[22px] rounded-full object-cover"
+              className="h-[30px] w-[30px] md:h-[22px] md:w-[22px] rounded-full object-cover"
             />
-            <div className="flex flex-col sm:flex-row items-center gap-3.5 text-sm text-white">
+            <div className="flex flex-col sm:flex-row items-center md:gap-3.5  text-sm text-white">
               <p>John Doe</p>
               <p>2 hours ago</p>
             </div>

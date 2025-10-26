@@ -133,7 +133,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#06133fbf] backdrop-blur-md rounded-t-2xl md:rounded-none custom-scroll-marketplace">
+        <main className="flex-1 overflow-y-auto p-2 md:p-8 bg-[#06133fbf] backdrop-blur-md md:rounded-none custom-scroll-marketplace">
           {children}
         </main>
       </div>
