@@ -25,21 +25,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ image = "https://media.istock
             </div>
 
             {/* Product Info */}
-            <div className="p-4 flex flex-col gap-2">
+            <div className="p-4 flex justify-between items-center gap-2">
                 <h3 className="text-lg font-semibold text-gray-300 line-clamp-1">{title}</h3>
 
                 <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-indigo-600">{price}</span>
-
-                    <div className="flex items-center text-sm text-yellow-500">
-                        <FaStar className="w-4 h-4 fill-yellow-400" />
-                        <span className="ml-1 text-gray-400">{rating}</span>
-                    </div>
                 </div>
-
-                <button className="mt-3 w-full rounded-xl bg-indigo-600 text-white py-2 font-medium hover:bg-indigo-700 transition">
-                    Add to Cart
-                </button>
             </div>
         </div>
     );
