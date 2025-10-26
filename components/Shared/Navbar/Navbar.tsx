@@ -10,6 +10,7 @@ import NotificationIcon from "../../Icons/NotificationIcon";
 import { FiPlus, FiMenu } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
 import { FaAlignRight } from "react-icons/fa";
+import MessagePopup from "../../Message/MessagePopup";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -19,6 +20,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [activeButton, setActiveButton] = useState("login");
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isMessagePopupOpen, setIsMessagePopupOpen] = useState(false);
 
   const router = useRouter();
 
@@ -80,8 +82,15 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
               <FiPlus size={20} />
             </button>
             
-            <button className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200">
+            <button 
+              onClick={() => setIsMessagePopupOpen(!isMessagePopupOpen)}
+              className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
+            >
               <AiOutlineMessage size={20} className="md:w-6 md:h-6" />
+              {/* Message notification badge */}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                3
+              </span>
             </button>
             <button className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200">
               <NotificationIcon />
@@ -134,6 +143,12 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
       {/* Profile Sidebar */}
       {isProfileSidebarOpen && <ProfileSidebar onClose={handleCloseSidebar} />}
+      
+      {/* Message Popup */}
+      <MessagePopup 
+        isOpen={isMessagePopupOpen} 
+        onClose={() => setIsMessagePopupOpen(false)} 
+      />
     </nav>
   );
 };
