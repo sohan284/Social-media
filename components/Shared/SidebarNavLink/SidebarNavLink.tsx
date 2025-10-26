@@ -25,7 +25,7 @@ const menuItems = [
   {
     icon: <IoTrendingUp size={24} />,
     label: "Popular",
-    href: "/",
+    href: "/popular",
   },
   {
     icon: <StoreIcon />,
