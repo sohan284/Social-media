@@ -5,12 +5,12 @@ import { FiMenu, FiX } from "react-icons/fi";
 import bg from "../../public/main-bg.jpg";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FaHome } from "react-icons/fa";
 
 const topNavLinks = [
   { label: "Browse", href: "/marketplace" },
   { label: "Categories", href: "/marketplace/categories" },
   { label: "Sell", href: "/marketplace/sell" },
-  { label: "Buy", href: "/marketplace/buy" },
   { label: "Profile", href: "/marketplace/profile" },
 ];
 
@@ -50,7 +50,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
           </button>
         </div>
 
-        <nav className="p-4 space-y-3">
+        <nav className="p-4 space-y-3 flex flex-col justify-between gap-2 h-[90vh]">
           <ul className="space-y-2">
             {sidebarLinks.map((item) => (
               <Link
@@ -66,6 +66,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
               </Link>
             ))}
           </ul>
+          <Link href="/" className="flex items-center gap-2 text-gray-100 hover:text-white bg-white/10 rounded-lg p-2 px-4"> <FaHome size={24} /> Home</Link>
         </nav>
       </aside>
 
@@ -103,7 +104,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
                   <button
                     className={`px-4 py-2 rounded-full text-sm transition-colors ${
                       isActive(btn.href)
-                        ? "bg-blue-600 text-white font-medium"
+                        ? "bg-[#06133fbf] text-white font-medium"
                         : "hover:bg-white/10"
                     }`}
                   >
@@ -121,7 +122,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
                 <button
                   className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap ${
                     isActive(btn.href)
-                      ? "bg-blue-600 text-white font-medium"
+                      ? "bg-[#06133fbf] text-white font-medium"
                       : "bg-white/10 hover:bg-white/20"
                   }`}
                 >
