@@ -49,6 +49,30 @@ const Story = () => {
       timestamp: "10 hours ago",
       isViewed: true,
     },
+    {
+      id: 3,
+      author: "Mike Johnson",
+      authorAvatar: "/profile.jpg",
+      storyImage: "/post.jpg",
+      timestamp: "6 hours ago",
+      isViewed: true,
+    },
+    {
+      id: 4,
+      author: "Sarah Wilson",
+      authorAvatar: "/profile.jpg",
+      storyImage: "/post.jpg",
+      timestamp: "8 hours ago",
+      isViewed: false,
+    },
+    {
+      id: 5,
+      author: "David Brown",
+      authorAvatar: "/profile.jpg",
+      storyImage: "/post.jpg",
+      timestamp: "10 hours ago",
+      isViewed: true,
+    },
   ]);
 
   const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
@@ -82,7 +106,7 @@ const Story = () => {
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg mb-6 md:mb-16">
+    <div className="rounded-lg mb-6 md:mb-16">
       <div className="flex gap-5 overflow-x-auto scrollbar-hide">
         {/* Add Story Button */}
         <div className="flex-shrink-0 cursor-pointer" onClick={() => setIsAddStoryModalOpen(true)}>

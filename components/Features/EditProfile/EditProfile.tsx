@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 interface FormData {
     displayName: string;
     about: string;
-    socialLink: string;
+    socialLinks: string[];
     avatar?: FileList;
     banner?: FileList;
 }
@@ -35,14 +35,17 @@ const EditProfile = () => {
         handleSubmit,
         watch,
         setValue,
+        control,
         formState: { errors, isSubmitting },
     } = useForm<FormData>({
         defaultValues: {
             displayName: "",
             about: "",
-            socialLink: "",
+            socialLinks: [""],
         },
     });
+
+    const socialLinks = watch("socialLinks") || [""]; 
 
     const displayNameValue = watch("displayName");
     const aboutValue = watch("about");
@@ -54,9 +57,9 @@ const EditProfile = () => {
                 return;
             }
 
-            const maxSize = 5 * 1024 * 1024; // 5MB
+            const maxSize = type === 'avatar' ? 2 * 1024 * 1024 : 5 * 1024 * 1024; 
             if (file.size > maxSize) {
-                alert('File size must be less than 5MB');
+                alert(`File size must be less than ${type === 'avatar' ? '2MB' : '5MB'}`);
                 return;
             }
 
@@ -147,22 +150,55 @@ const EditProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Social Link */}
+                            {/* Social Links */}
                             <div className="space-y-2">
-                                <label className="block text-white font-medium">Social Link</label>
-                                <input
-                                    {...register("socialLink", {
-                                        pattern: {
-                                            value: /^https?:\/\/.+/,
-                                            message: "Please enter a valid URL",
-                                        },
-                                    })}
-                                    type="url"
-                                    className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-black/30 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-sm sm:text-base"
-                                    placeholder="https://example.com"
-                                />
-                                {errors.socialLink && (
-                                    <p className="text-red-400 text-sm">{errors.socialLink.message}</p>
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-white font-medium">Social Links</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setValue("socialLinks", [...socialLinks, ""], { shouldDirty: true })}
+                                        className="flex items-center gap-1 px-2 py-1 text-xs sm:text-sm bg-white/10 hover:bg-white/20 text-white rounded-md border border-white/20 transition-all"
+                                    >
+                                        + Add
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {socialLinks.map((_, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            <input
+                                                {...register(`socialLinks.${index}` as const, {
+                                                    pattern: {
+                                                        value: /^https?:\/\/.+/,
+                                                        message: "Please enter a valid URL",
+                                                    },
+                                                })}
+                                                type="url"
+                                                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-black/30 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-sm sm:text-base"
+                                                placeholder="https://example.com"
+                                            />
+                                            {socialLinks.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = socialLinks.filter((__, i) => i !== index);
+                                                        setValue("socialLinks", next.length ? next : [""], { shouldDirty: true });
+                                                    }}
+                                                    className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                {Array.isArray(errors.socialLinks) && errors.socialLinks.some(Boolean) && (
+                                    <div className="space-y-1">
+                                        {errors.socialLinks.map((err, idx) => (
+                                            <div key={idx} className="text-red-400 text-sm">
+                                                {err?.message as unknown as string}
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 
@@ -208,6 +244,7 @@ const EditProfile = () => {
                                                 <p className="text-xs sm:text-sm font-medium text-white">Upload Avatar</p>
                                                 <p className="text-xs text-gray-300">Click to browse</p>
                                                 <p className="text-xs text-gray-400 mt-1">Square image recommended</p>
+                                                <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
                                             </div>
                                         </div>
                                     )}

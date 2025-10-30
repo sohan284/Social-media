@@ -53,10 +53,21 @@ export default function HomeLayout({
         )}
 
         {/* MAIN CONTENT */}
-        {/* <main className="flex-1 h-[calc(100vh)] px-2 lg:px-6 py-4 overflow-y-auto bg-gradient-to-tl from-[#956194] via-[#b8586e] to-[#956194]"> */}
-        <main className="flex-1 h-[calc(100vh)] px-2 lg:px-6 py-4 overflow-y-auto bg-slate-800">
-          <div className="max-w-3xl mx-auto mt-16">{children}</div>
+        <main
+          style={{
+            backgroundImage: `url(${bg.src})`,
+            scrollbarGutter: "stable both-edges",
+          }}
+          className="flex-1 h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
+        >
+          <div className="bg-[#06133fec] ">
+            <div className="max-w-3xl mx-auto pt-18 pb-4">
+              {children}
+            </div>
+          </div>
         </main>
+
+       
 
         {/* RIGHT SIDEBAR */}
         {pathname === "/create-post" ? null : (
