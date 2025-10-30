@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
 import { FaUpload } from "react-icons/fa";
-import { SellType } from "../../../../../types/SellTypes";
+import { SellType } from "../../../../../types/types";
 
 const inputClass =
   "w-full px-3 sm:px-4 py-2 sm:py-3 bg-black/30 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-sm sm:text-base";
@@ -90,8 +90,9 @@ export default function SalePage() {
             className={inputClass}
           />
           <input
-            {...register("condition")}
-            placeholder="Condition"
+            {...register("productUrl")}
+            placeholder="Product URL"
+            type="url"
             className={inputClass}
           />
 
