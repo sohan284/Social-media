@@ -10,7 +10,7 @@ const inputClass =
   "w-full px-3 sm:px-4 py-2 sm:py-3 bg-black/30 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-sm sm:text-base";
 
 export default function SalePage() {
-  const { register, handleSubmit, watch, reset } = useForm<
+  const { register, handleSubmit, watch, reset, setValue } = useForm<
     SellType & { image: File | null }
   >();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -27,11 +27,13 @@ export default function SalePage() {
     if (file.size > maxSize) {
       alert("Selected image is greater than 3MB");
       e.target.value = "";
+      setValue("image", null);
       return;
     }
 
     const previewUrl = URL.createObjectURL(file);
     setImageSrc(previewUrl);
+    setValue("image", file);
   };
 
   // Watch fields for live preview
@@ -58,6 +60,8 @@ export default function SalePage() {
               onChange={handleImageUpload}
             />
           </label>
+          {/* Hidden input to bind file to RHF state */}
+          <input type="hidden" {...register("image")} />
           {imageSrc && (
             <div className="w-40 h-32 rounded-md overflow-hidden">
               <Image
