@@ -36,7 +36,7 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-[#06133f] rounded-lg shadow-2xl flex flex-col animate-in slide-in-from-bottom-2 duration-300">
+    <div className="fixed z-50 bottom-2 left-2 right-2 h-[70vh] bg-[#06133f] rounded-lg shadow-2xl flex flex-col animate-in slide-in-from-bottom-2 duration-300 sm:bottom-4 sm:left-auto sm:right-4 sm:w-96 sm:h-[28rem]">
       {selectedUser ? (
         <ConversationView user={selectedUser} onBack={handleBackToList} />
       ) : (

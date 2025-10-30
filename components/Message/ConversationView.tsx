@@ -94,7 +94,7 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
   };
 
   return (
-    <div className="flex flex-col h-96">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-700 bg-[#06133f] rounded-t-3xl">
         <button 
