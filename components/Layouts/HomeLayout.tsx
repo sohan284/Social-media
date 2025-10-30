@@ -16,9 +16,11 @@ export default function HomeLayout({
 
   const pathname = usePathname();
 
+
+
   return (
     <div className="flex flex-col">
-      <Navbar />
+      <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
 
       <div className="flex flex-1">
         {/* LEFT SIDEBAR */}
@@ -27,7 +29,7 @@ export default function HomeLayout({
             backgroundImage: `url(${bg.src})`,
             scrollbarGutter: "stable both-edges",
           }}
-          className={`fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 lg:translate-x-0 z-30 w-[370px] p-10 
+          className={`fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
             ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
             hover:overflow-y-auto overflow-y-hidden custom-scroll
           `}
@@ -44,7 +46,6 @@ export default function HomeLayout({
           </nav>
         </aside>
 
-        {/* OVERLAY FOR MOBILE */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black/40 z-20 lg:hidden"

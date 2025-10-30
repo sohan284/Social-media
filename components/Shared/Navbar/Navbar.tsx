@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { AiOutlineMessage } from "react-icons/ai";
 import { GoSearch } from "react-icons/go";
@@ -34,6 +34,8 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
   const user = true;
 
+  const pathname = usePathname();
+
   return (
     <nav className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-40 border-b border-white/10">
       <div className="relative flex items-center justify-between">
@@ -41,7 +43,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           {/* Mobile Menu Toggle */}
           <button 
             onClick={onMenuToggle}
-            className="lg:hidden text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
+            className={`${pathname.startsWith('/main') ? 'lg:hidden' : 'xl:hidden'} text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200`}
           >
             <FaAlignRight size={24} />
           </button>
@@ -66,7 +68,6 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
         {user ? (
           <div className="flex items-center gap-2 md:gap-4 text-white">
-            {/* Create Post Button - Hidden on mobile, visible on tablet and up */}
             <button 
               onClick={() => router.push("/main/create-post")} 
               className="hidden md:flex items-center gap-3 text-sm cursor-pointer"
