@@ -36,7 +36,6 @@ export default function SalePage() {
     setValue("image", file);
   };
 
-  // Watch fields for live preview
   const watchFields = watch();
 
   return (
