@@ -7,7 +7,7 @@ interface ProductCardProps {
     rating?: number;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ image = "https://media.istockphoto.com/id/1414801672/photo/cardboard-box-with-cosmetics-product-in-front-od-open-door-buying-online-and-delivery.jpg?s=612x612&w=0&k=20&c=SA9VCzp-QtpzlliX8dM_uoH8K20U1gHqYfsWP08aLl0=", title = "Product Title", price = "$100", rating = 4.5 }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ image = "/sheep.jpg", title = "Product Title", price = "$100", rating = 4.5 }) => {
     return (
         <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white/ backdrop-blur-sm shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ">
             {/* Product Image */}
