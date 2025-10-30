@@ -48,7 +48,7 @@ export default function HomeLayout({
 
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+            className="fixed inset-0 bg-black/40 z-20 xl:hidden"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
