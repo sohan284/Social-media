@@ -151,7 +151,7 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
           <button 
             type="submit"
             disabled={!newMessage.trim()}
-            className="p-2 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 bg-[#0059ff] text-white rounded-full hover:bg-[#0059ffcd] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <PiPaperPlaneRightFill  size={16} />
           </button>

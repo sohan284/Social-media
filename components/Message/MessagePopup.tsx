@@ -42,7 +42,7 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
       ) : (
         <>
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-[#06133f] rounded-t-lg">
+          <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-[#063f1a] rounded-t-lg">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-white text-sm">Messages</h3>
               <span className="bg-[#ff4500] text-white text-xs px-2 py-1 rounded-full font-medium">3</span>

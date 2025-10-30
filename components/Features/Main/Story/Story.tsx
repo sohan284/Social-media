@@ -50,7 +50,7 @@ const Story = () => {
       isViewed: true,
     },
     {
-      id: 3,
+      id: 6,
       author: "Mike Johnson",
       authorAvatar: "/profile.jpg",
       storyImage: "/post.jpg",
@@ -58,7 +58,7 @@ const Story = () => {
       isViewed: true,
     },
     {
-      id: 4,
+      id: 7,
       author: "Sarah Wilson",
       authorAvatar: "/profile.jpg",
       storyImage: "/post.jpg",
@@ -66,7 +66,7 @@ const Story = () => {
       isViewed: false,
     },
     {
-      id: 5,
+      id: 8,
       author: "David Brown",
       authorAvatar: "/profile.jpg",
       storyImage: "/post.jpg",
