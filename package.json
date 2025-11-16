@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",
+    "@reduxjs/toolkit": "^2.10.1",
     "@stripe/react-stripe-js": "^5.2.0",
     "@stripe/stripe-js": "^8.1.0",
     "class-variance-authority": "^0.7.1",
