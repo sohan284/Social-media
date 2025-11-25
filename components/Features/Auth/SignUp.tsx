@@ -6,6 +6,8 @@ import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSendOtpMutation, useVerifyOtpMutation, useSetCredentialsMutation } from "@/store/authApi";
 
 // Types for form data
 type SignUpForm = {
@@ -46,15 +48,18 @@ const interestCategories = [
 ];
 
 const SignUp = () => {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [userEmail, setUserEmail] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [sendOtp, { isLoading: isSendingOtp, error: otpError }] = useSendOtpMutation();
+  const [verifyOtp, { isLoading: isVerifyingOtp, error: verifyOtpError }] = useVerifyOtpMutation();
+  const [setCredentials, { isLoading: isSettingCredentials, error: setCredentialsError }] = useSetCredentialsMutation();
 
   const {
     register,
     handleSubmit,
-    reset,
     watch,
     formState: { errors },
   } = useForm<SignUpForm>();
@@ -66,27 +71,61 @@ const SignUp = () => {
     }
   }, [resendTimer]);
 
-  const onSubmit = (data: SignUpForm) => {
-    console.log("Signup data:", data);
-    reset();
+  const onSubmit = async (data: SignUpForm) => {
+    if (!userEmail) return;
+    
+    try {
+      await setCredentials({
+        email: userEmail,
+        username: data.username,
+        password: data.password,
+      }).unwrap();
+      // Navigate to login page after successful credential setup
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Failed to set credentials:", error);
+      // Error handling UI is shown below the form
+    }
   };
 
   const handleSocialLogin = (provider: "google" | "apple") => {
     console.log(`Social login with ${provider}`);
   };
 
-  const handleEmailSubmit = (email: string) => {
-    setUserEmail(email);
-    setResendTimer(30);
-    setCurrentStep(2);
+  const handleEmailSubmit = async (email: string) => {
+    try {
+      await sendOtp({ email }).unwrap();
+      setUserEmail(email);
+      setResendTimer(30);
+      setCurrentStep(2);
+    } catch (error) {
+      console.error("Failed to send OTP:", error);
+      // You can add error handling UI here if needed
+    }
   };
 
-  const handleVerificationSubmit = () => {
+  const handleVerificationSubmit = async (code: string) => {
+    if (!userEmail) return;
+    
+    try {
+      await verifyOtp({ email: userEmail, code }).unwrap();
       setCurrentStep(3);
+    } catch (error) {
+      console.error("Failed to verify OTP:", error);
+      // You can add error handling UI here if needed
+    }
   };
 
-  const handleResendCode = () => {
-    setResendTimer(30);
+  const handleResendCode = async () => {
+    if (userEmail) {
+      try {
+        await sendOtp({ email: userEmail }).unwrap();
+        setResendTimer(30);
+      } catch (error) {
+        console.error("Failed to resend OTP:", error);
+        // You can add error handling UI here if needed
+      }
+    }
   };
 
   const handleInterestToggle = (interest: string) => {
@@ -120,7 +159,7 @@ const SignUp = () => {
         <button
           type="button"
           onClick={() => handleSocialLogin("google")}
-          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
+          className="w-full cursor-pointer flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
         >
           <FcGoogle className="text-xl" /> Continue With Google
         </button>
@@ -128,7 +167,7 @@ const SignUp = () => {
         <button
           type="button"
           onClick={() => handleSocialLogin("apple")}
-          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
+          className="w-full cursor-pointer flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
         >
           <FaApple className="text-xl" /> Continue With Apple
         </button>
@@ -154,10 +193,16 @@ const SignUp = () => {
           />
           <button
             type="submit"
-            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition"
+            disabled={isSendingOtp}
+            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            Continue
+            {isSendingOtp ? "Sending..." : "Continue"}
           </button>
+          {otpError && (
+            <p className="text-red-400 text-xs mt-2 text-center">
+              Failed to send OTP. Please try again.
+            </p>
+          )}
         </form>
 
         <div className="text-center mt-4">
@@ -195,7 +240,7 @@ const SignUp = () => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const code = formData.get("verificationCode") as string;
-        if (code) handleVerificationSubmit();
+        if (code) handleVerificationSubmit(code);
       }}>
         <input
           name="verificationCode"
@@ -214,19 +259,26 @@ const SignUp = () => {
             <button
               type="button"
               onClick={handleResendCode}
-              className="text-blue-300 hover:underline"
+              disabled={isSendingOtp}
+              className="text-blue-300 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Resend code
+              {isSendingOtp ? "Sending..." : "Resend code"}
             </button>
           )}
         </div>
 
         <button
           type="submit"
-          className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition"
+          disabled={isVerifyingOtp}
+          className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          Continue
+          {isVerifyingOtp ? "Verifying..." : "Continue"}
         </button>
+        {verifyOtpError && (
+          <p className="text-red-400 text-xs mt-2 text-center">
+            Invalid verification code. Please try again.
+          </p>
+        )}
       </form>
     </div>
   );
@@ -309,11 +361,16 @@ const SignUp = () => {
 
         <button
           type="submit"
-          onClick={() => setCurrentStep(4)}
-          className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition"
+          disabled={isSettingCredentials}
+          className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign Up
+          {isSettingCredentials ? "Setting up..." : "Sign Up"}
         </button>
+        {setCredentialsError && (
+          <p className="text-red-400 text-xs mt-2 text-center">
+            Failed to set credentials. Please try again.
+          </p>
+        )}
       </form>
     </div>
   );
@@ -352,7 +409,7 @@ const SignUp = () => {
       <button
         onClick={handleFinalSubmit}
         disabled={selectedInterests.length === 0}
-        className={`w-full mt-8 py-3 rounded-full font-semibold transition ${
+        className={`w-full mt-8 py-3 rounded-full font-semibold transition cursor-pointer ${
           selectedInterests.length > 0
             ? "bg-green-600 hover:bg-green-700 text-white"
             : "bg-gray-600 text-gray-400 cursor-not-allowed"
