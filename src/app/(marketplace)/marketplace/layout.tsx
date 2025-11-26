@@ -1,12 +1,11 @@
-import React from 'react'
-import MarketPlaceLayout from '../../../../components/Layouts/MarketPlaceLayout'
+import React from "react";
+import MarketPlaceLayout from "../../../../components/Layouts/MarketPlaceLayout";
+import ProtectedLayout from "../../../../components/Layouts/ProtectedLayout";
 
 export default function layout({ children }: { children: React.ReactNode }) {
-    return (
-        <div>
-            <MarketPlaceLayout>
-                {children}
-            </MarketPlaceLayout>
-        </div>
-    )
+  return (
+    <ProtectedLayout>
+      <MarketPlaceLayout>{children}</MarketPlaceLayout>
+    </ProtectedLayout>
+  );
 }

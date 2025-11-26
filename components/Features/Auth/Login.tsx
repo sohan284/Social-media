@@ -8,7 +8,7 @@ import { IoArrowBack } from "react-icons/io5";
 import Link from "next/link";
 import { useLoginMutation } from "@/store/authApi";
 import { useRouter } from "next/navigation";
-import { getRoleFromToken } from "@/lib/auth";
+import { getRoleFromToken, storeAuthTokens } from "@/lib/auth";
 
 type LoginForm = {
   email: string;
@@ -47,22 +47,36 @@ const Login = () => {
         response.tokens?.access ||
         (typeof response.token === "string" ? response.token : undefined);
       const refreshToken = response.tokens?.refresh;
+      const persistSession = Boolean(data.keepMeLoggedIn);
 
-      if (accessToken) {
-        localStorage.setItem("token", accessToken);
-      }
-
-      if (typeof refreshToken === "string") {
-        localStorage.setItem("refresh_token", refreshToken);
-      }
-
-      if (response.user) {
-        localStorage.setItem("user", JSON.stringify(response.user));
-      }
+      storeAuthTokens({
+        accessToken,
+        refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,
+        persist: persistSession,
+      });
 
       const role =
         getRoleFromToken(accessToken || null) || response.user?.role || "user";
-      localStorage.setItem("role", role);
+
+      if (typeof window !== "undefined") {
+        const primaryStorage = persistSession
+          ? window.localStorage
+          : window.sessionStorage;
+        const secondaryStorage = persistSession
+          ? window.sessionStorage
+          : window.localStorage;
+
+        if (response.user) {
+          primaryStorage.setItem("user", JSON.stringify(response.user));
+          secondaryStorage.removeItem("user");
+        } else {
+          primaryStorage.removeItem("user");
+          secondaryStorage.removeItem("user");
+        }
+
+        primaryStorage.setItem("role", role);
+        secondaryStorage.removeItem("role");
+      }
 
       const redirectTarget = role === "admin" ? "/dashboard" : "/";
       router.push(redirectTarget);

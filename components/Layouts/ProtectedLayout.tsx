@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getRoleFromToken, UserRole } from "@/lib/auth";
+import {
+  clearStoredTokens,
+  getRoleFromToken,
+  getStoredAccessToken,
+  UserRole,
+} from "@/lib/auth";
 
 type ProtectedLayoutProps = {
   children: React.ReactNode;
@@ -16,22 +21,50 @@ export default function ProtectedLayout({
   fallbackRedirect,
 }: ProtectedLayoutProps) {
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
 
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    setToken(getStoredAccessToken());
+    setIsBootstrapping(false);
+  }, []);
 
-    if (!token) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleStorage = () => {
+      setToken(getStoredAccessToken());
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const isExpired = useMemo(() => {
+    if (!token) return false;
+    try {
+      const [, payload] = token.split(".");
+      if (!payload) return false;
+      const data = JSON.parse(
+        atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+      );
+      return typeof data.exp === "number" && data.exp * 1000 <= Date.now();
+    } catch {
+      return false;
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (isBootstrapping) return;
+
+    if (!token || isExpired) {
+      clearStoredTokens();
       router.replace("/auth/login");
-      setIsAuthorized(false);
-      setIsChecking(false);
       return;
     }
 
-    const roleFromToken = getRoleFromToken(token);
-    const role: UserRole = roleFromToken || "user";
+    const role = getRoleFromToken(token) || "user";
     const hasRoleAccess =
       !allowedRoles ||
       allowedRoles.length === 0 ||
@@ -41,16 +74,10 @@ export default function ProtectedLayout({
       const redirectTarget =
         fallbackRedirect || (role === "admin" ? "/dashboard" : "/");
       router.replace(redirectTarget);
-      setIsAuthorized(false);
-      setIsChecking(false);
-      return;
     }
+  }, [allowedRoles, fallbackRedirect, isBootstrapping, isExpired, router, token]);
 
-    setIsAuthorized(true);
-    setIsChecking(false);
-  }, [allowedRoles, fallbackRedirect, router]);
-
-  if (isChecking) {
+  if (isBootstrapping) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white">
         Checking authentication...
@@ -58,7 +85,7 @@ export default function ProtectedLayout({
     );
   }
 
-  if (!isAuthorized) {
+  if (!token || isExpired) {
     return null;
   }
 

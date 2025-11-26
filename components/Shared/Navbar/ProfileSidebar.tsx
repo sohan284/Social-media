@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FiX,
   FiEdit3,
@@ -11,6 +13,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaRegCircleUser } from "react-icons/fa6";
 import { UserProfile } from "@/store/authApi";
+import { useRouter } from "next/navigation";
+import { clearStoredTokens, getStoredAccessToken } from "@/lib/auth";
 
 interface ProfileSidebarProps {
   onClose: () => void;
@@ -45,11 +49,6 @@ const profileItems = [
     href: "/profile/help-support",
     icon: FiHelpCircle,
   },
-  {
-    label: "Sign Out",
-    href: "/profile/sign-out",
-    icon: FiLogOut,
-  },
 ];
 
 const ProfileSidebar = ({
@@ -60,6 +59,8 @@ const ProfileSidebar = ({
 }: ProfileSidebarProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -70,6 +71,82 @@ const ProfileSidebar = ({
       document.body.style.overflow = "unset";
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncToken = () => {
+      const token = getStoredAccessToken();
+      setAuthToken(token);
+    };
+
+    syncToken();
+
+    window.addEventListener("storage", syncToken);
+    return () => {
+      window.removeEventListener("storage", syncToken);
+    };
+  }, []);
+
+  const decodeTokenExpiry = useCallback((token: string): number | null => {
+    try {
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const payload = JSON.parse(
+        atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+      );
+      if (typeof payload.exp === "number") {
+        return payload.exp * 1000;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to decode token payload", error);
+      return null;
+    }
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    clearStoredTokens();
+    setAuthToken(null);
+    onClose();
+    router.push("/auth/login");
+  }, [onClose, router]);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const expiryTime = decodeTokenExpiry(authToken);
+
+    if (expiryTime && expiryTime <= Date.now()) {
+      handleLogout();
+      return;
+    }
+
+    const timeoutId =
+      expiryTime && expiryTime > Date.now()
+        ? window.setTimeout(() => {
+            handleLogout();
+          }, expiryTime - Date.now())
+        : null;
+
+    const intervalId = window.setInterval(() => {
+      const latestToken = getStoredAccessToken();
+      if (!latestToken) {
+        handleLogout();
+        return;
+      }
+      const latestExpiry = decodeTokenExpiry(latestToken);
+      if (latestExpiry && latestExpiry <= Date.now()) {
+        handleLogout();
+      }
+    }, 60 * 1000);
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      clearInterval(intervalId);
+    };
+  }, [authToken, decodeTokenExpiry, handleLogout]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -91,6 +168,8 @@ const ProfileSidebar = ({
     profile?.username ||
     "";
   const profileEmail = profile?.email || profile?.username || "";
+
+  const showSignOut = useMemo(() => Boolean(authToken && profile), [authToken, profile]);
 
   return (
     <div
@@ -157,6 +236,15 @@ const ProfileSidebar = ({
                 </Link>
               );
             })}
+            {showSignOut && (
+              <button
+                onClick={handleLogout}
+                className="w-full text-sm text-left p-3 hover:bg-[#400f0f] rounded-lg transition-colors duration-200 flex items-center gap-3 cursor-pointer text-white font-medium mt-2 border border-white/10"
+              >
+                <FiLogOut size={20} />
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
       </div>
