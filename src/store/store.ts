@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { baseApi } from "./baseApi";
 import "./authApi"; // Import to ensure endpoints are registered
+import "./postApi";
 
 export const store = configureStore({
   reducer: {
