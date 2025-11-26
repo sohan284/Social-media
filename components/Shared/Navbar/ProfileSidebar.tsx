@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { FiX, FiEdit3, FiSettings, FiShield, FiHelpCircle, FiLogOut } from "react-icons/fi";
+import {
+  FiX,
+  FiEdit3,
+  FiSettings,
+  FiShield,
+  FiHelpCircle,
+  FiLogOut,
+} from "react-icons/fi";
 import Image from "next/image";
 import Link from "next/link";
 import { FaRegCircleUser } from "react-icons/fa6";
+import { UserProfile } from "@/store/authApi";
 
 interface ProfileSidebarProps {
   onClose: () => void;
+  profile?: UserProfile | null;
+  isLoadingProfile: boolean;
+  isError?: boolean;
 }
 
 const profileItems = [
@@ -41,7 +52,12 @@ const profileItems = [
   },
 ];
 
-const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
+const ProfileSidebar = ({
+  onClose,
+  profile,
+  isLoadingProfile,
+  isError,
+}: ProfileSidebarProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -64,6 +80,17 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
   };
 
   const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
+
+  const profileImage =
+    (profile?.profile_image as string) ||
+    (profile?.avatar as string) ||
+    "/profile.jpg";
+  const profileName =
+    profile?.full_name ||
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
+    profile?.username ||
+    "";
+  const profileEmail = profile?.email || profile?.username || "";
 
   return (
     <div
@@ -89,16 +116,31 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
         </div>
 
         <div className="p-6">
-          <div className="flex flex-col items-center mb-6">
-            <Image
-              src="/profile.jpg"
-              alt="profile"
-              width={80}
-              height={80}
-              className="rounded-full h-[80px] w-[80px] object-cover mb-4"
-            />
-            <h3 className="text-xl font-semibold text-white">John Doe</h3>
-            <p className="text-white">john.doe@example.com</p>
+          <div className="flex flex-col items-center mb-6 text-white">
+            <div className="rounded-full h-[80px] w-[80px] overflow-hidden border border-white/30 mb-4 bg-gray-700">
+              <Image
+                src={profileImage}
+                alt={profileName || "profile"}
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            {isLoadingProfile ? (
+              <div className="text-center space-y-1 w-full animate-pulse">
+                <div className="h-4 bg-white/20 rounded w-1/2 mx-auto" />
+                <div className="h-3 bg-white/10 rounded w-3/4 mx-auto" />
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold">
+                  {profileName || (isError ? "Unable to load user" : "Unknown User")}
+                </h3>
+                <p className="text-sm text-white/80">
+                  {profileEmail || (isError ? "Please try again later" : "No email available")}
+                </p>
+              </>
+            )}
           </div>
 
           <div className="flex flex-col">

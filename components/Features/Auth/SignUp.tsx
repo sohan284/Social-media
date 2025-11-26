@@ -7,7 +7,13 @@ import { FaApple } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSendOtpMutation, useVerifyOtpMutation, useSetCredentialsMutation } from "@/store/authApi";
+import {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+  useSetCredentialsMutation,
+  useGetCategoriesQuery,
+  useUpdateUserProfileMutation,
+} from "@/store/authApi";
 
 // Types for form data
 type SignUpForm = {
@@ -17,50 +23,27 @@ type SignUpForm = {
   verificationCode: string;
   keepMeLoggedIn: boolean;
   rememberMe: boolean;
-  interests: string[];
 };
-
-const interestCategories = [
-  {
-    id: "technology",
-    name: "Technology",
-    options: [
-      "Programming", "AI & Machine Learning", "Web Development", "Mobile Apps", "Data Science",
-      "Cybersecurity", "Cloud Computing", "DevOps", "Blockchain", "IoT"
-    ]
-  },
-  {
-    id: "lifestyle",
-    name: "Lifestyle",
-    options: [
-      "Fitness", "Travel", "Food & Cooking", "Fashion", "Photography",
-      "Music", "Art & Design", "Reading", "Gaming", "Movies"
-    ]
-  },
-  {
-    id: "business",
-    name: "Business",
-    options: [
-      "Entrepreneurship", "Marketing", "Finance", "Sales", "Leadership",
-      "Startups", "E-commerce", "Consulting", "Real Estate", "Investing"
-    ]
-  }
-];
 
 const SignUp = () => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [userEmail, setUserEmail] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedInterests, setSelectedInterests] = useState<number[]>([]);
   const [sendOtp, { isLoading: isSendingOtp, error: otpError }] = useSendOtpMutation();
   const [verifyOtp, { isLoading: isVerifyingOtp, error: verifyOtpError }] = useVerifyOtpMutation();
   const [setCredentials, { isLoading: isSettingCredentials, error: setCredentialsError }] = useSetCredentialsMutation();
+  const [updateUserProfile, { isLoading: isUpdatingProfile, error: updateProfileError }] = useUpdateUserProfileMutation();
+  const {
+    data: categoriesData,
+    isLoading: isCategoriesLoading,
+    isError: isCategoriesError,
+  } = useGetCategoriesQuery();
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<SignUpForm>();
 
@@ -71,20 +54,35 @@ const SignUp = () => {
     }
   }, [resendTimer]);
 
-  const onSubmit = async (data: SignUpForm) => {
-    if (!userEmail) return;
-    
+  const handleCredentialStepSubmit = async (data: SignUpForm) => {
+    if (!data.username || !data.password || !userEmail) {
+      return;
+    }
+
     try {
-      await setCredentials({
+      // Call credentials API when form is submitted
+      const credentialsResponse = await setCredentials({
         email: userEmail,
         username: data.username,
         password: data.password,
       }).unwrap();
-      // Navigate to login page after successful credential setup
-      router.push("/auth/login");
+
+      // Extract token from response
+      const token = credentialsResponse.token || credentialsResponse.tokens?.access;
+      
+      if (!token) {
+        console.error("No token received from credentials API");
+        return;
+      }
+
+      // Store token in localStorage for the API call
+      localStorage.setItem("token", token);
+
+      // Move to step 4 (category selection)
+      setCurrentStep(4);
     } catch (error) {
       console.error("Failed to set credentials:", error);
-      // Error handling UI is shown below the form
+      // Error will be shown via setCredentialsError in the UI
     }
   };
 
@@ -128,21 +126,30 @@ const SignUp = () => {
     }
   };
 
-  const handleInterestToggle = (interest: string) => {
-    setSelectedInterests(prev => 
-      prev.includes(interest) 
-        ? prev.filter(i => i !== interest)
-        : [...prev, interest]
+  const handleInterestToggle = (interestId: number) => {
+    setSelectedInterests((prev) =>
+      prev.includes(interestId)
+        ? prev.filter((id) => id !== interestId)
+        : [...prev, interestId]
     );
   };
 
-  const handleFinalSubmit = () => {
-    const formData = {
-      ...watch(),
-      email: userEmail,
-      interests: selectedInterests,
-    };
-    onSubmit(formData);
+  const handleFinalSubmit = async () => {
+    if (selectedInterests.length === 0) {
+      return;
+    }
+
+    try {
+      // Update user profile with subcategories
+      await updateUserProfile({
+        subcategory_ids: selectedInterests,
+      }).unwrap();
+
+      // Redirect to login after successful signup
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+    }
   };
 
   const renderStep1 = () => (
@@ -302,7 +309,7 @@ const SignUp = () => {
         <span className="text-blue-300">Privacy Policy</span>.
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(handleCredentialStepSubmit)} className="space-y-4">
         <div>
           <input
             {...register("username", {
@@ -362,13 +369,13 @@ const SignUp = () => {
         <button
           type="submit"
           disabled={isSettingCredentials}
-          className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          {isSettingCredentials ? "Setting up..." : "Sign Up"}
+          {isSettingCredentials ? "Creating account..." : "Continue"}
         </button>
         {setCredentialsError && (
           <p className="text-red-400 text-xs mt-2 text-center">
-            Failed to set credentials. Please try again.
+            Failed to create account. Please try again.
           </p>
         )}
       </form>
@@ -383,43 +390,58 @@ const SignUp = () => {
       </p>
 
       <div className="space-y-8">
-        {interestCategories.map((category) => (
-          <div key={category.id}>
-            <h3 className="text-lg font-medium mb-4 text-left">{category.name}</h3>
-            <div className="flex flex-wrap gap-3">
-              {category.options.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => handleInterestToggle(option)}
-                  className={`px-4 py-2 rounded-full text-sm border transition ${
-                    selectedInterests.includes(option)
-                      ? "border-teal-400 bg-teal-400/20 text-teal-400"
-                      : "border-gray-300 text-white hover:border-gray-200"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
+        {isCategoriesLoading ? (
+          <p>Loading categories...</p>
+        ) : isCategoriesError ? (
+          <p className="text-red-400">Failed to load categories.</p>
+        ) : (
+          categoriesData?.data?.map((category) => (
+            <div key={category.id}>
+              <h3 className="text-lg font-medium mb-4 text-left">{category.name}</h3>
+              <div className="flex flex-wrap gap-3">
+                {category.subcategories.map((subcategory) => (
+                  <button
+                    key={subcategory.id}
+                    type="button"
+                    onClick={() => handleInterestToggle(subcategory.id)}
+                    className={`px-4 py-2 rounded-full text-sm border transition ${
+                      selectedInterests.includes(subcategory.id)
+                        ? "border-teal-400 bg-teal-400/20 text-teal-400"
+                        : "border-gray-300 text-white hover:border-gray-200"
+                    }`}
+                  >
+                    {subcategory.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <button
         onClick={handleFinalSubmit}
-        disabled={selectedInterests.length === 0}
+        disabled={
+          selectedInterests.length === 0 ||
+          isUpdatingProfile
+        }
         className={`w-full mt-8 py-3 rounded-full font-semibold transition cursor-pointer ${
-          selectedInterests.length > 0
+          selectedInterests.length > 0 && !isUpdatingProfile
             ? "bg-green-600 hover:bg-green-700 text-white"
             : "bg-gray-600 text-gray-400 cursor-not-allowed"
         }`}
       >
-        {selectedInterests.length > 0 
-          ? `Select ${selectedInterests.length} item${selectedInterests.length > 1 ? 's' : ''} to continue`
-          : "Select 1 item to continue"
-        }
+        {isUpdatingProfile
+          ? "Saving preferences..."
+          : selectedInterests.length > 0
+            ? "Finish Sign Up"
+            : "Select at least 1 interest"}
       </button>
+      {updateProfileError && (
+        <p className="text-red-400 text-xs mt-2 text-center">
+          Failed to save your preferences. Please try again.
+        </p>
+      )}
     </div>
   );
 

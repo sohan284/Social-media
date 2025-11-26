@@ -1,18 +1,20 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
-    FiUser,
-    FiEdit3,
-    FiLink,
     FiImage,
     FiCamera,
     FiSave,
-    FiArrowRight,
     FiX
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import {
+    useGetCurrentUserProfileQuery,
+    useUpdateUserProfileMutation,
+} from "@/store/authApi";
+import Image from "next/image";
+import { toast } from "@/components/ui/sonner";
 
 interface FormData {
     displayName: string;
@@ -26,6 +28,9 @@ const EditProfile = () => {
     const router = useRouter();
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+    const { data: profileResponse, isLoading: isProfileLoading } = useGetCurrentUserProfileQuery();
+    const profile = profileResponse?.data;
+    const [updateProfile, { isLoading: isUpdating }] = useUpdateUserProfileMutation();
 
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +40,6 @@ const EditProfile = () => {
         handleSubmit,
         watch,
         setValue,
-        control,
         formState: { errors, isSubmitting },
     } = useForm<FormData>({
         defaultValues: {
@@ -45,21 +49,39 @@ const EditProfile = () => {
         },
     });
 
-    const socialLinks = watch("socialLinks") || [""]; 
+    useEffect(() => {
+        if (profile) {
+            const safeDisplayName = profile.display_name ?? profile.username ?? "";
+            const safeAbout = profile.about ?? "";
+            const rawSocialLink = profile.social_link ?? "";
+            const links =
+                rawSocialLink.trim().length > 0
+                    ? rawSocialLink.split(",").map((link: string) => link.trim()).filter(Boolean)
+                    : [""];
+            setValue("displayName", safeDisplayName);
+            setValue("about", safeAbout);
+            setValue("socialLinks", links);
+            setAvatarPreview(profile.avatar ?? null);
+            setBannerPreview(profile.cover_photo ?? null);
+        }
+    }, [profile, setValue]);
+
+    const socialLinks = watch("socialLinks") || [""];
 
     const displayNameValue = watch("displayName");
     const aboutValue = watch("about");
+    const isSaving = isSubmitting || isUpdating;
 
     const handleFileChange = (file: File | null, type: 'avatar' | 'banner') => {
         if (file) {
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
+                toast.error('Please select an image file');
                 return;
             }
 
             const maxSize = type === 'avatar' ? 2 * 1024 * 1024 : 5 * 1024 * 1024; 
             if (file.size > maxSize) {
-                alert(`File size must be less than ${type === 'avatar' ? '2MB' : '5MB'}`);
+                toast.error(`File size must be less than ${type === 'avatar' ? '2MB' : '5MB'}`);
                 return;
             }
 
@@ -85,13 +107,36 @@ const EditProfile = () => {
 
     const onSubmit = async (data: FormData) => {
         try {
-            console.log("Profile data:", data);
-            alert("Profile updated successfully!");
+            const avatarFile = avatarInputRef.current?.files?.[0] ?? null;
+            const bannerFile = bannerInputRef.current?.files?.[0] ?? null;
+
+            const payload = {
+                display_name: data.displayName ?? "",
+                about: data.about ?? "",
+                social_link: (data.socialLinks || [])
+                    .map((link) => link.trim())
+                    .filter(Boolean)
+                    .join(","),
+                avatar: avatarFile,
+                cover_photo: bannerFile,
+            };
+
+            await updateProfile(payload).unwrap();
+            toast.success("Profile updated successfully!");
         } catch (error) {
             console.error("Error updating profile:", error);
+            toast.error("Failed to update profile. Please try again.");
         }
     };
 
+
+    if (isProfileLoading && !profile) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh] text-white">
+                Loading profile...
+            </div>
+        );
+    }
 
     return (
         <div className="bg-cover bg-center bg-no-repeat p-2 sm:p-4">
@@ -219,9 +264,12 @@ const EditProfile = () => {
 
                                     {avatarPreview ? (
                                         <div className="relative">
-                                            <img
+                                            <Image
                                                 src={avatarPreview}
                                                 alt="Avatar preview"
+                                                width={80}
+                                                height={80}
+                                                unoptimized
                                                 className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-white/20 mx-auto"
                                             />
                                             <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -268,9 +316,12 @@ const EditProfile = () => {
 
                                     {bannerPreview ? (
                                         <div className="relative">
-                                            <img
+                                            <Image
                                                 src={bannerPreview}
                                                 alt="Banner preview"
+                                                width={800}
+                                                height={200}
+                                                unoptimized
                                                 className="w-full h-24 sm:h-32 object-cover rounded-lg border border-white/20"
                                             />
                                             <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -313,12 +364,12 @@ const EditProfile = () => {
                             </button>
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
+                                disabled={isSaving}
                                 className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg sm:rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base"
                             >
                                 <FiSave size={16} className="sm:hidden" />
                                 <FiSave size={18} className="hidden sm:block" />
-                                {isSubmitting ? "Saving..." : "Save Changes"}
+                                {isSaving ? "Saving..." : "Save Changes"}
                             </button>
                         </div>
                     </form>

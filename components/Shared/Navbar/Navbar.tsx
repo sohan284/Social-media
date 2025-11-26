@@ -11,6 +11,7 @@ import { FiPlus } from "react-icons/fi";
 import ProfileSidebar from "./ProfileSidebar";
 import { FaAlignRight } from "react-icons/fa";
 import MessagePopup from "../../Message/MessagePopup";
+import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -19,20 +20,26 @@ interface NavbarProps {
 const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [activeButton, setActiveButton] = useState("login");
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
   const [isMessagePopupOpen, setIsMessagePopupOpen] = useState(false);
 
   const router = useRouter();
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError: isProfileError,
+  } = useGetCurrentUserProfileQuery();
+
+  const profile = profileData?.data;
 
   const handleCloseSidebar = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsProfileSidebarOpen(false);
-      setIsClosing(false);
-    }, 300);
+    setIsProfileSidebarOpen(false);
   };
 
   const user = true;
+  const avatarUrl =
+    (profile?.profile_image as string) ||
+    (profile?.avatar as string) ||
+    "/profile.jpg";
 
   const pathname = usePathname();
 
@@ -100,14 +107,17 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             <button
               className="cursor-pointer"
               onClick={() => setIsProfileSidebarOpen(true)}
+              aria-label="Open profile"
             >
-              <Image
-                src="/profile.jpg"
-                alt="profile"
-                width={30}
-                height={30}
-                className="rounded-full h-[30px] w-[30px] object-cover"
-              />
+              <div className="h-[30px] w-[30px] rounded-full overflow-hidden border border-white/30 bg-gray-700">
+                <Image
+                  src={avatarUrl || "/profile.jpg"}
+                  alt={profile?.username ? `${profile.username} avatar` : "profile"}
+                  width={30}
+                  height={30}
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </button>
           </div>
         ) : (
@@ -143,7 +153,14 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
       </div>
 
       {/* Profile Sidebar */}
-      {isProfileSidebarOpen && <ProfileSidebar onClose={handleCloseSidebar} />}
+      {isProfileSidebarOpen && (
+        <ProfileSidebar
+          onClose={handleCloseSidebar}
+          profile={profile || null}
+          isLoadingProfile={isProfileLoading}
+          isError={isProfileError}
+        />
+      )}
       
       {/* Message Popup */}
       <MessagePopup 
