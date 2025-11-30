@@ -69,8 +69,8 @@ const Home = () => {
 
   return (
     <div className="px-2 md:px-4 xl:px-10">
-      <Story />
-      <div className="mt-6">
+      {/* <Story /> */}
+      <div className="mt-6 min-h-[88.3vh]">
         {renderPosts()}
       </div>
     </div>

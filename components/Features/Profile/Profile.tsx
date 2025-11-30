@@ -19,7 +19,7 @@ const Profile = () => {
     if (!postsResponse) return [];
     return (
       postsResponse.data ??
-      postsResponse.results ??
+      postsResponse.results?.data ??
       postsResponse.posts ??
       []
     );

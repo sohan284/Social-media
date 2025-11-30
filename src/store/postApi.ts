@@ -16,8 +16,6 @@ export interface CreatePostResponse {
   [key: string]: unknown;
 }
 
-
-
 export interface PostAuthor {
   avatar?: string;
   name?: string;
@@ -37,13 +35,67 @@ export interface PostItem {
   author?: PostAuthor;
   likes_count?: number;
   is_liked?: boolean;
+  comments_count?: number;
   [key: string]: unknown;
 }
 
 export interface GetPostsResponse {
   data?: PostItem[];
-  results?: PostItem[];
+  results?: {
+    data?: PostItem[];
+  };
   posts?: PostItem[];
+}
+
+export interface CommentAuthor {
+  id?: number | string;
+  username?: string;
+  avatar?: string;
+  display_name?: string;
+}
+
+export interface CommentItem {
+  id: number | string;
+  content: string;
+  created_at: string;
+  author?: CommentAuthor;
+  user?: CommentAuthor;
+  username?: string;
+  user_name?: string;
+  avatar?: string;
+  parent?: number | string | null;
+  replies?: CommentItem[];
+  post?: number | string;
+  [key: string]: unknown;
+}
+
+export interface GetCommentsResponse {
+  data?: CommentItem[];
+  results?: CommentItem[];
+  comments?: CommentItem[];
+  [key: string]: unknown;
+}
+
+export interface CreateCommentRequest {
+  post: number | string;
+  content: string;
+  parent?: number | string;
+}
+
+export interface CreateCommentResponse {
+  id?: number | string;
+  content?: string;
+  created_at?: string;
+  author?: CommentAuthor;
+  user?: CommentAuthor;
+  username?: string;
+  user_name?: string;
+  avatar?: string;
+  parent?: number | string | null;
+  post?: number | string;
+  message?: string;
+  success?: boolean;
+  [key: string]: unknown;
 }
 
 export const postApi = baseApi.injectEndpoints({
@@ -110,7 +162,7 @@ export const postApi = baseApi.injectEndpoints({
           };
           if (draft.posts) updatePost(draft.posts);
           if (draft.data) updatePost(draft.data);
-          if (draft.results) updatePost(draft.results);
+          if (draft.results) updatePost(draft.results.data);
         };
 
         // Optimistic updates
@@ -145,8 +197,96 @@ export const postApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getComments: builder.query<GetCommentsResponse, number | string>({
+      query: (postId) => ({
+        url: `/api/comments/?post=${postId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, postId) => [{ type: 'Comments' as const, id: postId }],
+    }),
+    createComment: builder.mutation<CreateCommentResponse, CreateCommentRequest>({
+      query: (data) => ({
+        url: "/api/comments/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { post }) => [{ type: 'Comments' as const, id: post }],
+      async onQueryStarted({ post }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          
+          // Update the post's comment count
+          const updatePostCommentCount = (draft: GetPostsResponse) => {
+            const updatePost = (posts: PostItem[] | undefined) => {
+              if (!posts) return;
+              const postItem = posts.find((p) => p.id === post);
+              if (postItem) {
+                postItem.comments_count = (postItem.comments_count || 0) + 1;
+              }
+            };
+            if (draft.posts) updatePost(draft.posts);
+            if (draft.data) updatePost(draft.data);
+            if (draft.results) updatePost(draft.results.data);
+          };
+
+          dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostCommentCount));
+          dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostCommentCount));
+          
+        } catch {
+          // Error already handled
+        }
+      },
+    }),
+    updateComment: builder.mutation<CreateCommentResponse, { commentId: number | string; content: string; postId: number | string }>({
+      query: ({ commentId, content }) => ({
+        url: `/api/comments/${commentId}/`,
+        method: "PATCH",
+        body: { content },
+      }),
+      invalidatesTags: (result, error, { postId }) => [{ type: 'Comments' as const, id: postId }],
+    }),
+    deleteComment: builder.mutation<void, { commentId: number | string; postId: number | string }>({
+      query: ({ commentId }) => ({
+        url: `/api/comments/${commentId}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { postId }) => [{ type: 'Comments' as const, id: postId }],
+      async onQueryStarted({ postId }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          
+          // Update the post's comment count
+          const updatePostCommentCount = (draft: GetPostsResponse) => {
+            const updatePost = (posts: PostItem[] | undefined) => {
+              if (!posts) return;
+              const postItem = posts.find((p) => p.id === postId);
+              if (postItem && postItem.comments_count && postItem.comments_count > 0) {
+                postItem.comments_count = postItem.comments_count - 1;
+              }
+            };
+            if (draft.posts) updatePost(draft.posts);
+            if (draft.data) updatePost(draft.data);
+            if (draft.results) updatePost(draft.results.data);
+          };
+
+          dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostCommentCount));
+          dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostCommentCount));
+          
+        } catch {
+          // Error already handled
+        }
+      },
+    }),
   }),
 });
 
-export const { useCreatePostMutation, useGetMyPostsQuery, useGetNewsFeedQuery, useLikePostMutation } = postApi;
-
+export const { 
+  useCreatePostMutation, 
+  useGetMyPostsQuery, 
+  useGetNewsFeedQuery, 
+  useLikePostMutation,
+  useGetCommentsQuery,
+  useCreateCommentMutation,
+  useDeleteCommentMutation,
+  useUpdateCommentMutation,
+} = postApi;
