@@ -6,12 +6,15 @@ import AvatarModal from "./_components/AvatarModal";
 import Post from "../Main/Post/Post";
 import ProfileSidebar from "./_components/ProfileSidebar";
 import { useGetMyPostsQuery } from "@/store/postApi";
+import { useGetCurrentUserProfileQuery } from "@/store/authApi";
+import CreatePost from "../CreatePost/CreatePost";
 
 const Profile = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "posts">("overview");
   const { data: postsResponse, isLoading, isError } = useGetMyPostsQuery();
-
+  const { data: profileResponse } = useGetCurrentUserProfileQuery();
+  const profile = profileResponse?.data;
   const posts = useMemo(() => {
     if (!postsResponse) return [];
     return (
@@ -65,7 +68,7 @@ const Profile = () => {
     return (
       <div className="space-y-6">
         {posts.map((post) => (
-          <Post key={post.id} post={post} />
+          <Post key={post.id} post={post} profile={profile} />
         ))}
       </div>
     );
@@ -101,13 +104,13 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className="mt-6 space-y-6">
-            {activeTab === "overview" ? (
-              <p className="text-gray-300 text-sm">
-                Welcome to your profile overview.
-              </p>
+          <div className=" space-y-6">
+            {activeTab !== "overview" ? (
+               <CreatePost isProfile={true}/>
             ) : (
-              renderPosts()
+          <div className="mt-6 space-y-6">
+            {renderPosts()}
+          </div>
             )}
           </div>
         </div>

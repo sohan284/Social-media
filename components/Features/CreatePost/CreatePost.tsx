@@ -38,7 +38,7 @@ type MediaPreview = {
   url: string;
 };
 
-const CreatePost = () => {
+const CreatePost = ({ isProfile = false }: { isProfile?: boolean }) => {
   const [activeTab, setActiveTab] = useState<"text" | "image" | "link">("text");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -226,14 +226,14 @@ const CreatePost = () => {
                   );
                 })}
               </div>
-              <div className="mb-6 md:mb-0 text-center md:text-left">
+              {!isProfile &&  <div className="mb-6 md:mb-0 text-center md:text-left">
                 <h1 className="text-3xl font-bold text-white mb-2">
                   Create New Post
                 </h1>
                 <p className="text-gray-300">
                   Share your thoughts with the community
                 </p>
-              </div>
+              </div>}
             </div>
 
             {/* Title Input */}

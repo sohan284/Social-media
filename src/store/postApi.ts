@@ -18,13 +18,26 @@ export interface CreatePostResponse {
 
 
 
+export interface PostAuthor {
+  avatar?: string;
+  name?: string;
+  username?: string;
+}
+
 export interface PostItem {
   id: number | string;
   title?: string;
   content?: string;
   media?: string[];
+  media_file?: string[];
   tags?: string[];
   created_at?: string;
+  user_name?: string;
+  username?: string;
+  author?: PostAuthor;
+  likes_count?: number;
+  is_liked?: boolean;
+  [key: string]: unknown;
 }
 
 export interface GetPostsResponse {
@@ -53,6 +66,7 @@ export const postApi = baseApi.injectEndpoints({
             formData.append("media_files", file)
           );
         }
+        console.log(formData);
         formData.append("post_type", data.post_type.toString());
         return {
           url: "/api/posts/",
@@ -67,8 +81,72 @@ export const postApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    getNewsFeed: builder.query<GetPostsResponse, void>({
+      query: () => ({
+        url: "/api/posts/news_feed/",
+        method: "GET",
+      }),
+    }),
+    likePost: builder.mutation<
+      { success: boolean; likes_count: number; is_liked: boolean; id?: number | string; like_id?: number | string; data?: { id?: number | string; like_id?: number | string } },
+      { postId: number | string; isLiked: boolean }
+    >({
+      query: ({ postId }) => ({
+        url: `/api/likes/`,
+        method: "POST",
+        body: { post: postId },
+      }),
+      async onQueryStarted({ postId, isLiked }, { dispatch, queryFulfilled }) {
+        // Helper function to update post in query cache
+        const updatePostInCache = (draft: GetPostsResponse) => {
+          const updatePost = (posts: PostItem[] | undefined) => {
+            if (!posts) return;
+            const post = posts.find((p) => p.id === postId);
+            if (post) {
+              const wasLiked = post.is_liked || false;
+              post.is_liked = !wasLiked;
+              post.likes_count = (post.likes_count || 0) + (wasLiked ? -1 : 1);
+            }
+          };
+          if (draft.posts) updatePost(draft.posts);
+          if (draft.data) updatePost(draft.data);
+          if (draft.results) updatePost(draft.results);
+        };
+
+        // Optimistic updates
+        const patchResults = [
+          dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostInCache)),
+          dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache)),
+        ];
+
+        try {
+          const result = await queryFulfilled;
+          const responseData = result.data;
+
+          // If unliking, delete the like using ID from response
+          if (isLiked === false) {
+            const likeId = responseData?.data?.id || responseData?.data?.like_id || responseData.id || responseData.like_id;
+            
+            if (likeId) {
+              const { getStoredAccessToken } = await import("@/lib/auth");
+              const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://socialmedia.lumivancelabs.com/";
+              
+              await fetch(`${baseUrl}api/likes/${likeId}/`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${getStoredAccessToken() || ""}`,
+                  "Content-Type": "application/json",
+                },
+              }).catch((error) => console.error("Failed to delete like:", error));
+            }
+          }
+        } catch {
+          patchResults.forEach((patch) => patch.undo());
+        }
+      },
+    }),
   }),
 });
 
-export const { useCreatePostMutation, useGetMyPostsQuery } = postApi;
+export const { useCreatePostMutation, useGetMyPostsQuery, useGetNewsFeedQuery, useLikePostMutation } = postApi;
 
