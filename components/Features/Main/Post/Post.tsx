@@ -12,10 +12,8 @@ import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
 import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface Profile {
   id: string | number;
@@ -43,6 +41,7 @@ const Post = ({ post, profile }: PostProps) => {
   const [editingComment, setEditingComment] = useState<number | string | null>(null);
   const [editText, setEditText] = useState("");
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(10);
+  const [commentToDelete, setCommentToDelete] = useState<number | string | null>(null);
   
   const [likePost, { isLoading: isLiking }] = useLikePostMutation();
   const { data: commentsData, isLoading: isLoadingComments } = useGetCommentsQuery(post?.id, {
@@ -78,18 +77,28 @@ const Post = ({ post, profile }: PostProps) => {
   }, [post?.media_file]);
 
   const comments = useMemo(() => {
-    const data = commentsData?.data || commentsData?.results || commentsData?.comments || [];
+    const source =
+      commentsData?.data ??
+      commentsData?.results ??
+      commentsData?.comments ??
+      [];
+
+    const data = Array.isArray(source)
+      ? source
+      : Array.isArray((source as { data?: CommentItem[] }).data)
+      ? (source as { data?: CommentItem[] }).data!
+      : [];
     // Organize comments into parent-child structure
     const commentMap = new Map<number | string, CommentItem & { replies: CommentItem[] }>();
     const topLevelComments: (CommentItem & { replies: CommentItem[] })[] = [];
 
     // First pass: create map of all comments
-    data.forEach((comment) => {
+    data?.forEach((comment) => {
       commentMap.set(comment.id, { ...comment, replies: [] });
     });
 
     // Second pass: organize into tree structure
-    data.forEach((comment) => {
+    data?.forEach((comment) => {
       const commentWithReplies = commentMap.get(comment.id)!;
       if (comment.parent) {
         const parentComment = commentMap.get(comment.parent);
@@ -241,19 +250,27 @@ const Post = ({ post, profile }: PostProps) => {
     }
   };
 
-  const handleDeleteComment = async (commentId: number | string) => {
+  const handleDeleteComment = (commentId: number | string) => {
     if (!post?.id) return;
-    
-    if (window.confirm("Are you sure you want to delete this comment?")) {
-      try {
-        await deleteComment({
-          commentId,
-          postId: post.id,
-        }).unwrap();
-      } catch (error) {
-        console.error("Failed to delete comment:", error);
-      }
+    setCommentToDelete(commentId);
+  };
+
+  const confirmDeleteComment = async () => {
+    if (!post?.id || commentToDelete == null) return;
+    try {
+      await deleteComment({
+        commentId: commentToDelete,
+        postId: post.id,
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+    } finally {
+      setCommentToDelete(null);
     }
+  };
+
+  const cancelDeleteComment = () => {
+    setCommentToDelete(null);
   };
 
   const renderComment = (comment: CommentItem & { replies: CommentItem[] }, depth = 0) => {
@@ -847,6 +864,17 @@ const Post = ({ post, profile }: PostProps) => {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Delete Comment Confirm Dialog */}
+      <ConfirmDialog
+        open={commentToDelete !== null}
+        title="Delete comment?"
+        description="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeleteComment}
+        onCancel={cancelDeleteComment}
+      />
     </div>
   );
 };
