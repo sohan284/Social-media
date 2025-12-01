@@ -6,6 +6,9 @@ import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
 import Link from "next/link";
+import { useLoginMutation } from "@/store/authApi";
+import { useRouter } from "next/navigation";
+import { getRoleFromToken, storeAuthTokens } from "@/lib/auth";
 
 type LoginForm = {
   email: string;
@@ -24,16 +27,63 @@ type ResetStep2Form = {
 };
 
 const Login = () => {
+  const router = useRouter();
   const [currentMode, setCurrentMode] = useState<'login' | 'reset-step1' | 'reset-step2'>('login');
   const [resetEmail, setResetEmail] = useState("");
+  const [login, { isLoading: isLoggingIn, error: loginError }] = useLoginMutation();
 
   const loginForm = useForm<LoginForm>();
   const resetStep1Form = useForm<ResetStep1Form>();
   const resetStep2Form = useForm<ResetStep2Form>();
 
-  const onLoginSubmit = (data: LoginForm) => {
-    console.log(data);
-    loginForm.reset();
+  const onLoginSubmit = async (data: LoginForm) => {
+    try {
+      const response = await login({
+        email_or_username: data.email,
+        password: data.password,
+      }).unwrap();
+
+      const accessToken =
+        response.tokens?.access ||
+        (typeof response.token === "string" ? response.token : undefined);
+      const refreshToken = response.tokens?.refresh;
+      const persistSession = Boolean(data.keepMeLoggedIn);
+
+      storeAuthTokens({
+        accessToken,
+        refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,
+        persist: persistSession,
+      });
+
+      const role =
+        getRoleFromToken(accessToken || null) || response.user?.role || "user";
+
+      if (typeof window !== "undefined") {
+        const primaryStorage = persistSession
+          ? window.localStorage
+          : window.sessionStorage;
+        const secondaryStorage = persistSession
+          ? window.sessionStorage
+          : window.localStorage;
+
+        if (response.user) {
+          primaryStorage.setItem("user", JSON.stringify(response.user));
+          secondaryStorage.removeItem("user");
+        } else {
+          primaryStorage.removeItem("user");
+          secondaryStorage.removeItem("user");
+        }
+
+        primaryStorage.setItem("role", role);
+        secondaryStorage.removeItem("role");
+      }
+
+      const redirectTarget = role === "admin" ? "/dashboard" : "/";
+      router.push(redirectTarget);
+    } catch (error) {
+      console.error("Login failed:", error);
+      // Error handling UI is shown below the form
+    }
   };
 
   const onResetStep1Submit = (data: ResetStep1Form) => {
@@ -184,10 +234,16 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition"
+                  disabled={isLoggingIn}
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  Log in
+                  {isLoggingIn ? "Logging in..." : "Log in"}
                 </button>
+                {loginError && (
+                  <p className="text-red-400 text-xs mt-2 text-center">
+                    Invalid email/username or password. Please try again.
+                  </p>
+                )}
               </form>
             </>
           )}

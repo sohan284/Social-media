@@ -1,10 +1,10 @@
-import React from "react";
 import HomeLayout from "../../../components/Layouts/HomeLayout";
+import ProtectedLayout from "../../../components/Layouts/ProtectedLayout";
 
-export default function layout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <HomeLayout>
-      {children}
-    </HomeLayout>
+    <ProtectedLayout allowedRoles={["user"]} fallbackRedirect="/dashboard">
+      <HomeLayout>{children}</HomeLayout>
+    </ProtectedLayout>
   );
 }

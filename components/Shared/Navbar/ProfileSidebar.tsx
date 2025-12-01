@@ -1,11 +1,26 @@
-import React, { useEffect, useState } from "react";
-import { FiX, FiEdit3, FiSettings, FiShield, FiHelpCircle, FiLogOut } from "react-icons/fi";
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FiX,
+  FiEdit3,
+  FiSettings,
+  FiShield,
+  FiHelpCircle,
+  FiLogOut,
+} from "react-icons/fi";
 import Image from "next/image";
 import Link from "next/link";
 import { FaRegCircleUser } from "react-icons/fa6";
+import { UserProfile } from "@/store/authApi";
+import { useRouter } from "next/navigation";
+import { clearStoredTokens, getStoredAccessToken } from "@/lib/auth";
 
 interface ProfileSidebarProps {
   onClose: () => void;
+  profile?: UserProfile | null;
+  isLoadingProfile: boolean;
+  isError?: boolean;
 }
 
 const profileItems = [
@@ -34,16 +49,18 @@ const profileItems = [
     href: "/profile/help-support",
     icon: FiHelpCircle,
   },
-  {
-    label: "Sign Out",
-    href: "/profile/sign-out",
-    icon: FiLogOut,
-  },
 ];
 
-const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
+const ProfileSidebar = ({
+  onClose,
+  profile,
+  isLoadingProfile,
+  isError,
+}: ProfileSidebarProps) => {
   const [isClosing, setIsClosing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -55,6 +72,82 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncToken = () => {
+      const token = getStoredAccessToken();
+      setAuthToken(token);
+    };
+
+    syncToken();
+
+    window.addEventListener("storage", syncToken);
+    return () => {
+      window.removeEventListener("storage", syncToken);
+    };
+  }, []);
+
+  const decodeTokenExpiry = useCallback((token: string): number | null => {
+    try {
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const payload = JSON.parse(
+        atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+      );
+      if (typeof payload.exp === "number") {
+        return payload.exp * 1000;
+      }
+      return null;
+    } catch (error) {
+      console.error("Failed to decode token payload", error);
+      return null;
+    }
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    clearStoredTokens();
+    setAuthToken(null);
+    onClose();
+    router.push("/auth/login");
+  }, [onClose, router]);
+
+  useEffect(() => {
+    if (!authToken) return;
+    const expiryTime = decodeTokenExpiry(authToken);
+
+    if (expiryTime && expiryTime <= Date.now()) {
+      handleLogout();
+      return;
+    }
+
+    const timeoutId =
+      expiryTime && expiryTime > Date.now()
+        ? window.setTimeout(() => {
+            handleLogout();
+          }, expiryTime - Date.now())
+        : null;
+
+    const intervalId = window.setInterval(() => {
+      const latestToken = getStoredAccessToken();
+      if (!latestToken) {
+        handleLogout();
+        return;
+      }
+      const latestExpiry = decodeTokenExpiry(latestToken);
+      if (latestExpiry && latestExpiry <= Date.now()) {
+        handleLogout();
+      }
+    }, 60 * 1000);
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      clearInterval(intervalId);
+    };
+  }, [authToken, decodeTokenExpiry, handleLogout]);
+
   const handleClose = () => {
     setIsClosing(true);
     setIsOpen(false);
@@ -64,6 +157,19 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
   };
 
   const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
+
+  const profileImage =
+    (profile?.profile_image as string) ||
+    (profile?.avatar as string) ||
+    "/profile.jpg";
+  const profileName =
+    profile?.full_name ||
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
+    profile?.username ||
+    "";
+  const profileEmail = profile?.email || profile?.username || "";
+
+  const showSignOut = useMemo(() => Boolean(authToken && profile), [authToken, profile]);
 
   return (
     <div
@@ -89,16 +195,31 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
         </div>
 
         <div className="p-6">
-          <div className="flex flex-col items-center mb-6">
-            <Image
-              src="/profile.jpg"
-              alt="profile"
-              width={80}
-              height={80}
-              className="rounded-full h-[80px] w-[80px] object-cover mb-4"
-            />
-            <h3 className="text-xl font-semibold text-white">John Doe</h3>
-            <p className="text-white">john.doe@example.com</p>
+          <div className="flex flex-col items-center mb-6 text-white">
+            <div className="rounded-full h-[80px] w-[80px] overflow-hidden border border-white/30 mb-4 bg-gray-700">
+              <Image
+                src={profileImage}
+                alt={profileName || "profile"}
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            {isLoadingProfile ? (
+              <div className="text-center space-y-1 w-full animate-pulse">
+                <div className="h-4 bg-white/20 rounded w-1/2 mx-auto" />
+                <div className="h-3 bg-white/10 rounded w-3/4 mx-auto" />
+              </div>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold">
+                  {profileName || (isError ? "Unable to load user" : "Unknown User")}
+                </h3>
+                <p className="text-sm text-white/80">
+                  {profileEmail || (isError ? "Please try again later" : "No email available")}
+                </p>
+              </>
+            )}
           </div>
 
           <div className="flex flex-col">
@@ -115,6 +236,15 @@ const ProfileSidebar = ({ onClose }: ProfileSidebarProps) => {
                 </Link>
               );
             })}
+            {showSignOut && (
+              <button
+                onClick={handleLogout}
+                className="w-full text-sm text-left p-3 hover:bg-[#400f0f] rounded-lg transition-colors duration-200 flex items-center gap-3 cursor-pointer text-white font-medium mt-2 border border-white/10"
+              >
+                <FiLogOut size={20} />
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
       </div>
