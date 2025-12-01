@@ -12,6 +12,7 @@ import ProfileSidebar from "./ProfileSidebar";
 import { FaAlignRight } from "react-icons/fa";
 import MessagePopup from "../../Message/MessagePopup";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
+import NotificationDropdown from "../../Message/NotificationDropdown";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -21,6 +22,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [activeButton, setActiveButton] = useState("login");
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
   const [isMessagePopupOpen, setIsMessagePopupOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const router = useRouter();
   const {
@@ -74,7 +76,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
         </div>
 
         {user ? (
-          <div className="flex items-center gap-2 md:gap-4 text-white">
+          <div className="relative flex items-center gap-2 md:gap-4 text-white">
             <button 
               onClick={() => router.push("/main/create-post")} 
               className="hidden md:flex items-center gap-3 text-sm cursor-pointer"
@@ -91,7 +93,10 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             </button>
             
             <button 
-              onClick={() => setIsMessagePopupOpen(!isMessagePopupOpen)}
+              onClick={() => {
+                setIsMessagePopupOpen(!isMessagePopupOpen);
+                setIsNotificationOpen(false);
+              }}
               className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
             >
               <AiOutlineMessage size={20} className="md:w-6 md:h-6" />
@@ -100,9 +105,23 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
                 3
               </span>
             </button>
-            <button className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200">
-              <NotificationIcon />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsNotificationOpen(!isNotificationOpen);
+                  setIsMessagePopupOpen(false);
+                }}
+                className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
+              >
+                <NotificationIcon />
+              </button>
+
+              {/* Notification Dropdown */}
+              <NotificationDropdown
+                isOpen={isNotificationOpen}
+                onClose={() => setIsNotificationOpen(false)}
+              />
+            </div>
             {/* profile */}
             <button
               className="cursor-pointer"
