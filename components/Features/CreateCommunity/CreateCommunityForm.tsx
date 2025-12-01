@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { FaGlobe, FaEyeSlash, FaLock } from "react-icons/fa";
+import { useCreateCommunityMutation } from "@/store/communityApi";
+import { toast } from "sonner";
 
 type FormValues = {
   name: string;
@@ -13,6 +16,7 @@ type FormValues = {
 };
 
 const CreateCommunityForm = () => {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
@@ -20,29 +24,45 @@ const CreateCommunityForm = () => {
   const { register, handleSubmit, watch } = useForm<FormValues>({
     defaultValues: { visibility: "public" },
   });
+  const [createCommunity, { isLoading: isCreating }] = useCreateCommunityMutation();
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const formData = new FormData();
+      const bannerFile = data.banner && data.banner.length > 0 ? data.banner[0] : undefined;
+      const iconFile = data.icon && data.icon.length > 0 ? data.icon[0] : undefined;
 
-      formData.append('name', data.name);
-      formData.append('description', data.description);
-      formData.append('visibility', data.visibility);
+      await createCommunity({
+        name: data.name,
+        description: data.description,
+        visibility: data.visibility,
+        banner: bannerFile,
+        icon: iconFile,
+        // Initial post data for this community
+        title: data.name,
+        content: data.description,
+        post_type: "text",
+        tags: [],
+      }).unwrap();
 
-      if (data.banner && data.banner.length > 0) {
-        formData.append('banner', data.banner[0]);
-      }
-      if (data.icon && data.icon.length > 0) {
-        formData.append('icon', data.icon[0]);
-      }
+      toast.success("Community created successfully!", {
+        description: `Your community "${data.name}" has been created.`,
+      });
 
-      console.log('Form data with binary files:', formData);
-      // TODO: Send the form data to the server
-
-      alert("Community Created!");
-    } catch (error) {
+      // Navigate to home or community page
+      router.push("/main");
+    } catch (error: unknown) {
       console.error('Error creating community:', error);
-      alert("Error creating community. Please try again.");
+      const errorMessage = 
+        (error && typeof error === 'object' && 'data' in error && 
+         error.data && typeof error.data === 'object' && 
+         ('message' in error.data || 'detail' in error.data))
+          ? (error.data as { message?: string; detail?: string }).message || 
+            (error.data as { message?: string; detail?: string }).detail
+          : "Failed to create community. Please try again.";
+      
+      toast.error("Error creating community", {
+        description: errorMessage || "Failed to create community. Please try again.",
+      });
     }
   };
 
@@ -383,9 +403,10 @@ const CreateCommunityForm = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-md"
+                  disabled={isCreating}
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Create
+                  {isCreating ? "Creating..." : "Create"}
                 </button>
               </div>
             </>

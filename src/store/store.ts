@@ -4,6 +4,7 @@ import { baseApi } from "./baseApi";
 import "./authApi"; // Import to ensure endpoints are registered
 import "./postApi";
 import "./notificationApi";
+import "./communityApi";
 
 export const store = configureStore({
   reducer: {
