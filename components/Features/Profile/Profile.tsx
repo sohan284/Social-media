@@ -76,7 +76,7 @@ const Profile = () => {
 
   return (
     <>
-      <div className="max-w-[1220px] mx-auto flex gap-10 pt-6 lg:p-4">
+      <div className="mx-auto flex gap-10 pt-6 lg:p-4">
         <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
           <div className="border-b border-white/10 pb-4">
             <ProfileHeader onAvatarClick={openModal} />
