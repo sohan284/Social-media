@@ -75,7 +75,6 @@ const Post = ({ post, profile }: PostProps) => {
       return `${baseUrl}media/${cleanPath}`;
     });
   }, [post?.media_file]);
-
   const comments = useMemo(() => {
     const source =
       commentsData?.data ??
@@ -814,12 +813,12 @@ const Post = ({ post, profile }: PostProps) => {
         <DialogContent className="max-w-6xl w-full p-0 bg-black/80 border-none">
           <div className="relative w-full h-[90vh] flex items-center justify-center">
             {/* Close Button */}
-            <button
+            {/* <button
               onClick={() => setIsImageModalOpen(false)}
               className="absolute top-4 right-4 z-50 rounded-full hover:scale-105 duration-300 ease-in-out bg-black cursor-pointer p-2 text-white hover:bg-black/90 transition-colors"
             >
               <IoMdClose size={24} />
-            </button>
+            </button> */}
 
             {/* Previous Button */}
             {allMediaUrls.length > 1 && (

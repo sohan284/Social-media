@@ -2,7 +2,11 @@
 
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { FaGlobe, FaEyeSlash, FaLock } from "react-icons/fa";
+import { useCreateCommunityMutation } from "@/store/communityApi";
+import { toast } from "sonner";
 
 type FormValues = {
   name: string;
@@ -13,6 +17,7 @@ type FormValues = {
 };
 
 const CreateCommunityForm = () => {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
@@ -20,29 +25,45 @@ const CreateCommunityForm = () => {
   const { register, handleSubmit, watch } = useForm<FormValues>({
     defaultValues: { visibility: "public" },
   });
+  const [createCommunity, { isLoading: isCreating }] = useCreateCommunityMutation();
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const formData = new FormData();
+      const bannerFile = data.banner && data.banner.length > 0 ? data.banner[0] : undefined;
+      const iconFile = data.icon && data.icon.length > 0 ? data.icon[0] : undefined;
 
-      formData.append('name', data.name);
-      formData.append('description', data.description);
-      formData.append('visibility', data.visibility);
+      await createCommunity({
+        name: data.name,
+        description: data.description,
+        visibility: data.visibility,
+        banner: bannerFile,
+        icon: iconFile,
+        // Initial post data for this community
+        title: data.name,
+        content: data.description,
+        post_type: "text",
+        tags: [],
+      }).unwrap();
 
-      if (data.banner && data.banner.length > 0) {
-        formData.append('banner', data.banner[0]);
-      }
-      if (data.icon && data.icon.length > 0) {
-        formData.append('icon', data.icon[0]);
-      }
+      toast.success("Community created successfully!", {
+        description: `Your community "${data.name}" has been created.`,
+      });
 
-      console.log('Form data with binary files:', formData);
-      // TODO: Send the form data to the server
-
-      alert("Community Created!");
-    } catch (error) {
+      // Navigate to home or community page
+      router.push("/main");
+    } catch (error: unknown) {
       console.error('Error creating community:', error);
-      alert("Error creating community. Please try again.");
+      const errorMessage = 
+        (error && typeof error === 'object' && 'data' in error && 
+         error.data && typeof error.data === 'object' && 
+         ('message' in error.data || 'detail' in error.data))
+          ? (error.data as { message?: string; detail?: string }).message || 
+            (error.data as { message?: string; detail?: string }).detail
+          : "Failed to create community. Please try again.";
+      
+      toast.error("Error creating community", {
+        description: errorMessage || "Failed to create community. Please try again.",
+      });
     }
   };
 
@@ -199,11 +220,13 @@ const CreateCommunityForm = () => {
                     />
                     
                     {bannerPreview ? (
-                      <div className="relative">
-                        <img
+                      <div className="relative w-full h-40">
+                        <Image
                           src={bannerPreview}
                           alt="Banner preview"
-                          className="w-full h-40 object-cover rounded-lg border border-white/20"
+                          fill
+                          className="object-cover rounded-lg border border-white/20"
+                          unoptimized
                         />
                         <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                           <div className="text-center">
@@ -258,11 +281,13 @@ const CreateCommunityForm = () => {
                     />
                     
                     {iconPreview ? (
-                      <div className="relative">
-                        <img
+                      <div className="relative w-20 h-20 mx-auto">
+                        <Image
                           src={iconPreview}
                           alt="Icon preview"
-                          className="w-20 h-20 object-cover rounded-full border-2 border-white/20 mx-auto"
+                          fill
+                          className="object-cover rounded-full border-2 border-white/20"
+                          unoptimized
                         />
                         <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                           <div className="text-center">
@@ -383,9 +408,10 @@ const CreateCommunityForm = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-md"
+                  disabled={isCreating}
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Create
+                  {isCreating ? "Creating..." : "Create"}
                 </button>
               </div>
             </>
@@ -395,21 +421,27 @@ const CreateCommunityForm = () => {
         {/* Right Preview */}
         <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
           {bannerPreview && (
-            <div className="mb-4">
-              <img
+            <div className="mb-4 relative w-full h-24">
+              <Image
                 src={bannerPreview}
                 alt="Community banner"
-                className="w-full h-24 object-cover rounded-lg"
+                fill
+                className="object-cover rounded-lg"
+                unoptimized
               />
             </div>
           )}
           <div className="flex items-center justify-center mb-3">
             {iconPreview ? (
-              <img
-                src={iconPreview}
-                alt="Community icon"
-                className="w-12 h-12 object-cover rounded-full border-2 border-white/20"
-              />
+              <div className="relative w-12 h-12">
+                <Image
+                  src={iconPreview}
+                  alt="Community icon"
+                  fill
+                  className="object-cover rounded-full border-2 border-white/20"
+                  unoptimized
+                />
+              </div>
             ) : (
               <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">
