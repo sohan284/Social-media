@@ -277,6 +277,20 @@ export const postApi = baseApi.injectEndpoints({
         }
       },
     }),
+    followUser: builder.mutation<{ success?: boolean; message?: string; id?: number | string; following_id?: number | string; [key: string]: unknown }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/api/follows/user_profile/?user_id=${userId}`,
+        method: "POST",
+        body: { following: 0 },
+      }),
+    }),
+    unfollowUser: builder.mutation<{ success?: boolean; message?: string; [key: string]: unknown }, { followingId: number | string }>({
+      query: ({ followingId }) => ({
+        url: `/api/follows/${followingId}/`,
+        method: "DELETE",
+        body: { following: 0 },
+      }),
+    }),
   }),
 });
 
@@ -289,4 +303,6 @@ export const {
   useCreateCommentMutation,
   useDeleteCommentMutation,
   useUpdateCommentMutation,
+  useFollowUserMutation,
+  useUnfollowUserMutation,
 } = postApi;

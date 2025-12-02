@@ -7,10 +7,9 @@ import { FaRegShareFromSquare } from "react-icons/fa6";
 import { VscThumbsup } from "react-icons/vsc";
 import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
-import { IoMdClose } from "react-icons/io";
 import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
-import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation } from "@/store/postApi";
+import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -50,6 +49,23 @@ const Post = ({ post, profile }: PostProps) => {
   const [createComment, { isLoading: isCreatingComment }] = useCreateCommentMutation();
   const [updateComment, { isLoading: isUpdatingComment }] = useUpdateCommentMutation();
   const [deleteComment] = useDeleteCommentMutation();
+  const [followUser, { isLoading: isFollowing }] = useFollowUserMutation();
+  const [unfollowUser, { isLoading: isUnfollowing }] = useUnfollowUserMutation();
+  const [followingId, setFollowingId] = useState<number | string | null>(null);
+  const [isFollowingUser, setIsFollowingUser] = useState(false);
+
+  // Initialize follow state from post data if available
+  useEffect(() => {
+    const postFollowingId = (post as { following_id?: number | string })?.following_id;
+    const postIsFollowing = (post as { is_following?: boolean })?.is_following;
+    
+    if (postFollowingId) {
+      setFollowingId(postFollowingId);
+      setIsFollowingUser(true);
+    } else if (postIsFollowing !== undefined) {
+      setIsFollowingUser(postIsFollowing);
+    }
+  }, [post]);
 
   const isLiked = post?.is_liked || false;
   const likeCount = post?.likes_count as number || 0;
@@ -271,6 +287,45 @@ const Post = ({ post, profile }: PostProps) => {
   const cancelDeleteComment = () => {
     setCommentToDelete(null);
   };
+
+  const handleFollowClick = async () => {
+    // Extract user_id from post - could be in different fields
+    const userId = (post as { user_id?: number | string }).user_id || 
+                   (post?.author as { id?: number | string })?.id ||
+                   (post as { author_id?: number | string }).author_id;
+    
+    if (!userId) {
+      console.error("User ID not found in post data");
+      return;
+    }
+
+    try {
+      if (isFollowingUser && followingId) {
+        // Unfollow
+        await unfollowUser({ followingId }).unwrap();
+        setIsFollowingUser(false);
+        setFollowingId(null);
+      } else {
+        // Follow
+        const result = await followUser({ userId }).unwrap();
+        const followId = (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.id || 
+                         (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.following_id ||
+                         (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.data?.id ||
+                         (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.data?.following_id;
+        if (followId) {
+          setFollowingId(followId);
+          setIsFollowingUser(true);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to follow/unfollow user:", error);
+    }
+  };
+
+  // Extract user_id for the follow button
+  const postUserId = (post as { user_id?: number | string }).user_id || 
+                     (post?.author as { id?: number | string })?.id ||
+                     (post as { author_id?: number | string }).author_id;
 
   const renderComment = (comment: CommentItem & { replies: CommentItem[] }, depth = 0) => {
     const commentAuthor = comment.author || comment.user;
@@ -691,7 +746,23 @@ const Post = ({ post, profile }: PostProps) => {
             <p className="text-white/70 text-xs sm:text-sm">{createdAt}</p>
           </div>
         </div>
-        <button className="text-sm text-white cursor-pointer">Follow</button>
+        {postUserId && (
+          <button 
+            onClick={handleFollowClick}
+            disabled={isFollowing || isUnfollowing}
+            className={`text-sm text-white cursor-pointer px-4 py-1.5 rounded-full transition-colors ${
+              (isFollowing || isUnfollowing)
+                ? "bg-slate-600 opacity-50 cursor-not-allowed" 
+                : isFollowingUser
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            {isFollowing || isUnfollowing 
+              ? (isFollowing ? "Following..." : "Unfollowing...") 
+              : (isFollowingUser ? "Unfollow" : "Follow")}
+          </button>
+        )}
       </div>
 
       <div>

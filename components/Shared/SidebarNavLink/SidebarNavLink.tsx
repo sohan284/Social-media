@@ -89,7 +89,10 @@ const SidebarNavLink = () => {
         <button onClick={() => router.push('/main/create-community')} className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
           <FiPlus size={24} /> Create Communities
         </button>
-        <button className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
+        <button 
+          onClick={() => router.push('/main/manage-communities')}
+          className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer"
+        >
           <HexagonIcon /> Manage Communities
         </button>
       </div>
