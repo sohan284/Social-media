@@ -8,7 +8,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ProtectedLayout allowedRoles={["admin"]} fallbackRedirect="/">
+    <ProtectedLayout allowedRoles={["user"]} fallbackRedirect="/">
       <AdminLayout>{children}</AdminLayout>
     </ProtectedLayout>
   );

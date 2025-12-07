@@ -11,15 +11,19 @@ const inputClass =
 
 export default function SalePage() {
   const { register, handleSubmit, watch, reset, setValue } = useForm<
-    SellType & { image: File | null }
-  >();
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+    SellType & { images: File[] }
+  >({
+    defaultValues: {
+      images: [],
+    },
+  });
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  const onSubmit = (data: SellType & { image: File | null }) => {
+  const onSubmit = (data: SellType & { images: File[] }) => {
     console.log(data);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -27,55 +31,65 @@ export default function SalePage() {
     if (file.size > maxSize) {
       alert("Selected image is greater than 3MB");
       e.target.value = "";
-      setValue("image", null);
       return;
     }
 
     const previewUrl = URL.createObjectURL(file);
-    setImageSrc(previewUrl);
-    setValue("image", file);
+    const newPreviews = [...imagePreviews];
+    newPreviews[index] = previewUrl;
+    setImagePreviews(newPreviews);
+
+    const currentImages = watch("images") || [];
+    const newImages = [...currentImages];
+    newImages[index] = file;
+    setValue("images", newImages);
   };
 
   const watchFields = watch();
+  const previewImage = imagePreviews[0] || null;
 
   return (
-    <div className=" text-white flex flex-col md:flex-row items-start justify-center gap-8 p-2 md:p-6">
+    <div className="text-white flex flex-col lg:flex-row items-start justify-center gap-6 lg:gap-8 p-4 md:p-6 min-h-screen">
       {/* Left Side - Form */}
-      <div className="w-full max-w-[1220px] mx-auto  backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
-        <h2 className="text-2xl font-semibold mb-4 text-center">
+      <div className="w-full lg:w-1/3 backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
+        <h2 className="text-2xl font-semibold mb-6 text-center">
           Item For Sale
         </h2>
-        <p className="text-sm mb-3 text-gray-300">Required</p>
+        
+        <p className="text-sm mb-4 text-gray-300">Required</p>
 
-        {/* Image Upload */}
-        <div className="flex flex-wrap gap-4 mb-5">
-          <label className="flex flex-col items-center justify-center w-40 h-32  border border-gray-400/40 rounded-md cursor-pointer hover:bg-black/40 transition">
-            <FaUpload className="text-2xl text-gray-300 mb-2" />
-            <span className="text-sm text-gray-300">Add Photo</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-          </label>
-          {/* Hidden input to bind file to RHF state */}
-          <input type="hidden" {...register("image")} />
-          {imageSrc && (
-            <div className="w-40 h-32 rounded-md overflow-hidden">
-              <Image
-                src={imageSrc}
-                alt="preview"
-                width={160}
-                height={128}
-                className="object-cover w-full h-full"
-              />
+        {/* Image Upload - Two photo buttons */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          {[0].map((index) => (
+            <div key={index}>
+              {imagePreviews[index] ? (
+                <div className="w-40 h-32 rounded-md overflow-hidden border border-white/20">
+                  <Image
+                    src={imagePreviews[index]}
+                    alt={`preview-${index}`}
+                    width={160}
+                    height={128}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-40 h-32 bg-black/30 border border-gray-400/40 rounded-md cursor-pointer hover:bg-black/40 transition">
+                  <FaUpload className="text-2xl text-gray-300 mb-2" />
+                  <span className="text-sm text-gray-300">Add Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageUpload(e, index)}
+                  />
+                </label>
+              )}
             </div>
-          )}
+          ))}
         </div>
 
         {/* Form Fields */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <input
             {...register("title")}
             placeholder="Title"
@@ -93,17 +107,35 @@ export default function SalePage() {
             className={inputClass}
           />
           <input
-            {...register("productUrl")}
-            placeholder="Product URL"
-            type="url"
+            {...register("condition")}
+            placeholder="Condition"
+            className={inputClass}
+          />
+          <input
+            {...register("color")}
+            placeholder="Color"
+            className={inputClass}
+          />
+          <textarea
+            {...register("description")}
+            placeholder="Description"
+            rows={4}
+            className={inputClass}
+          />
+          <input
+            {...register("location")}
+            placeholder="Location"
             className={inputClass}
           />
 
           {/* Buttons */}
-          <div className="flex justify-between mt-4">
+          <div className="flex justify-between mt-6">
             <button
               type="button"
-              onClick={() => reset()}
+              onClick={() => {
+                reset();
+                setImagePreviews([]);
+              }}
               className="w-32 bg-gray-400/60 hover:bg-gray-500 text-black py-2 rounded-full font-semibold duration-300 transition-all cursor-pointer"
             >
               Draft
@@ -116,6 +148,66 @@ export default function SalePage() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Right Side - Preview */}
+      <div className="w-full lg:w-2/3 backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
+        <h2 className="text-2xl font-semibold mb-6 text-center">Preview</h2>
+        
+        {/* Preview Image */}
+        <div className="w-full h-[500px] mb-6 rounded-lg overflow-hidden bg-black/30 border border-white/20">
+          {previewImage ? (
+            <Image
+              src={previewImage}
+              alt="Item preview"
+              width={600}
+              height={600}
+              className="object-contain w-full h-full"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400">
+              <span>No image uploaded</span>
+            </div>
+          )}
+        </div>
+
+        {/* Preview Details */}
+        <div className="space-y-3">
+          <div className="flex justify-between mx-20 items-start">
+            <h3 className="text-xl font-semibold">
+              {watchFields.title || "Item Title"}
+            </h3>
+            {watchFields.price && (
+              <span className="text-xl font-semibold text-green-400">
+                ${watchFields.price}
+              </span>
+            )}
+          </div>
+          
+          {watchFields.condition && (
+            <p className="text-sm text-gray-300">
+              <span className="font-medium">Condition:</span> {watchFields.condition}
+            </p>
+          )}
+          
+          {watchFields.color && (
+            <p className="text-sm text-gray-300">
+              <span className="font-medium">Color:</span> {watchFields.color}
+            </p>
+          )}
+          
+          {watchFields.description && (
+            <p className="text-sm text-gray-300">
+              <span className="font-medium">Description:</span> {watchFields.description}
+            </p>
+          )}
+          
+          {watchFields.location && (
+            <p className="text-sm text-gray-300">
+              <span className="font-medium">Location:</span> {watchFields.location}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

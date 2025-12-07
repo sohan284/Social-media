@@ -1,25 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { FiMenu, FiX } from "react-icons/fi";
+import { FiMenu } from "react-icons/fi";
 import bg from "../../public/main-bg.jpg";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome } from "react-icons/fa";
+import MarketplaceSidebar from "../Features/Marketplace/Sidebar/MarketplaceSidebar";
 
 const topNavLinks = [
   { label: "Browse", href: "/marketplace" },
   { label: "Categories", href: "/marketplace/categories" },
   { label: "Sell", href: "/marketplace/sell" },
-  { label: "Profile", href: "/marketplace/profile" },
-];
-
-const sidebarLinks = [
-  { label: "Books", href: "/marketplace/item-condition" },
-  { label: "Electronics", href: "/marketplace/item-type" },
-  { label: "Accessories", href: "/marketplace/item-location" },
-  { label: "Home & Garden", href: "/marketplace/item-price" },
-  { label: "Clothing", href: "/marketplace/item-description" },
+  { label: "Buy", href: "/marketplace/buy" },
 ];
 
 export default function MarketPlaceLayout({ children }: { children: React.ReactNode }) {
@@ -36,39 +28,10 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
       className="bg-cover bg-center bg-no-repeat h-screen  flex flex-col md:flex-row text-white"
     >
       {/* Sidebar */}
-      <aside
-        className={`fixed lg:static top-0 left-0  w-64 h-screen bg-[#06133f] transform transition-transform duration-300 ease-in-out z-40
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h1 className="text-lg font-semibold mb-5">Virtual Store</h1>
-          <button
-            className="lg:hidden text-white"
-            onClick={() => setIsSidebarOpen(false)}
-          >
-            <FiX size={24} />
-          </button>
-        </div>
-
-        <nav className="p-4 space-y-3 flex flex-col justify-between gap-2 h-[90vh]">
-          <ul className="space-y-2">
-            {sidebarLinks.map((item) => (
-              <Link
-                href={item.href}
-                key={item.label}
-                className={`block px-3 py-2 rounded-md text-base transition-all duration-150 ${
-                  isActive(item.href)
-                    ? "bg-blue-600 text-white"
-                    : "hover:bg-white/10 text-gray-100"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </ul>
-          <Link href="/" className="flex items-center gap-2 text-gray-100 hover:text-white bg-white/10 rounded-lg p-2 px-4"> <FaHome size={24} /> Home</Link>
-        </nav>
-      </aside>
+      <MarketplaceSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {isSidebarOpen && (
         <div
