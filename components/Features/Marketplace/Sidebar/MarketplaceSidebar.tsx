@@ -71,7 +71,7 @@ export default function MarketplaceSidebar({
   return (
     <>
       <aside
-        className={`fixed lg:static top-0 left-0 w-64 h-full transform transition-transform duration-300 ease-in-out z-40
+        className={`fixed lg:static top-0 left-0 w-64 h-full bg-black/70 lg:bg-transparent transform transition-transform duration-300 ease-in-out z-40
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div className="flex items-center justify-between p-4 pb-9 border-b border-white/10">

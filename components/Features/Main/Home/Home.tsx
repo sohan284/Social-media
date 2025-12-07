@@ -70,7 +70,7 @@ const Home = () => {
   return (
     <div className="px-2 md:px-4 xl:px-10">
       {/* <Story /> */}
-      <div className="mt-6 min-h-[88.3vh]">
+      <div className="mt-6 min-h-[calc(100vh-110px)]">
         {renderPosts()}
       </div>
     </div>
