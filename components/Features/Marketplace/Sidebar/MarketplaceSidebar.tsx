@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FiX } from "react-icons/fi";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { FaHome } from "react-icons/fa";
 import { categories } from "../Categories/categoriesData";
 
@@ -19,7 +19,22 @@ export default function MarketplaceSidebar({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Convert to camelCase format (e.g., "Home & Garden" -> "homeAndGarden")
+  const toCamelCase = (str: string) => {
+    return str
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .split(/\s+/)
+      .map((word, index) => {
+        if (index === 0) {
+          return word.toLowerCase();
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join("");
+  };
 
   const toggleCategory = (categoryName: string) => {
     setExpandedCategories((prev) => {
@@ -37,20 +52,29 @@ export default function MarketplaceSidebar({
     return expandedCategories.has(categoryName);
   };
 
-  const generateSubcategoryHref = (categoryName: string, subcategory: string) => {
-    // Generate a URL-friendly path for the subcategory
-    const categorySlug = categoryName.toLowerCase().replace(/\s+/g, "-");
-    const subcategorySlug = subcategory.toLowerCase().replace(/\s+/g, "-");
-    return `/marketplace/category/${categorySlug}/${subcategorySlug}`;
+  const handleCategoryClick = (categoryName: string) => {
+    toggleCategory(categoryName);
+    const categoryParam = toCamelCase(categoryName);
+    router.push(`/marketplace/buy?category=${categoryParam}`);
+    onClose();
   };
+
+  const generateSubcategoryHref = (categoryName: string, subcategory: string) => {
+    const categoryParam = toCamelCase(categoryName);
+    const subcategoryParam = toCamelCase(subcategory);
+    return `/marketplace/buy?category=${categoryParam}&subcategory=${subcategoryParam}`;
+  };
+
+  const currentCategory = searchParams.get("category");
+  const currentSubcategory = searchParams.get("subcategory");
 
   return (
     <>
       <aside
-        className={`fixed lg:static top-0 left-0 w-64 h-screen bg-[#06133f] transform transition-transform duration-300 ease-in-out z-40
+        className={`fixed lg:static top-0 left-0 w-64 h-full transform transition-transform duration-300 ease-in-out z-40
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex items-center justify-between p-4 pb-9 border-b border-white/10">
           <h1 className="text-lg font-semibold">Virtual Store</h1>
           <button
             className="lg:hidden text-white"
@@ -60,15 +84,21 @@ export default function MarketplaceSidebar({
           </button>
         </div>
 
-        <nav className="p-4 flex flex-col h-[90vh]">
+        <nav className="p-4 h-[90vh] flex flex-col justify-between py-10">
           <ul className="space-y-1 flex-1 overflow-y-auto pr-2">
             {categories.map((category) => {
               const isExpanded = isCategoryExpanded(category.name);
+              const categoryParam = toCamelCase(category.name);
+              const isCategoryActive = currentCategory === categoryParam;
               return (
                 <li key={category.name}>
                   <button
-                    onClick={() => toggleCategory(category.name)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-md text-base transition-all duration-150 hover:bg-white/10 text-gray-100"
+                    onClick={() => handleCategoryClick(category.name)}
+                    className={`w-full flex cursor-pointer items-center justify-between px-3 py-2 rounded-md text-base transition-all duration-150 text-left ${
+                      isCategoryActive
+                        ? "bg-[#fc859d3a] text-white"
+                        : "hover:bg-white/10 text-gray-100"
+                    }`}
                   >
                     <span className="font-medium">{category.name}</span>
                     <span
@@ -85,7 +115,10 @@ export default function MarketplaceSidebar({
                     <ul className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
                       {category.items.map((item) => {
                         const href = generateSubcategoryHref(category.name, item);
-                        const isActive = pathname === href;
+                        const subcategoryParam = toCamelCase(item);
+                        const isActive =
+                          currentCategory === categoryParam &&
+                          currentSubcategory === subcategoryParam;
                         return (
                           <li key={item}>
                             <Link
@@ -93,7 +126,7 @@ export default function MarketplaceSidebar({
                               onClick={onClose}
                               className={`block px-3 py-1.5 rounded-md text-sm transition-all duration-150 ${
                                 isActive
-                                  ? "bg-blue-600 text-white"
+                                  ? "bg-[#fc859d3a] text-white"
                                   : "hover:bg-white/10 text-gray-300"
                               }`}
                             >
@@ -110,7 +143,7 @@ export default function MarketplaceSidebar({
           </ul>
           <Link
             href="/"
-            className="flex items-center gap-2 text-gray-100 hover:text-white bg-white/10 rounded-lg p-2 px-4 mt-4"
+            className="flex items-center gap-2 text-gray-100 hover:text-white hover:bg-[#fc859d3a] rounded-lg p-2 px-4 my-4"
           >
             <FaHome size={24} /> Home
           </Link>

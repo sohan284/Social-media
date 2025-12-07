@@ -25,25 +25,27 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         backgroundImage: `url(${bg.src})`,
         scrollbarGutter: "stable both-edges",
       }}
-      className="bg-cover bg-center bg-no-repeat h-screen  flex flex-col md:flex-row text-white"
+      className="bg-cover bg-center bg-no-repeat p-10 flex flex-col md:flex-row text-white"
     >
-      {/* Sidebar */}
-      <MarketplaceSidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+      {/* Unified container with backdrop blur */}
+      <div className="w-full flex flex-col md:flex-row gap-0 backdrop-blur-xl bg-black/40 rounded-lg overflow-hidden h-[calc(100vh-80px)]">
+        {/* Sidebar */}
+        <MarketplaceSidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
-      )}
 
-      {/* Main area */}
-      <div className="flex-1 flex flex-col min-h-screen">
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0  backdrop-blur-sm z-30 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main area */}
+        <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="flex flex-col gap-3 p-3 md:p-4 border-b border-white/10 bg-[#06133f]/90 backdrop-blur-sm sticky top-0 z-20">
+        <header className="flex flex-col gap-3 p-3 md:p-4 border-b border-white/10 sticky top-0 z-20">
           <div className="flex items-center justify-between gap-3">
             <button
               className="lg:hidden text-white"
@@ -65,7 +67,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
               {topNavLinks.map((btn) => (
                 <Link href={btn.href} key={btn.label}>
                   <button
-                    className={`px-4 py-2 rounded-full text-sm transition-colors ${
+                    className={`px-4 py-2 rounded-full cursor-pointer text-sm transition-colors ${
                       isActive(btn.href)
                         ? "bg-[#06133fbf] text-white font-medium"
                         : "hover:bg-white/10"
@@ -83,7 +85,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
             {topNavLinks.map((btn) => (
               <Link href={btn.href} key={btn.label}>
                 <button
-                  className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                  className={`px-4 py-1.5 rounded-full cursor-pointer text-sm whitespace-nowrap ${
                     isActive(btn.href)
                       ? "bg-[#06133fbf] text-white font-medium"
                       : "bg-white/10 hover:bg-white/20"
@@ -97,9 +99,10 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-2 md:p-8 bg-[#06133fbf] backdrop-blur-md md:rounded-none custom-scroll-marketplace">
+        <main className="flex-1 overflow-y-auto p-2 md:p-8 custom-scroll-marketplace">
           {children}
         </main>
+      </div>
       </div>
     </div>
   );
