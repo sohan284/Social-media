@@ -1,3 +1,4 @@
+import { BarChart } from "@/components/BarChart";
 import { SlidersHorizontal } from "lucide-react"
 
 export default function AdminDashboardHome() {
@@ -58,8 +59,8 @@ export default function AdminDashboardHome() {
 
         <div className="col-span-3 space-y-10">
               {/* ALL POSTS TABLE */}
-            <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl border border-white/20 max-w-3xl">
-              <h3 className="text-center text-lg font-semibold mb-4">All Posts</h3>
+            <div className="bg-white/30 text-black p-6 rounded-xl border border-white/20">
+              <h3 className="text-center text-lg font-bold mb-4">All Posts</h3>
 
               <table className="w-full text-sm">
                 <thead>
@@ -86,21 +87,9 @@ export default function AdminDashboardHome() {
             </div>
 
             {/* POST STATS GRAPH MOCK */}
-            <div className="bg-white/10 backdrop-blur-lg p-6 rounded-xl border border-white/20 max-w-4xl">
-              <h3 className="text-center text-lg font-semibold mb-6">Post Stats</h3>
-
-              <div className="grid grid-cols-5 gap-4">
-                {["January", "February", "March", "April", "May"].map((month) => (
-                  <div key={month} className="text-center">
-                    <div className="flex justify-center space-x-1 mb-2">
-                      <div className="w-3 bg-blue-400 h-20"></div>
-                      <div className="w-3 bg-green-400 h-16"></div>
-                      <div className="w-3 bg-red-400 h-12"></div>
-                    </div>
-                    <span className="text-xs opacity-70">{month}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6">
+              <h1 className="text-center text-2xl font-semibold mb-4">Post Stats</h1>
+              <BarChart />
             </div>
         </div>
       </div>
