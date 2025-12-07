@@ -49,7 +49,7 @@ export default function SalePage() {
   const previewImage = imagePreviews[0] || null;
 
   return (
-    <div className="text-white flex flex-col lg:flex-row items-start justify-center gap-6 lg:gap-8 p-4 md:p-6 ">
+    <div className="text-white flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6 ">
       {/* Left Side - Form */}
       <div className="w-full lg:w-1/3 backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
         <h2 className="text-2xl font-semibold mb-6 text-center">
@@ -59,7 +59,7 @@ export default function SalePage() {
         <p className="text-sm mb-4 text-gray-300">Required</p>
 
         {/* Image Upload - Two photo buttons */}
-        <div className="flex flex-wrap gap-4 mb-6">
+        <div className="flex flex-wrap gap-4 mb-2">
           {[0].map((index) => (
             <div key={index}>
               {imagePreviews[index] ? (
@@ -129,7 +129,7 @@ export default function SalePage() {
           />
 
           {/* Buttons */}
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between mt-2">
             <button
               type="button"
               onClick={() => {
