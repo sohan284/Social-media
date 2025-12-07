@@ -42,7 +42,7 @@ const menuItemsTwo = [
   {
     icon: <RiMenuSearchLine size={24} />,
     label: "Topics",
-    href: "/",
+    href: "/main/topics",
   },
   {
     icon: <FriendsIcon />,
@@ -52,7 +52,7 @@ const menuItemsTwo = [
   {
     icon: <FaRegQuestionCircle size={24} />,
     label: "Help",
-    href: "/",
+    href: "/main/help",
   },
   {
     icon: <SubscriptionIcon />,
@@ -62,7 +62,7 @@ const menuItemsTwo = [
   {
     icon: <DatabaseIcon />,
     label: "Storage",
-    href: "/",
+    href: "/main/storage",
   },
 ];
 
