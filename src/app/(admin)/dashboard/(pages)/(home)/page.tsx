@@ -1,7 +1,47 @@
 import { BarChart } from "@/components/BarChart";
+import { Column, DataTable } from "@/components/DataTable";
 import { SlidersHorizontal } from "lucide-react"
 
+
+interface PostData {
+  postHead: string;
+  postDate: string;
+  totalLikes: string;
+  totalShare: string;
+}
+
 export default function AdminDashboardHome() {
+  const postColumns: Column<PostData>[] = [
+    {
+      header: 'SL',
+      accessor: (row, index) => index + 1
+    },
+    {
+      header: 'Post Head',
+      accessor: (row) => row.postHead
+    },
+    {
+      header: 'Post Date',
+      accessor: (row) => row.postDate
+    },
+    {
+      header: 'Total Likes',
+      accessor: (row) => row.totalLikes
+    },
+    {
+      header: 'Total Share',
+      accessor: (row) => row.totalShare
+    }
+  ];
+
+  // Your post data with proper typing
+  const postData: PostData[] = [
+    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' },
+    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' },
+    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' },
+    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' }
+  ];
+
   return (
     <div className="space-y-10">
 
@@ -59,32 +99,12 @@ export default function AdminDashboardHome() {
 
         <div className="col-span-3 space-y-10">
               {/* ALL POSTS TABLE */}
-            <div className="bg-white/30 text-black p-6 rounded-xl border border-white/20">
-              <h3 className="text-center text-lg font-bold mb-4">All Posts</h3>
-
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="opacity-80 text-left">
-                    <th className="py-2">SL</th>
-                    <th>Post Head</th>
-                    <th>Post Date</th>
-                    <th>Total Likes</th>
-                    <th>Total Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4].map((num) => (
-                    <tr key={num} className="border-t border-white/10">
-                      <td className="py-2">{num}</td>
-                      <td>Post Head</td>
-                      <td>01.12.25</td>
-                      <td>10K</td>
-                      <td>200</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            
+              <DataTable 
+                title="All Posts" 
+                columns={postColumns} 
+                data={postData} 
+              />
 
             {/* POST STATS GRAPH MOCK */}
             <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6">

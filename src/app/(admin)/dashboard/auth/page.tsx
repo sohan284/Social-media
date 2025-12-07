@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#1F2149] px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#1F2149] text-white px-4">
         {/* TITLE */}
         <h1 className="text-center text-2xl mb-8">
           Admin Login

@@ -10,20 +10,21 @@ import {
   BarChart2,
   ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState("Home");
 
   const menu = [
-    { name: "Home", icon: Home },
-    { name: "All Posts", icon: FileText },
-    { name: "Rejected Posts", icon: FileText },
-    { name: "User Management", icon: Users },
-    { name: "Statistics", icon: BarChart2 },
+    { name: "Home", icon: Home, path: '/dashboard' },
+    { name: "All Posts", icon: FileText, path: '/dashboard/all-posts' },
+    { name: "Rejected Posts", icon: FileText, path: '/dashboard/rejected-posts' },
+    { name: "User Management", icon: Users, path: '/dashboard/user-management' },
+    { name: "Statistics", icon: BarChart2, path: '/dashboard/statistics' },
   ];
 
   return (
-    <div         style={{ backgroundImage: "url('/admin-bg.jpg')" }} className="flex h-screen bg-cover bg-center text-white p-4 overflow-hidden">
+    <div style={{ backgroundImage: "url('/admin-bg.jpg')" }} className="flex h-screen bg-cover bg-center text-white p-4 overflow-hidden">
       
       {/* SIDEBAR */}
       <aside className="w-64 bg-white text-gray-900 rounded-xl p-6 shadow-xl flex flex-col h-full">
@@ -38,23 +39,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {menu.map((item) => {
             const Icon = item.icon;
             return (
-              <button
-                key={item.name}
-                onClick={() => setActive(item.name)}
-                className={`flex items-center w-full px-4 py-3 rounded-xl text-left text-sm font-medium transition
-                ${
-                  active === item.name
-                    ? "bg-[#2A2A46] text-white"
-                    : "bg-white border border-gray-300"
-                }`}
-              >
-                <Icon className="w-4 h-4 mr-3" />
-                {item.name}
+              <Link href={item.path} className="block">
+                <button
+                  key={item.name}
+                  onClick={() => setActive(item.name)}
+                  className={`flex items-center w-full px-4 py-3 rounded-xl text-left text-sm font-medium transition
+                  ${
+                    active === item.name
+                      ? "bg-[#2A2A46] text-white"
+                      : "bg-white border border-gray-300"
+                  }`}
+                >
+                  <Icon className="w-4 h-4 mr-3" />
+                  {item.name}
 
-                <span className="ml-auto">
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                </span>
-              </button>
+                  <span className="ml-auto">
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </span>
+                </button>
+              </Link>
             );
           })}
         </nav>
