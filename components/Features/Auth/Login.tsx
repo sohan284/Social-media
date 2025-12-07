@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useLoginMutation } from "@/store/authApi";
 import { useRouter } from "next/navigation";
 import { getRoleFromToken, storeAuthTokens } from "@/lib/auth";
+import { toast } from "sonner";
 
 type LoginForm = {
   email: string;
@@ -80,8 +81,13 @@ const Login = () => {
 
       const redirectTarget = role === "admin" ? "/dashboard" : "/";
       router.push(redirectTarget);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Login failed:", error);
+      toast.error('Failed to login', {
+        description: (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred',
+      });
       // Error handling UI is shown below the form
     }
   };
@@ -212,12 +218,12 @@ const Login = () => {
                   <FcGoogle className="text-xl" /> Continue With Google
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   className="w-full flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
                 >
                   <FaApple className="text-xl" /> Continue With Apple
-                </button>
+                </button> */}
 
                 <div className="flex justify-between text-xs sm:text-sm mt-3">
                   <button
