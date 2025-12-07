@@ -10,7 +10,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <header className="border-b border-white/10 bg-slate-900/80 backdrop-blur px-6 py-4 flex items-center justify-between">
+      {/* <header className="border-b border-white/10 bg-slate-900/80 backdrop-blur px-6 py-4 flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-widest text-blue-200/80">
             Admin Dashboard
@@ -32,9 +32,9 @@ export default function AdminLayout({
             Content
           </Link>
         </nav>
-      </header>
+      </header> */}
 
-      <main className="px-6 py-8">{children}</main>
+      <main>{children}</main>
     </div>
   );
 }
