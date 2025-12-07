@@ -47,7 +47,7 @@ const menuItemsTwo = [
   {
     icon: <FriendsIcon />,
     label: "Communities",
-    href: "/",
+    href: "/main/communities",
   },
   {
     icon: <FaRegQuestionCircle size={24} />,

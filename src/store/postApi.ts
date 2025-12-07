@@ -139,6 +139,12 @@ export const postApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    getCommunityPosts: builder.query<GetPostsResponse, string>({
+      query: (communityName) => ({
+        url: `/api/posts/community_posts/?community=${communityName}`,
+        method: "GET",
+      }),
+    }),
     likePost: builder.mutation<
       { success: boolean; likes_count: number; is_liked: boolean; id?: number | string; like_id?: number | string; data?: { id?: number | string; like_id?: number | string } },
       { postId: number | string; isLiked: boolean }
@@ -297,7 +303,8 @@ export const postApi = baseApi.injectEndpoints({
 export const { 
   useCreatePostMutation, 
   useGetMyPostsQuery, 
-  useGetNewsFeedQuery, 
+  useGetNewsFeedQuery,
+  useGetCommunityPostsQuery,
   useLikePostMutation,
   useGetCommentsQuery,
   useCreateCommentMutation,
