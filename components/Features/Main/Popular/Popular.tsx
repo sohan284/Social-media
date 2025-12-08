@@ -112,11 +112,11 @@ const Popular = () => {
                 </Select>
             </div>
             <div className='mt-6 space-y-4 px-1'>
+                {/* <Post/>
                 <Post/>
                 <Post/>
                 <Post/>
-                <Post/>
-                <Post/>
+                <Post/> */}
             </div>
         </div>
     );

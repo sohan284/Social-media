@@ -39,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {menu.map((item) => {
             const Icon = item.icon;
             return (
-              <Link href={item.path} className="block">
+              <Link key={item.name} href={item.path} className="block">
                 <button
                   key={item.name}
                   onClick={() => setActive(item.name)}

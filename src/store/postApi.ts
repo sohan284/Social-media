@@ -7,6 +7,7 @@ export interface CreatePostRequest {
   link?: string;
   media_files?: File[];
   post_type: "media" | "text" | "link";
+  community?: number | string;
 }
 
 export interface CreatePostResponse {
@@ -117,6 +118,9 @@ export const postApi = baseApi.injectEndpoints({
           data.media_files.forEach((file) =>
             formData.append("media_files", file)
           );
+        }
+        if (data.community !== undefined) {
+          formData.append("community", data.community.toString());
         }
         console.log(formData);
         formData.append("post_type", data.post_type.toString());
