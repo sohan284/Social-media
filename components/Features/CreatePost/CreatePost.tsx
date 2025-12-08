@@ -38,7 +38,7 @@ type MediaPreview = {
   url: string;
 };
 
-const CreatePost = ({ isProfile = false }: { isProfile?: boolean }) => {
+const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?: boolean; communityId?: number | string; onSuccess?: () => void }) => {
   const [activeTab, setActiveTab] = useState<"text" | "image" | "link">("text");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -157,6 +157,7 @@ const CreatePost = ({ isProfile = false }: { isProfile?: boolean }) => {
         tags: data.tags ?? [],
         media_files: data.files ?? [],
         post_type: derivePostType(),
+        ...(communityId && { community: communityId }),
       }).unwrap();
 
       toast.success(
@@ -171,6 +172,9 @@ const CreatePost = ({ isProfile = false }: { isProfile?: boolean }) => {
       updateFormFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
+      }
+      if (onSuccess) {
+        onSuccess();
       }
     } catch (error) {
       console.error("Error submitting form:", error);

@@ -15,6 +15,7 @@ import FriendsIcon from '../../Icons/FriendsIcon';
 import { toast } from 'sonner';
 import Post from '../Main/Post/Post';
 import CommunityCard from '../../Shared/CommunityCard/CommunityCard';
+import CreatePost from '../CreatePost/CreatePost';
 
 const Communities = () => {
   const router = useRouter();
@@ -23,7 +24,7 @@ const Communities = () => {
   const { data: communitiesResponse, isLoading, isError, refetch } = useGetPopularCommunitiesQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
-  const { data: postsResponse, isLoading: isLoadingPosts } = useGetCommunityPostsQuery(selectedCommunity, {
+  const { data: postsResponse, isLoading: isLoadingPosts, refetch: refetchPosts } = useGetCommunityPostsQuery(selectedCommunity, {
     skip: !selectedCommunity,
   });
   const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
@@ -299,6 +300,18 @@ const Communities = () => {
                 </div>
               </div>
               <div className="space-y-6">
+                {(() => {
+                  const community = communities.find((c: CommunityItem) => c.name === selectedCommunity);
+                  return community?.id ? (
+                    <CreatePost 
+                      communityId={community.id} 
+                      isProfile={true}
+                      onSuccess={() => {
+                        refetchPosts();
+                      }}
+                    />
+                  ) : null;
+                })()}
                 {renderPosts()}
               </div>
             </div>
