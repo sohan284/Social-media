@@ -9,7 +9,7 @@ import SubscriptionIcon from "../../Icons/SubscriptionIcon";
 import DatabaseIcon from "../../Icons/DatabaseIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
-import { FiPlus } from "react-icons/fi";
+import { FiPlus, FiTag } from "react-icons/fi";
 import { usePathname, useRouter } from "next/navigation";
 const menuItems = [
   {
@@ -101,8 +101,11 @@ const SidebarNavLink = () => {
         <button className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
           <FiPlus size={24} /> Join Categories
         </button>
-        <button className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
-          <HexagonIcon /> Manage Categories
+        <button 
+          onClick={() => router.push('/main/categories')}
+          className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer"
+        >
+          <FiTag size={24} /> Manage Categories
         </button>
       </div>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2.5 rounded-2xl">
