@@ -171,13 +171,13 @@ const SignUp = () => {
           <FcGoogle className="text-xl" /> Continue With Google
         </button>
 
-        <button
+        {/* <button
           type="button"
           onClick={() => handleSocialLogin("apple")}
           className="w-full cursor-pointer flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
         >
           <FaApple className="text-xl" /> Continue With Apple
-        </button>
+        </button> */}
 
         <div className="flex items-center my-4">
           <div className="flex-grow border-t border-gray-400"></div>

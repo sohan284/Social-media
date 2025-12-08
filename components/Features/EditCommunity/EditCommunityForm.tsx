@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaGlobe, FaEyeSlash, FaLock } from "react-icons/fa";
 import { useUpdateCommunityMutation, useGetMyCommunitiesQuery, type CommunityItem } from "@/store/communityApi";
-import { getApiBaseUrl } from "@/lib/utils";
 import { toast } from "sonner";
 
 type FormValues = {
   name: string;
   description: string;
-  banner?: FileList;
-  icon?: FileList;
+  profile_image?: FileList;
+  cover_image?: FileList;
   visibility: "public" | "restricted" | "private";
 };
 
@@ -24,16 +23,16 @@ interface EditCommunityFormProps {
 const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [iconPreview, setIconPreview] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState({ banner: false, icon: false });
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState({ cover_image: false, profile_image: false });
   const [community, setCommunity] = useState<CommunityItem | null>(null);
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true);
   
   const { data: communitiesResponse } = useGetMyCommunitiesQuery();
   const [updateCommunity, { isLoading: isUpdating }] = useUpdateCommunityMutation();
 
-  const { register, handleSubmit, watch, reset } = useForm<FormValues>({
+  const { register, handleSubmit, watch, reset, setValue } = useForm<FormValues>({
     defaultValues: { visibility: "public" },
   });
 
@@ -59,18 +58,29 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
         });
         
         // Set preview images from existing community
-        const apiBase = getApiBaseUrl();
-        if (foundCommunity.banner) {
+        if (foundCommunity.cover_image) {
+          const coverImagePath = foundCommunity.cover_image.startsWith("/") 
+            ? foundCommunity.cover_image.slice(1) 
+            : foundCommunity.cover_image;
+          setCoverImagePreview(`${coverImagePath}`);
+        } else if (foundCommunity.banner) {
+          // Fallback to banner if cover_image doesn't exist
           const bannerPath = foundCommunity.banner.startsWith("/") 
             ? foundCommunity.banner.slice(1) 
             : foundCommunity.banner;
-          setBannerPreview(`${apiBase}${bannerPath}`);
+          setCoverImagePreview(`${bannerPath}`);
         }
-        if (foundCommunity.icon) {
+        if (foundCommunity.profile_image) {
+          const profileImagePath = foundCommunity.profile_image.startsWith("/") 
+            ? foundCommunity.profile_image.slice(1) 
+            : foundCommunity.profile_image;
+          setProfileImagePreview(`${profileImagePath}`);
+        } else if (foundCommunity.icon) {
+          // Fallback to icon if profile_image doesn't exist
           const iconPath = foundCommunity.icon.startsWith("/") 
             ? foundCommunity.icon.slice(1) 
             : foundCommunity.icon;
-          setIconPreview(`${apiBase}${iconPath}`);
+          setProfileImagePreview(`${iconPath}`);
         }
       }
       setIsLoadingCommunity(false);
@@ -79,8 +89,13 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const bannerFile = data.banner && data.banner.length > 0 ? data.banner[0] : undefined;
-      const iconFile = data.icon && data.icon.length > 0 ? data.icon[0] : undefined;
+      const profileImageFile = data.profile_image && data.profile_image.length > 0 ? data.profile_image[0] : undefined;
+      const coverImageFile = data.cover_image && data.cover_image.length > 0 ? data.cover_image[0] : undefined;
+
+      console.log("Submitting form with files:", {
+        profile_image: profileImageFile ? { name: profileImageFile.name, size: profileImageFile.size } : undefined,
+        cover_image: coverImageFile ? { name: coverImageFile.name, size: coverImageFile.size } : undefined,
+      });
 
       await updateCommunity({
         communityName: communityName,
@@ -88,8 +103,8 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
           name: data.name,
           description: data.description,
           visibility: data.visibility,
-          banner: bannerFile,
-          icon: iconFile,
+          profile_image: profileImageFile,
+          cover_image: coverImageFile,
         },
       }).unwrap();
 
@@ -117,7 +132,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
   const name = watch("name") || "Community Name";
   const description = watch("description") || "Your community description";
 
-  const handleFileChange = (file: File | null, type: 'banner' | 'icon') => {
+  const handleFileChange = (file: File | null, type: 'cover_image' | 'profile_image') => {
     if (file) {
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file');
@@ -129,27 +144,36 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
         alert('File size must be less than 5MB');
         return;
       }
+      
+      // Create a FileList-like object to set in the form
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      const fileList = dataTransfer.files;
+      
+      // Update form value
+      setValue(type, fileList);
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        if (type === 'banner') {
-          setBannerPreview(result);
+        if (type === 'cover_image') {
+          setCoverImagePreview(result);
         } else {
-          setIconPreview(result);
+          setProfileImagePreview(result);
         }
       };
       reader.readAsDataURL(file);
     } else {
-      if (type === 'banner') {
-        setBannerPreview(null);
+      if (type === 'cover_image') {
+        setCoverImagePreview(null);
       } else {
-        setIconPreview(null);
+        setProfileImagePreview(null);
       }
     }
   };
 
   // Drag and drop handlers
-  const handleDrag = (e: React.DragEvent, type: 'banner' | 'icon') => {
+  const handleDrag = (e: React.DragEvent, type: 'cover_image' | 'profile_image') => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -159,7 +183,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent, type: 'banner' | 'icon') => {
+  const handleDrop = (e: React.DragEvent, type: 'cover_image' | 'profile_image') => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(prev => ({ ...prev, [type]: false }));
@@ -197,10 +221,10 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
   }
 
   return (
-    <div className="flex items-center justify-center bg-cover bg-center text-white p-4">
+    <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="relative w-full max-w-4xl bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg flex flex-col md:flex-row p-6 md:p-10 gap-8"
+        className="relative w-full bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg flex flex-col md:flex-row p-6 md:p-10 gap-8"
       >
         {/* Left Section */}
         <div className="flex-1 space-y-6">
@@ -268,35 +292,35 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
               </div>
 
               <div className="space-y-6">
-                {/* Banner Upload */}
+                {/* Cover Image Upload */}
                 <div>
-                  <label className="block mb-3 font-medium">Banner</label>
+                  <label className="block mb-3 font-medium">Cover Image</label>
                   <div
                     className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 cursor-pointer ${
-                      dragActive.banner
+                      dragActive.cover_image
                         ? 'border-purple-400 bg-purple-500/20 scale-105'
                         : 'border-white/30 hover:border-purple-400 hover:bg-white/5'
                     }`}
-                    onDragEnter={(e) => handleDrag(e, 'banner')}
-                    onDragLeave={(e) => handleDrag(e, 'banner')}
-                    onDragOver={(e) => handleDrag(e, 'banner')}
-                    onDrop={(e) => handleDrop(e, 'banner')}
-                    onClick={() => document.getElementById('banner-upload')?.click()}
+                    onDragEnter={(e) => handleDrag(e, 'cover_image')}
+                    onDragLeave={(e) => handleDrag(e, 'cover_image')}
+                    onDragOver={(e) => handleDrag(e, 'cover_image')}
+                    onDrop={(e) => handleDrop(e, 'cover_image')}
+                    onClick={() => document.getElementById('cover-image-upload')?.click()}
                   >
                     <input
-                      id="banner-upload"
+                      id="cover-image-upload"
                       type="file"
                       accept="image/*"
-                      {...register("banner")}
-                      onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'banner')}
+                      {...register("cover_image")}
+                      onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'cover_image')}
                       className="hidden"
                     />
                     
-                    {bannerPreview ? (
+                    {coverImagePreview ? (
                       <div className="relative w-full h-40">
                         <Image
-                          src={bannerPreview}
-                          alt="Banner preview"
+                          src={coverImagePreview}
+                          alt="Cover image preview"
                           fill
                           className="object-cover rounded-lg border border-white/20"
                           unoptimized
@@ -320,7 +344,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-lg font-medium text-white">Upload Banner</p>
+                          <p className="text-lg font-medium text-white">Upload Cover Image</p>
                           <p className="text-sm text-gray-300">Drag & drop or click to browse</p>
                           <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
                         </div>
@@ -329,35 +353,35 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
                   </div>
                 </div>
 
-                {/* Icon Upload */}
+                {/* Profile Image Upload */}
                 <div>
-                  <label className="block mb-3 font-medium">Icon</label>
+                  <label className="block mb-3 font-medium">Profile Image</label>
                   <div
                     className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 cursor-pointer ${
-                      dragActive.icon
+                      dragActive.profile_image
                         ? 'border-purple-400 bg-purple-500/20 scale-105'
                         : 'border-white/30 hover:border-purple-400 hover:bg-white/5'
                     }`}
-                    onDragEnter={(e) => handleDrag(e, 'icon')}
-                    onDragLeave={(e) => handleDrag(e, 'icon')}
-                    onDragOver={(e) => handleDrag(e, 'icon')}
-                    onDrop={(e) => handleDrop(e, 'icon')}
-                    onClick={() => document.getElementById('icon-upload')?.click()}
+                    onDragEnter={(e) => handleDrag(e, 'profile_image')}
+                    onDragLeave={(e) => handleDrag(e, 'profile_image')}
+                    onDragOver={(e) => handleDrag(e, 'profile_image')}
+                    onDrop={(e) => handleDrop(e, 'profile_image')}
+                    onClick={() => document.getElementById('profile-image-upload')?.click()}
                   >
                     <input
-                      id="icon-upload"
+                      id="profile-image-upload"
                       type="file"
                       accept="image/*"
-                      {...register("icon")}
-                      onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'icon')}
+                      {...register("profile_image")}
+                      onChange={(e) => handleFileChange(e.target.files?.[0] || null, 'profile_image')}
                       className="hidden"
                     />
                     
-                    {iconPreview ? (
+                    {profileImagePreview ? (
                       <div className="relative w-20 h-20 mx-auto">
                         <Image
-                          src={iconPreview}
-                          alt="Icon preview"
+                          src={profileImagePreview}
+                          alt="Profile image preview"
                           fill
                           className="object-cover rounded-full border-2 border-white/20"
                           unoptimized
@@ -381,7 +405,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white">Upload Icon</p>
+                          <p className="text-sm font-medium text-white">Upload Profile Image</p>
                           <p className="text-xs text-gray-300">Drag & drop or click to browse</p>
                           <p className="text-xs text-gray-400 mt-1">Square image recommended</p>
                         </div>
@@ -493,11 +517,11 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
 
         {/* Right Preview */}
         <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
-          {bannerPreview && (
+          {coverImagePreview && (
             <div className="mb-4 relative w-full h-24">
               <Image
-                src={bannerPreview}
-                alt="Community banner"
+                src={coverImagePreview}
+                alt="Community cover image"
                 fill
                 className="object-cover rounded-lg"
                 unoptimized
@@ -505,11 +529,11 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
             </div>
           )}
           <div className="flex items-center justify-center mb-3">
-            {iconPreview ? (
+            {profileImagePreview ? (
               <div className="relative w-12 h-12">
                 <Image
-                  src={iconPreview}
-                  alt="Community icon"
+                  src={profileImagePreview}
+                  alt="Community profile image"
                   fill
                   className="object-cover rounded-full border-2 border-white/20"
                   unoptimized

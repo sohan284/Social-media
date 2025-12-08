@@ -1,70 +1,144 @@
+"use client";
+
 import Image from 'next/image';
-import React from 'react';
-
-const communities = [
-    {
-        name: 'Community 1',
-        members: 1000,
-        image: '/profile.jpg',
-    },
-
-    {
-        name: 'Community 3',
-        members: 3000,
-        image: '/profile.jpg',
-    },
-    {
-        name: 'Community 3',
-        members: 3000,
-        image: '/profile.jpg',
-    },
-]
-
-const members = (members: number) => {
-    if (members > 1000) {
-        return '1k+ Members';
-    } else if (members > 10000) {
-        return '10k+ Members';
-    } else if (members > 100000) {
-        return '100k+ Members';
-    }
-}
+import React, { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  useGetPopularCommunitiesQuery, 
+  useJoinCommunityMutation, 
+  useLeaveCommunityMutation,
+  CommunityItem
+} from '@/store/communityApi';
+import { FiUsers } from 'react-icons/fi';
+import { toast } from 'sonner';
 
 const RightSidebar = () => {
-    return (
+  const router = useRouter();
+  const { data: communitiesResponse, isLoading } = useGetPopularCommunitiesQuery();
+  const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
+  const [leaveCommunity, { isLoading: isLeaving }] = useLeaveCommunityMutation();
+
+  const allCommunities = useMemo(() => {
+    if (!communitiesResponse) return [];
+    const data = communitiesResponse.results?.data ?? communitiesResponse.data ?? [];
+    return Array.isArray(data) ? data : [];
+  }, [communitiesResponse]);
+
+  // Filter to only show public communities
+  const communities = useMemo(() => {
+    return allCommunities.filter((c: CommunityItem) => c.visibility === 'public').slice(0, 5);
+  }, [allCommunities]);
+
+  const formatMembers = (members: number) => {
+    if (members >= 100000) return '100k+';
+    if (members >= 10000) return '10k+';
+    if (members >= 1000) return '1k+';
+    return members.toString();
+  };
+
+  const handleJoin = async (communityName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await joinCommunity(communityName).unwrap();
+      toast.success('Successfully joined community!');
+    } catch (error: unknown) {
+      console.error('Failed to join community:', error);
+      const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred';
+      toast.error('Failed to join community', {
+        description: errorMessage,
+      });
+    }
+  };
+
+  const handleLeave = async (communityName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await leaveCommunity(communityName).unwrap();
+      toast.success('Successfully left community!');
+    } catch (error: unknown) {
+      const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred';
+      toast.error('Failed to leave community', {
+        description: errorMessage,
+      });
+    }
+  };
+
+  return (
         <div className=' space-y-6'>
             <div className='bg-[#06133FBF] backdrop-blur-[1px] py-6 px-4 rounded-2xl space-y-4 '>
                 <h1 className='text-white text-lg font-semibold'>Popular Communities</h1>
-                {
-                    communities.map((community, index) =>
-                        <div key={index} className='flex items-center justify-between'>
-                            <div className='flex items-center gap-2'>
-                                <Image src="/profile.jpg" alt="Profile" width={50} height={50} className='rounded-full object-cover' />
-                                <div>
-                                    <h3 className='text-white text-sm font-semibold'>John Doe</h3>
-                                    <p className='text-gray-400 text-sm'>{members(community.members)} Members</p>
-                                </div>
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, idx) => (
+                      <div key={idx} className="animate-pulse flex items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-white/10" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-24 rounded bg-white/10" />
+                          <div className="h-3 w-16 rounded bg-white/10" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : communities.length === 0 ? (
+                  <p className="text-white/60 text-sm text-center py-4">No communities available</p>
+                ) : (
+                  communities.map((community: CommunityItem) => {
+                    const iconUrl = community.icon || community.profile_image
+                      ? `${(community.icon || community.profile_image)?.startsWith("/") ? (community.icon || community.profile_image)?.slice(1) : (community.icon || community.profile_image)}`
+                      : null;
+
+                    return (
+                      <div 
+                        key={community.id} 
+                        className='flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity'
+                        onClick={() => router.push(`/main/communities?community=${encodeURIComponent(community.name || '')}`)}
+                      >
+                        <div className='flex items-center gap-2 flex-1 min-w-0'>
+                          {iconUrl ? (
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                              <Image 
+                                src={iconUrl} 
+                                alt={community.title || community.name || ''} 
+                                fill
+                                className='object-cover' 
+                                unoptimized 
+                              />
                             </div>
-                            <button className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer'> Join</button>
-                        </div>)
-                }
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                              <FiUsers className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className='text-white text-sm font-semibold truncate'>{community.title || community.name}</h3>
+                            <p className='text-gray-400 text-xs'>{formatMembers(community.members_count || 0)} Members</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            if (community.is_member) {
+                              handleLeave(community.name!, e);
+                            } else {
+                              handleJoin(community.name!, e);
+                            }
+                          }}
+                          disabled={isJoining || isLeaving}
+                          className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                        >
+                          {community.is_member ? 'Joined' : 'Join'}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
             </div>
             <div className='bg-[#06133FBF] backdrop-blur-[1px] py-6 px-4 rounded-2xl space-y-4 '>
-                <h1 className='text-white text-lg font-semibold'>Popular Categories
-                </h1>
-                {
-                    communities.map((community, index) =>
-                        <div key={index} className='flex items-center justify-between'>
-                            <div className='flex items-center gap-2'>
-                                <Image src="/profile.jpg" alt="Profile" width={50} height={50} className='rounded-full object-cover' />
-                                <div>
-                                    <h3 className='text-white text-sm font-semibold'>John Doe</h3>
-                                    <p className='text-gray-400 text-sm'>{members(community.members)} Members</p>
-                                </div>
-                            </div>
-                            <button className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer'> Join</button>
-                        </div>)
-                }
+                <h1 className='text-white text-lg font-semibold'>Popular Categories</h1>
+                <p className='text-white/60 text-sm text-center py-4'>Coming soon</p>
             </div>
         </div>
     );

@@ -61,7 +61,7 @@ export default function HomeLayout({
           }}
           className="flex-1 h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
         >
-          <div className="bg-[#06133fec] ">
+          <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
             <div className="max-w-3xl mx-auto pt-18 pb-4">
               {children}
             </div>
