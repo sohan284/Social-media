@@ -3,7 +3,7 @@ import Communities from '../../../../../components/Features/Communities/Communit
 
 export default function CommunitiesPage() {
   return (
-    <div>
+    <div className='flex'>
       <Communities />
     </div>
   );
