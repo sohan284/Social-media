@@ -61,8 +61,8 @@ export default function HomeLayout({
           }}
           className="flex-1 h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
         >
-          <div className="bg-[#06133fec] ">
-            <div className="max-w-3xl mx-auto pt-18 pb-4">
+          <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
+            <div className="max-w-[47vw] mx-auto pt-18 pb-4">
               {children}
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function HomeLayout({
               backgroundImage: `url(${bg.src})`,
               scrollbarGutter: "stable both-edges",
             }}
-            className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 w-[370px] h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll"
+            className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll"
           >
             <div className="mt-16 ">
               <RightSidebar />

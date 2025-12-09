@@ -9,7 +9,7 @@ import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
-import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation } from "@/store/postApi";
+import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowersQuery } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -54,18 +54,48 @@ const Post = ({ post, profile }: PostProps) => {
   const [followingId, setFollowingId] = useState<number | string | null>(null);
   const [isFollowingUser, setIsFollowingUser] = useState(false);
 
-  // Initialize follow state from post data if available
+  // Extract user_id for the follow button
+  const postUserId = (post as { user?: number | string }).user 
+
+  // Fetch followers to check if user is already following
+  const { data: followersData } = useGetFollowersQuery(undefined, {
+    skip: !postUserId || !profile?.id,
+  });
+
+  // Check if user is already following from followers API (takes precedence)
   useEffect(() => {
-    const postFollowingId = (post as { following_id?: number | string })?.following_id;
-    const postIsFollowing = (post as { is_following?: boolean })?.is_following;
-    
-    if (postFollowingId) {
-      setFollowingId(postFollowingId);
-      setIsFollowingUser(true);
-    } else if (postIsFollowing !== undefined) {
-      setIsFollowingUser(postIsFollowing);
+    if (!postUserId) return;
+
+    // If we have followers data, use it to determine follow state
+    if (followersData) {
+      const followersRaw =  followersData.results?.data || [];
+      const followers = Array.isArray(followersRaw) ? followersRaw : [];
+      
+      const followItem = followers.find((item) => {
+        const followingId = item.following || item.id || item.following;
+        return followingId && String(followingId) === String(postUserId);
+      });
+
+      if (followItem && followItem.id) {
+        setFollowingId(followItem.id);
+        setIsFollowingUser(true);
+      } else {
+        setIsFollowingUser(false);
+        setFollowingId(null);
+      }
+    } else {
+      // Fallback to post data if followers API hasn't loaded yet
+      const postFollowingId = (post as { following_id?: number | string })?.following_id;
+      const postIsFollowing = (post as { is_following?: boolean })?.is_following;
+      
+      if (postFollowingId) {
+        setFollowingId(postFollowingId);
+        setIsFollowingUser(true);
+      } else if (postIsFollowing !== undefined) {
+        setIsFollowingUser(postIsFollowing);
+      }
     }
-  }, [post]);
+  }, [followersData, postUserId, post]);
 
   const isLiked = post?.is_liked || false;
   const likeCount = post?.likes_count as number || 0;
@@ -289,12 +319,7 @@ const Post = ({ post, profile }: PostProps) => {
   };
 
   const handleFollowClick = async () => {
-    // Extract user_id from post - could be in different fields
-    const userId = (post as { user_id?: number | string }).user_id || 
-                   (post?.author as { id?: number | string })?.id ||
-                   (post as { author_id?: number | string }).author_id;
-    
-    if (!userId) {
+    if (!postUserId) {
       console.error("User ID not found in post data");
       return;
     }
@@ -307,7 +332,7 @@ const Post = ({ post, profile }: PostProps) => {
         setFollowingId(null);
       } else {
         // Follow
-        const result = await followUser({ userId }).unwrap();
+        const result = await followUser({ userId: postUserId }).unwrap();
         const followId = (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.id || 
                          (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.following_id ||
                          (result as { id?: number | string; following_id?: number | string; data?: { id?: number | string; following_id?: number | string } })?.data?.id ||
@@ -321,11 +346,9 @@ const Post = ({ post, profile }: PostProps) => {
       console.error("Failed to follow/unfollow user:", error);
     }
   };
-
-  // Extract user_id for the follow button
-  const postUserId = (post as { user_id?: number | string }).user_id || 
-                     (post?.author as { id?: number | string })?.id ||
-                     (post as { author_id?: number | string }).author_id;
+  
+  // Check if post is created by another user (not the current user)
+  const isOtherUserPost = postUserId && profile?.id && String(postUserId) !== String(profile.id);
 
   const renderComment = (comment: CommentItem & { replies: CommentItem[] }, depth = 0) => {
     const commentAuthor = comment.author || comment.user;
@@ -746,16 +769,14 @@ const Post = ({ post, profile }: PostProps) => {
             <p className="text-white/70 text-xs sm:text-sm">{createdAt}</p>
           </div>
         </div>
-        {postUserId && (
+        {isOtherUserPost && (
           <button 
             onClick={handleFollowClick}
             disabled={isFollowing || isUnfollowing}
-            className={`text-sm text-white cursor-pointer px-4 py-1.5 rounded-full transition-colors ${
+            className={`text-xs cursor-pointer text-white px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
               (isFollowing || isUnfollowing)
-                ? "bg-slate-600 opacity-50 cursor-not-allowed" 
-                : isFollowingUser
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
+                && "bg-slate-600 opacity-50 cursor-not-allowed" 
+               
             }`}
           >
             {isFollowing || isUnfollowing 

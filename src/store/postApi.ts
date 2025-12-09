@@ -7,6 +7,7 @@ export interface CreatePostRequest {
   link?: string;
   media_files?: File[];
   post_type: "media" | "text" | "link";
+  community?: number | string;
 }
 
 export interface CreatePostResponse {
@@ -98,6 +99,22 @@ export interface CreateCommentResponse {
   [key: string]: unknown;
 }
 
+export interface FollowItem {
+  id?: number | string;
+  following?: number | string;
+  follower?: number | string;
+  user?: number | string;
+  [key: string]: unknown;
+}
+
+export interface GetFollowersResponse {
+  data?: FollowItem[];
+  results?: {
+    data?: FollowItem[];
+  };
+  [key: string]: unknown;
+}
+
 export const postApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createPost: builder.mutation<CreatePostResponse, CreatePostRequest>({
@@ -118,6 +135,9 @@ export const postApi = baseApi.injectEndpoints({
             formData.append("media_files", file)
           );
         }
+        if (data.community !== undefined) {
+          formData.append("community", data.community.toString());
+        }
         console.log(formData);
         formData.append("post_type", data.post_type.toString());
         return {
@@ -136,6 +156,12 @@ export const postApi = baseApi.injectEndpoints({
     getNewsFeed: builder.query<GetPostsResponse, void>({
       query: () => ({
         url: "/api/posts/news_feed/",
+        method: "GET",
+      }),
+    }),
+    getCommunityPosts: builder.query<GetPostsResponse, string>({
+      query: (communityName) => ({
+        url: `/api/posts/community_posts/?community=${communityName}`,
         method: "GET",
       }),
     }),
@@ -279,10 +305,11 @@ export const postApi = baseApi.injectEndpoints({
     }),
     followUser: builder.mutation<{ success?: boolean; message?: string; id?: number | string; following_id?: number | string; [key: string]: unknown }, { userId: number | string }>({
       query: ({ userId }) => ({
-        url: `/api/follows/user_profile/?user_id=${userId}`,
+        url: `/api/follows/`,
         method: "POST",
-        body: { following: 0 },
+        body: { following: userId },
       }),
+      invalidatesTags: () => [{ type: 'Followers' }],
     }),
     unfollowUser: builder.mutation<{ success?: boolean; message?: string; [key: string]: unknown }, { followingId: number | string }>({
       query: ({ followingId }) => ({
@@ -290,6 +317,14 @@ export const postApi = baseApi.injectEndpoints({
         method: "DELETE",
         body: { following: 0 },
       }),
+      invalidatesTags: () => [{ type: 'Followers' }],
+    }),
+    getFollowers: builder.query<GetFollowersResponse, void>({
+      query: () => ({
+        url: `/api/follows/?following=true`,
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'Followers' }],
     }),
   }),
 });
@@ -297,7 +332,8 @@ export const postApi = baseApi.injectEndpoints({
 export const { 
   useCreatePostMutation, 
   useGetMyPostsQuery, 
-  useGetNewsFeedQuery, 
+  useGetNewsFeedQuery,
+  useGetCommunityPostsQuery,
   useLikePostMutation,
   useGetCommentsQuery,
   useCreateCommentMutation,
@@ -305,4 +341,5 @@ export const {
   useUpdateCommentMutation,
   useFollowUserMutation,
   useUnfollowUserMutation,
+  useGetFollowersQuery,
 } = postApi;
