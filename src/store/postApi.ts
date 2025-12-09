@@ -109,7 +109,9 @@ export interface FollowItem {
 
 export interface GetFollowersResponse {
   data?: FollowItem[];
-  results?: FollowItem[];
+  results?: {
+    data?: FollowItem[];
+  };
   [key: string]: unknown;
 }
 
@@ -319,7 +321,7 @@ export const postApi = baseApi.injectEndpoints({
     }),
     getFollowers: builder.query<GetFollowersResponse, void>({
       query: () => ({
-        url: `/api/follows/?followers=true`,
+        url: `/api/follows/?following=true`,
         method: "GET",
       }),
       providesTags: () => [{ type: 'Followers' }],

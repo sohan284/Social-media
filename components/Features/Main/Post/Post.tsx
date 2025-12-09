@@ -68,11 +68,11 @@ const Post = ({ post, profile }: PostProps) => {
 
     // If we have followers data, use it to determine follow state
     if (followersData) {
-      const followersRaw = followersData.data || followersData.results;
+      const followersRaw =  followersData.results?.data || [];
       const followers = Array.isArray(followersRaw) ? followersRaw : [];
       
       const followItem = followers.find((item) => {
-        const followingId = item.following || item.user;
+        const followingId = item.following || item.id || item.following;
         return followingId && String(followingId) === String(postUserId);
       });
 
@@ -773,7 +773,7 @@ const Post = ({ post, profile }: PostProps) => {
           <button 
             onClick={handleFollowClick}
             disabled={isFollowing || isUnfollowing}
-            className={`text-sm text-white cursor-pointer px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
+            className={`text-xs cursor-pointer text-white px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
               (isFollowing || isUnfollowing)
                 && "bg-slate-600 opacity-50 cursor-not-allowed" 
                

@@ -5,7 +5,7 @@ import { FiX } from "react-icons/fi";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FaHome } from "react-icons/fa";
-import { categories } from "../Categories/categoriesData";
+import { useGetMarketplaceCategoriesQuery } from "@/store/marketplaceApi";
 
 interface MarketplaceSidebarProps {
   isOpen: boolean;
@@ -21,6 +21,8 @@ export default function MarketplaceSidebar({
   );
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: categoriesResponse, isLoading, isError } = useGetMarketplaceCategoriesQuery();
+  const categories = categoriesResponse?.data || categoriesResponse?.results?.data || [];
 
   // Convert to camelCase format (e.g., "Home & Garden" -> "homeAndGarden")
   const toCamelCase = (str: string) => {
@@ -86,60 +88,82 @@ export default function MarketplaceSidebar({
 
         <nav className="p-4 h-[90vh] flex flex-col justify-between py-10">
           <ul className="space-y-1 flex-1 overflow-y-auto pr-2">
-            {categories.map((category) => {
-              const isExpanded = isCategoryExpanded(category.name);
-              const categoryParam = toCamelCase(category.name);
-              const isCategoryActive = currentCategory === categoryParam;
-              return (
-                <li key={category.name}>
-                  <button
-                    onClick={() => handleCategoryClick(category.name)}
-                    className={`w-full flex cursor-pointer items-center justify-between px-3 py-2 rounded-md text-base transition-all duration-150 text-left ${
-                      isCategoryActive
-                        ? "bg-[#fc859d3a] text-white"
-                        : "hover:bg-white/10 text-gray-100"
-                    }`}
-                  >
-                    <span className="font-medium">{category.name}</span>
-                    <span
-                      className={`inline-block w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-gray-300 transition-transform duration-300 ${
-                        isExpanded ? "" : "-rotate-90"
+            {isLoading ? (
+              <li className="px-3 py-2">
+                <div className="animate-pulse space-y-2">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="h-10 bg-white/10 rounded-md" />
+                  ))}
+                </div>
+              </li>
+            ) : isError ? (
+              <li className="px-3 py-2">
+                <p className="text-red-400 text-sm">Failed to load categories</p>
+              </li>
+            ) : categories.length === 0 ? (
+              <li className="px-3 py-2">
+                <p className="text-gray-400 text-sm">No categories available</p>
+              </li>
+            ) : (
+              categories.map((category) => {
+                const isExpanded = isCategoryExpanded(category.name);
+                const categoryParam = toCamelCase(category.name);
+                const isCategoryActive = currentCategory === categoryParam;
+                return (
+                  <li key={category.id}>
+                    <button
+                      onClick={() => handleCategoryClick(category.name)}
+                      className={`w-full flex cursor-pointer items-center justify-between px-3 py-2 rounded-md text-base transition-all duration-150 text-left ${
+                        isCategoryActive
+                          ? "bg-[#fc859d3a] text-white"
+                          : "hover:bg-white/10 text-gray-100"
                       }`}
-                    />
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <ul className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
-                      {category.items.map((item) => {
-                        const href = generateSubcategoryHref(category.name, item);
-                        const subcategoryParam = toCamelCase(item);
-                        const isActive =
-                          currentCategory === categoryParam &&
-                          currentSubcategory === subcategoryParam;
-                        return (
-                          <li key={item}>
-                            <Link
-                              href={href}
-                              onClick={onClose}
-                              className={`block px-3 py-1.5 rounded-md text-sm transition-all duration-150 ${
-                                isActive
-                                  ? "bg-[#fc859d3a] text-white"
-                                  : "hover:bg-white/10 text-gray-300"
-                              }`}
-                            >
-                              {item}
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </li>
-              );
-            })}
+                    >
+                      <span className="font-medium">{category.name}</span>
+                      {category.subcategories.length > 0 && (
+                        <span
+                          className={`inline-block w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-gray-300 transition-transform duration-300 ${
+                            isExpanded ? "" : "-rotate-90"
+                          }`}
+                        />
+                      )}
+                    </button>
+                    {category.subcategories.length > 0 && (
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                          isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        <ul className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
+                          {category.subcategories.map((subcategory) => {
+                            const href = generateSubcategoryHref(category.name, subcategory.name);
+                            const subcategoryParam = toCamelCase(subcategory.name);
+                            const isActive =
+                              currentCategory === categoryParam &&
+                              currentSubcategory === subcategoryParam;
+                            return (
+                              <li key={subcategory.id}>
+                                <Link
+                                  href={href}
+                                  onClick={onClose}
+                                  className={`block px-3 py-1.5 rounded-md text-sm transition-all duration-150 ${
+                                    isActive
+                                      ? "bg-[#fc859d3a] text-white"
+                                      : "hover:bg-white/10 text-gray-300"
+                                  }`}
+                                >
+                                  {subcategory.name}
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                );
+              })
+            )}
           </ul>
           <Link
             href="/"
