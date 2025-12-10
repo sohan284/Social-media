@@ -83,7 +83,7 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
         // Load existing media
         const apiBase = getApiBaseUrl();
         const baseUrl = apiBase.endsWith("/") ? apiBase : `${apiBase}/`;
-        const existingMedia: MediaPreview[] = (post.media_file || []).map((path) => ({
+        const existingMedia: MediaPreview[] = (post.media_file || []).map((path: string) => ({
           id: `existing-${path}`,
           url: `${baseUrl}media/${path.startsWith("/") ? path.slice(1) : path}`,
           isExisting: true,
@@ -91,7 +91,7 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
         }));
         setMediaPreviews(existingMedia);
         previewsRef.current = existingMedia;
-      } else if (post.link) {
+      } else if (post.link && typeof post.link === 'string') {
         setActiveTab("link");
         setValue("postType", "link");
         setValue("linkUrl", post.link);
@@ -395,30 +395,64 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
                     {mediaPreviews.slice(0, 5).map((media, idx) => {
                       const isOverflowTile =
                         idx === 4 && mediaPreviews.length > 5;
+                      const isVideo = media.file 
+                        ? media.file.type.startsWith('video/')
+                        : media.url && (media.url.includes('.mp4') || media.url.includes('.mov') || media.url.includes('.webm') || media.url.includes('video'));
+                      const isImage = media.file 
+                        ? media.file.type.startsWith('image/')
+                        : !isVideo;
+                      
                       return (
                         <div
                           key={media.id}
                           className="relative w-full h-28 rounded-lg overflow-hidden border border-white/10 group"
                         >
-                          <Image
-                            src={media.url}
-                            alt={`Preview ${idx + 1}`}
-                            fill
-                            unoptimized
-                            sizes="(max-width: 640px) 50vw, 20vw"
-                            className="object-cover"
-                          />
+                          {isImage ? (
+                            <Image
+                              src={media.url}
+                              alt={`Preview ${idx + 1}`}
+                              fill
+                              unoptimized
+                              sizes="(max-width: 640px) 50vw, 20vw"
+                              className="object-cover"
+                            />
+                          ) : isVideo ? (
+                            <div className="relative w-full h-full">
+                              <video
+                                src={media.url}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                                playsInline
+                                onLoadedMetadata={(e) => {
+                                  const video = e.currentTarget;
+                                  video.currentTime = 0.1;
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none z-10">
+                                <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                                  <svg
+                                    className="w-6 h-6 text-white ml-1"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
                           {isOverflowTile && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-lg font-semibold">
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-lg font-semibold z-10">
                               +{mediaPreviews.length - 4} more
                             </div>
                           )}
                           <button
                             type="button"
                             onClick={() => handleRemoveMedia(media.id)}
-                            className="absolute top-2 right-2 rounded-full bg-black/70 p-2 text-white hover:bg-black/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-20"
                           >
-                            <IoMdClose size={16} />
+                            <IoMdClose size={14} />
                           </button>
                         </div>
                       );
