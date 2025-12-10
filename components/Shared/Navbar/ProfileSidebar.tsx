@@ -41,12 +41,12 @@ const profileItems = [
   },
   {
     label: "Privacy",
-    href: "/profile/privacy",
+    href: "/main/privacy",
     icon: FiShield,
   },
   {
     label: "Help & Support",
-    href: "/profile/help-support",
+    href: "/main/help-support",
     icon: FiHelpCircle,
   },
 ];
