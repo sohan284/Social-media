@@ -443,7 +443,7 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-">
-              <button
+              {/* <button
                 type="button"
                 onClick={handleDraft}
                 disabled={isSubmitting || isCreating}
@@ -451,7 +451,7 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
               >
                 <FiSave size={18} />
                 Save as Draft
-              </button>
+              </button> */}
               <button
                 type="button"
                 onClick={handlePublish}

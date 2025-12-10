@@ -2,17 +2,21 @@ import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { IoImageOutline } from 'react-icons/io5';
+import { IoImageOutline, IoPersonOutline } from 'react-icons/io5';
 
 const ProfileSidebar = () => {
     const router = useRouter();
-    const { data: profileResponse, isLoading: isProfileLoading } = useGetCurrentUserProfileQuery();
+    const { data: profileResponse } = useGetCurrentUserProfileQuery();
     const profile = profileResponse?.data;
     return (
         <div className='space-y-4'>
             <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-2xl'>
                 <div className='relative'>
-                    <Image src={profile?.cover_photo || "/post.jpg"} alt="Cover Image" width={500} height={500} className='rounded-t-2xl h-32 object-cover' />
+                    {profile?.cover_photo ? (
+                        <Image src={profile.cover_photo} alt="Cover Image" width={500} height={500} className='rounded-t-2xl h-32 object-cover' />
+                    ) : (
+                        <div className=' rounded-t-2xl h-32 bg-gradient-to-br from-[#6c3f79] from-10% via-[#081a55] via-99% to-[#995a98] to-100%' />
+                    )}
                     <button
                         onClick={() => router.push('/main/edit-profile')}
                         className='bg-[#06133F]/75 backdrop-blur-[17.5px] hover:bg-[#06133F]/90 transition-all duration-300 text-white p-2 rounded-full absolute bottom-4 right-4 cursor-pointer'
@@ -48,53 +52,68 @@ const ProfileSidebar = () => {
             <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-2xl p-4'>
                 <h3 className='text-white text-lg font-semibold mb-4'>Settings</h3>
                 <div className='space-y-4'>
-                    {/* Profile Option */}
-                    <div className='flex items-center justify-between'>
-                        <div className='flex items-center space-x-3'>
-                            <div className='w-8 h-8 bg-white/20 rounded-full flex items-center justify-center'>
-                                <Image src={profile?.avatar || "/profile.jpg"} alt="profile" width={32} height={32} className='rounded-full object-cover' />
-                            </div>
-                            <div>
-                                <h4 className='text-white font-medium'>Profile</h4>
-                                <p className='text-gray-400 text-sm'>Customize your profile.</p>
-                            </div>
-                        </div>
-                        <button className='text-white text-sm hover:text-gray-300 transition-colors'>
-                            Update
-                        </button>
-                    </div>
-
                     {/* Avatar Option */}
-                    <div className='flex items-center justify-between'>
+                    <button 
+                        onClick={() => router.push('/main/edit-profile')}
+                        className='w-full flex items-center justify-between p-3 hover:bg-[#06133F]/50 rounded-lg transition-colors group'
+                    >
                         <div className='flex items-center space-x-3'>
-                            <div className='w-8 h-8 bg-white/20 rounded-full flex items-center justify-center p-2'>
-                                <IoImageOutline size={16} />
+                            <div className='w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-white/20 flex-shrink-0'>
+                                {profile?.avatar ? (
+                                    <Image src={profile.avatar} alt="avatar" width={48} height={48} className='rounded-full object-cover w-full h-full' />
+                                ) : (
+                                    <div className='w-full h-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center'>
+                                        <IoPersonOutline className='text-white' size={24} />
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <h4 className='text-white font-medium'>Avatar</h4>
+                            <div className='text-left'>
+                                <h4 className='text-white font-medium group-hover:text-gray-200 transition-colors'>Avatar</h4>
                                 <p className='text-gray-400 text-sm'>Edit your avatar or upload an image.</p>
                             </div>
                         </div>
-                        <button className='text-white text-sm hover:text-gray-300 transition-colors'>
-                            Update
-                        </button>
-                    </div>
+                        <IoImageOutline className='text-gray-400 group-hover:text-white transition-colors' size={18} />
+                    </button>
 
-                    {/* Curate Profile Option */}
-                    <div className='flex items-center justify-between'>
+                    {/* Cover Photo Option */}
+                    <button 
+                        onClick={() => router.push('/main/edit-profile')}
+                        className='w-full flex items-center justify-between p-3 hover:bg-[#06133F]/50 rounded-lg transition-colors group'
+                    >
                         <div className='flex items-center space-x-3'>
-                            <div className='w-8 h-8 bg-white/20 rounded-full flex items-center justify-center p-2'>
-                                <IoImageOutline size={16} />
+                            <div className='w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden border border-white/20 flex-shrink-0'>
+                                {profile?.cover_photo ? (
+                                    <Image src={profile.cover_photo} alt="cover photo" width={48} height={48} className='object-cover w-full h-full' />
+                                ) : (
+                                    <div className='w-full h-full bg-gradient-to-br from-[#6c3f79] from-10% via-[#081a55] via-99% to-[#995a98] to-100% flex items-center justify-center'>
+                                        <IoImageOutline className='text-white' size={20} />
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <h4 className='text-white font-medium'>Curate your profile</h4>
-                                <p className='text-gray-400 text-sm'>Manage what people see when they visit your profile.</p>
+                            <div className='text-left'>
+                                <h4 className='text-white font-medium group-hover:text-gray-200 transition-colors'>Cover Photo</h4>
+                                <p className='text-gray-400 text-sm'>Update your cover photo.</p>
                             </div>
                         </div>
-                        <button className='text-white text-sm hover:text-gray-300 transition-colors'>
-                            Update
-                        </button>
-                    </div>
+                        <IoImageOutline className='text-gray-400 group-hover:text-white transition-colors' size={18} />
+                    </button>
+
+                    {/* Details Option */}
+                    <button 
+                        onClick={() => router.push('/main/edit-profile')}
+                        className='w-full flex items-center justify-between p-3 hover:bg-[#06133F]/50 rounded-lg transition-colors group'
+                    >
+                        <div className='flex items-center space-x-3'>
+                            <div className='w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center border border-white/20 flex-shrink-0'>
+                                <IoPersonOutline className='text-white' size={24} />
+                            </div>
+                            <div className='text-left'>
+                                <h4 className='text-white font-medium group-hover:text-gray-200 transition-colors'>Profile Details</h4>
+                                <p className='text-gray-400 text-sm'>Manage your profile information.</p>
+                            </div>
+                        </div>
+                        <IoImageOutline className='text-gray-400 group-hover:text-white transition-colors' size={18} />
+                    </button>
                 </div>
             </div>
         </div>

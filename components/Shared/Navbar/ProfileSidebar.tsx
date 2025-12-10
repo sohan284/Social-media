@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { FaRegCircleUser } from "react-icons/fa6";
+import { IoPersonOutline } from "react-icons/io5";
 import { UserProfile } from "@/store/authApi";
 import { useRouter } from "next/navigation";
 import { clearStoredTokens, getStoredAccessToken } from "@/lib/auth";
@@ -161,7 +162,7 @@ const ProfileSidebar = ({
   const profileImage =
     (profile?.profile_image as string) ||
     (profile?.avatar as string) ||
-    "/profile.jpg";
+    null;
   const profileName =
     profile?.full_name ||
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
@@ -196,14 +197,20 @@ const ProfileSidebar = ({
 
         <div className="p-6">
           <div className="flex flex-col items-center mb-6 text-white">
-            <div className="rounded-full h-[80px] w-[80px] overflow-hidden border border-white/30 mb-4 bg-gray-700">
-              <Image
-                src={profileImage}
-                alt={profileName || "profile"}
-                width={80}
-                height={80}
-                className="h-full w-full object-cover"
-              />
+            <div className="rounded-full h-[80px] w-[80px] overflow-hidden border border-white/30 mb-4">
+              {profileImage ? (
+                <Image
+                  src={profileImage}
+                  alt={profileName || "profile"}
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center">
+                  <IoPersonOutline className="text-white" size={40} />
+                </div>
+              )}
             </div>
             {isLoadingProfile ? (
               <div className="text-center space-y-1 w-full animate-pulse">
