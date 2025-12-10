@@ -1,10 +1,10 @@
 import React from 'react';
-import Categories from '../../../../../components/Features/Categories/Categories';
+import ManageCategories from '../../../../../components/Features/Categories/ManageCategories';
 
 export default function CategoriesPage() {
   return (
     <div>
-      <Categories />
+      <ManageCategories />
     </div>
   );
 }

@@ -98,7 +98,10 @@ const SidebarNavLink = () => {
       </div>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-1.5 px-2.5 rounded-2xl">
         <h3 className="text-base text-[#BCB3B3] px-8 mb-7">Categories</h3>
-        <button className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
+        <button 
+          onClick={() => router.push('/main/join-categories')}
+          className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer"
+        >
           <FiPlus size={24} /> Join Categories
         </button>
         <button 
