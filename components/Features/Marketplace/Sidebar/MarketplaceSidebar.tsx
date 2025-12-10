@@ -76,8 +76,8 @@ export default function MarketplaceSidebar({
         className={`fixed lg:static top-0 left-0 w-64 h-full bg-black/70 lg:bg-transparent transform transition-transform duration-300 ease-in-out z-40
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
-        <div className="flex items-center justify-between p-4 pb-9 border-b border-white/10">
-          <h1 className="text-lg font-semibold">Virtual Store</h1>
+        <div className="flex items-center justify-between p-6 pb-7 border-b border-white/10">
+          <h1 className="text-xl font-semibold">Virtual Store</h1>
           <button
             className="lg:hidden text-white"
             onClick={onClose}
@@ -86,7 +86,7 @@ export default function MarketplaceSidebar({
           </button>
         </div>
 
-        <nav className="p-4 h-[90vh] flex flex-col justify-between py-10">
+        <nav className="p-4 h-[calc(100vh-120px)] flex flex-col justify-between py-10">
           <ul className="space-y-1 flex-1 overflow-y-auto pr-2">
             {isLoading ? (
               <li className="px-3 py-2">
