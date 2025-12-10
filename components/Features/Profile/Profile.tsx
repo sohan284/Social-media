@@ -2,15 +2,15 @@
 
 import React, { useMemo, useState } from "react";
 import ProfileHeader from "./_components/ProfileHeader";
-import AvatarModal from "./_components/AvatarModal";
 import Post from "../Main/Post/Post";
 import ProfileSidebar from "./_components/ProfileSidebar";
 import { useGetMyPostsQuery } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import CreatePost from "../CreatePost/CreatePost";
+import { useRouter } from "next/navigation";
 
 const Profile = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "posts">("overview");
   const { data: postsResponse, isLoading, isError } = useGetMyPostsQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
@@ -25,8 +25,9 @@ const Profile = () => {
     );
   }, [postsResponse]);
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const openModal = () => {
+    router.push('/main/edit-profile');
+  };
 
   const renderPosts = () => {
     if (isLoading) {
@@ -121,8 +122,6 @@ const Profile = () => {
           <ProfileSidebar />
         </div>
       </div>
-
-      <AvatarModal isOpen={isModalOpen} onClose={closeModal} />
     </>
   );
 };
