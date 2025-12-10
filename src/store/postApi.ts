@@ -10,6 +10,16 @@ export interface CreatePostRequest {
   community?: number | string;
 }
 
+export interface UpdatePostRequest {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  link?: string;
+  media_files?: File[];
+  post_type?: "media" | "text" | "link";
+  community?: number | string;
+}
+
 export interface CreatePostResponse {
   id?: number | string;
   message?: string;
@@ -127,8 +137,8 @@ export const postApi = baseApi.injectEndpoints({
         if (typeof data.link === "string" && data.link.trim().length > 0) {
           formData.append("link", data.link);
         }
-        if (Array.isArray(data.tags)) {
-          data.tags.forEach((tag) => formData.append("tags", tag));
+        if (Array.isArray(data.tags) && data.tags.length > 0) {
+          formData.append("tags", JSON.stringify(data.tags));
         }
         if (Array.isArray(data.media_files)) {
           data.media_files.forEach((file) =>
@@ -147,11 +157,110 @@ export const postApi = baseApi.injectEndpoints({
         };
       },
     }),
+    updatePost: builder.mutation<CreatePostResponse, { postId: number | string; data: UpdatePostRequest }>({
+      query: ({ postId, data }) => {
+        const formData = new FormData();
+        if (data.title) {
+          formData.append("title", data.title);
+        }
+        if (typeof data.content === "string") {
+          formData.append("content", data.content);
+        }
+        if (typeof data.link === "string" && data.link.trim().length > 0) {
+          formData.append("link", data.link);
+        }
+        if (Array.isArray(data.tags) && data.tags.length > 0) {
+          formData.append("tags", JSON.stringify(data.tags));
+        }
+        if (Array.isArray(data.media_files)) {
+          data.media_files.forEach((file) =>
+            formData.append("media_files", file)
+          );
+        }
+        if (data.community !== undefined) {
+          formData.append("community", data.community.toString());
+        }
+        if (data.post_type) {
+          formData.append("post_type", data.post_type.toString());
+        }
+        return {
+          url: `/api/posts/${postId}/`,
+          method: "PATCH",
+          body: formData,
+        };
+      },
+      async onQueryStarted({ postId, data }, { dispatch, queryFulfilled }) {
+        // Optimistically update post in cache
+        const updatePostInCache = (draft: GetPostsResponse) => {
+          const updatePost = (posts: PostItem[] | undefined) => {
+            if (!posts) return;
+            const post = posts.find((p) => p.id === postId);
+            if (post) {
+              if (data.title) post.title = data.title;
+              if (data.content !== undefined) post.content = data.content;
+              if (data.tags) post.tags = data.tags;
+              if (data.link) post.link = data.link;
+            }
+          };
+          if (draft.posts) updatePost(draft.posts);
+          if (draft.data) updatePost(draft.data);
+          if (draft.results) updatePost(draft.results.data);
+        };
+
+        const patchResults = [
+          dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostInCache)),
+          dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache)),
+        ];
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResults.forEach((patch) => patch.undo());
+        }
+      },
+    }),
+    deletePost: builder.mutation<void, { postId: number | string }>({
+      query: ({ postId }) => ({
+        url: `/api/posts/${postId}/`,
+        method: "DELETE",
+      }),
+      async onQueryStarted({ postId }, { dispatch, queryFulfilled }) {
+        // Optimistically remove post from cache
+        const removePostFromCache = (draft: GetPostsResponse) => {
+          const removePost = (posts: PostItem[] | undefined) => {
+            if (!posts) return;
+            const index = posts.findIndex((p) => p.id === postId);
+            if (index !== -1) {
+              posts.splice(index, 1);
+            }
+          };
+          if (draft.posts) removePost(draft.posts);
+          if (draft.data) removePost(draft.data);
+          if (draft.results) removePost(draft.results.data);
+        };
+
+        const patchResults = [
+          dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, removePostFromCache)),
+          dispatch(postApi.util.updateQueryData("getMyPosts", undefined, removePostFromCache)),
+        ];
+
+        try {
+          await queryFulfilled;
+          // Invalidate queries to refetch and ensure data is up to date
+          dispatch(postApi.util.invalidateTags([{ type: 'UserProfile' }]));
+          // Also directly refetch getMyPosts to ensure instant update
+          dispatch(postApi.endpoints.getMyPosts.initiate(undefined, { forceRefetch: true }));
+        } catch {
+          patchResults.forEach((patch) => patch.undo());
+        }
+      },
+    }),
     getMyPosts: builder.query<GetPostsResponse, void>({
       query: () => ({
         url: "/api/posts/my_posts/",
         method: "GET",
       }),
+      providesTags: () => [{ type: 'UserProfile' }],
     }),
     getNewsFeed: builder.query<GetPostsResponse, void>({
       query: () => ({
@@ -330,7 +439,9 @@ export const postApi = baseApi.injectEndpoints({
 });
 
 export const { 
-  useCreatePostMutation, 
+  useCreatePostMutation,
+  useUpdatePostMutation,
+  useDeletePostMutation,
   useGetMyPostsQuery, 
   useGetNewsFeedQuery,
   useGetCommunityPostsQuery,

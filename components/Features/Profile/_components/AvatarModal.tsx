@@ -1,8 +1,12 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { IoClose, IoImageOutline } from 'react-icons/io5';
+import { IoClose, IoImageOutline, IoPersonOutline } from 'react-icons/io5';
 import { useForm } from 'react-hook-form';
 import { FiUploadCloud } from 'react-icons/fi';
+import { useGetCurrentUserProfileQuery, useUpdateUserProfileMutation } from '@/store/authApi';
+import { toast } from 'sonner';
+import Image from 'next/image';
+import { getApiBaseUrl } from '@/lib/utils';
 
 interface AvatarModalProps {
     isOpen: boolean;
@@ -16,6 +20,10 @@ interface FormData {
 const AvatarModal = ({ isOpen, onClose }: AvatarModalProps) => {
     const [preview, setPreview] = useState<string | null>(null);
     const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>();
+    const { data: profileResponse } = useGetCurrentUserProfileQuery(undefined, { skip: !isOpen });
+    const [updateProfile, { isLoading: isUpdating }] = useUpdateUserProfileMutation();
+    const profile = profileResponse?.data;
+    const currentAvatar = profile?.avatar || profile?.profile_image;
 
     const watchedFile = watch('image');
 
@@ -40,9 +48,20 @@ const AvatarModal = ({ isOpen, onClose }: AvatarModalProps) => {
             };
             reader.readAsDataURL(file);
         } else {
-            setPreview(null);
+            // Show current avatar if no new file selected
+            setPreview(currentAvatar ? (currentAvatar.startsWith('http') ? currentAvatar : `${getApiBaseUrl()}${currentAvatar.startsWith('/') ? currentAvatar.slice(1) : currentAvatar}`) : null);
         }
-    }, [watchedFile]);
+    }, [watchedFile, currentAvatar]);
+
+    // Set initial preview when modal opens
+    useEffect(() => {
+        if (isOpen && currentAvatar && !watchedFile) {
+            const avatarUrl = currentAvatar.startsWith('http') 
+                ? currentAvatar 
+                : `${getApiBaseUrl()}${currentAvatar.startsWith('/') ? currentAvatar.slice(1) : currentAvatar}`;
+            setPreview(avatarUrl);
+        }
+    }, [isOpen, currentAvatar, watchedFile]);
 
     const onSubmit = (data: FormData) => {
         console.log('Uploaded file:', data.image[0]);

@@ -2,7 +2,7 @@
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import Image from 'next/image';
 import React from 'react';
-import { IoImageOutline } from 'react-icons/io5';
+import { IoImageOutline, IoPersonOutline } from 'react-icons/io5';
 
 interface ProfileHeaderProps {
     onAvatarClick: () => void;
@@ -16,7 +16,13 @@ const ProfileHeader = ({ onAvatarClick }: ProfileHeaderProps) => {
             {/* Header */}
             <div className='flex items-center gap-4'>
                 <div className='relative'>
-                    <Image src={profile?.avatar || "/profile.jpg"} alt="profile" width={60} height={60} className='rounded-full object-cover h-12 w-12' />
+                    {profile?.avatar ? (
+                        <Image src={profile.avatar} alt="profile" width={60} height={60} className='rounded-full object-cover h-12 w-12' />
+                    ) : (
+                        <div className='h-12 w-12 rounded-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center'>
+                            <IoPersonOutline className='text-white' size={28} />
+                        </div>
+                    )}
                     <button 
                         onClick={onAvatarClick}
                         className='bg-[#06133F]/75 backdrop-blur-[17.5px] hover:bg-[#06133F]/90 transition-all duration-300 text-white p-2 rounded-full absolute -bottom-1 -right-2 cursor-pointer'

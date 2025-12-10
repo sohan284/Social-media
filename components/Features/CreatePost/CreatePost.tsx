@@ -331,6 +331,9 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
                   <p className="text-gray-400 text-sm">
                     Images and videos up to 10MB each
                   </p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    Supported: JPG, PNG, GIF, MP4, MOV, WEBM
+                  </p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -345,6 +348,9 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
                     {mediaPreviews.slice(0, 5).map((media, idx) => {
                       const isOverflowTile =
                         idx === 4 && mediaPreviews.length > 5;
+                      const isVideo = media.file?.type?.startsWith('video/') ?? false;
+                      const isImage = media.file?.type?.startsWith('image/') ?? false;
+                      
                       return (
                         <button
                           type="button"
@@ -352,19 +358,57 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
                           onClick={() => setIsMediaModalOpen(true)}
                           className="relative w-full h-28 rounded-lg overflow-hidden border border-white/10 group"
                         >
-                          <Image
-                            src={media.url}
-                            alt={`Preview ${idx + 1}`}
-                            fill
-                            unoptimized
-                            sizes="(max-width: 640px) 50vw, 20vw"
-                            className="object-cover"
-                          />
+                          {isImage ? (
+                            <Image
+                              src={media.url}
+                              alt={`Preview ${idx + 1}`}
+                              fill
+                              unoptimized
+                              sizes="(max-width: 640px) 50vw, 20vw"
+                              className="object-cover"
+                            />
+                          ) : isVideo ? (
+                            <div className="relative w-full h-full">
+                              <video
+                                src={media.url}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                                playsInline
+                                onLoadedMetadata={(e) => {
+                                  // Ensure video loads properly
+                                  const video = e.currentTarget;
+                                  video.currentTime = 0.1; // Set to first frame for thumbnail
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none z-10">
+                                <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                                  <svg
+                                    className="w-6 h-6 text-white ml-1"
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
                           {isOverflowTile && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-lg font-semibold">
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-lg font-semibold z-10">
                               +{mediaPreviews.length - 4} more
                             </div>
                           )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveMedia(media.id);
+                            }}
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-20"
+                          >
+                            <IoMdClose size={14} />
+                          </button>
                         </button>
                       );
                     })}
@@ -399,7 +443,7 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-">
-              <button
+              {/* <button
                 type="button"
                 onClick={handleDraft}
                 disabled={isSubmitting || isCreating}
@@ -407,7 +451,7 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
               >
                 <FiSave size={18} />
                 Save as Draft
-              </button>
+              </button> */}
               <button
                 type="button"
                 onClick={handlePublish}
@@ -441,33 +485,63 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
           </DialogHeader>
           {mediaPreviews.length === 0 ? (
             <p className="text-gray-400 text-sm">
-              No media selected yet. Upload images to preview them here.
+              No media selected yet. Upload images or videos to preview them here.
             </p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {mediaPreviews.map((media) => (
-                <div
-                  key={media.id}
-                  className="relative w-full h-48 rounded-xl overflow-hidden border border-white/10"
-                >
-                  <Image
-                    src={media.url}
-                    alt="Uploaded media"
-                    fill
-                    unoptimized
-                    sizes="(max-width: 640px) 100vw, 33vw"
-                    className="object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMedia(media.id)}
-                    className="absolute top-2 right-2 rounded-full bg-black/70 p-2 text-white hover:bg-black/90"
+              {mediaPreviews.map((media) => {
+                const isVideo = media.file?.type?.startsWith('video/') ?? false;
+                const isImage = media.file?.type?.startsWith('image/') ?? false;
+                
+                return (
+                  <div
+                    key={media.id}
+                    className="relative w-full h-48 rounded-xl overflow-hidden border border-white/10 group"
                   >
-                    <IoMdClose size={16} />
-                    <span className="sr-only">Remove media</span>
-                  </button>
-                </div>
-              ))}
+                    {isImage ? (
+                      <Image
+                        src={media.url}
+                        alt="Uploaded image"
+                        fill
+                        unoptimized
+                        sizes="(max-width: 640px) 100vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : isVideo ? (
+                      <div className="relative w-full h-full">
+                        <video
+                          src={media.url}
+                          className="w-full h-full object-cover rounded-xl"
+                          controls
+                          muted
+                          preload="metadata"
+                          playsInline
+                        />
+                        <div className="absolute top-2 left-2 px-2 py-1 bg-black/70 rounded text-white text-xs font-medium">
+                          Video
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <p className="text-white/60 text-sm">Unsupported file type</p>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMedia(media.id)}
+                      className="absolute top-2 right-2 rounded-full bg-black/70 p-2 text-white hover:bg-red-600 transition-colors"
+                    >
+                      <IoMdClose size={16} />
+                      <span className="sr-only">Remove media</span>
+                    </button>
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 rounded text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      {media.file.name.length > 20 
+                        ? `${media.file.name.substring(0, 20)}...` 
+                        : media.file.name}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </DialogContent>

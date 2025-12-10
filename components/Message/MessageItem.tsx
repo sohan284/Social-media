@@ -38,7 +38,8 @@ const MessageItem = ({ message, onUserSelect }: MessageItemProps) => {
       avatar: message.sender.avatar,
       username: message.sender.username,
       isOnline: message.isOnline,
-      timestamp: message.timestamp
+      timestamp: message.timestamp,
+      roomId: message.roomId || message.id, // Pass room ID if available
     };
     onUserSelect(user);
   };

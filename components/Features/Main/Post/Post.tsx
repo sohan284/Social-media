@@ -9,10 +9,12 @@ import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
-import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowersQuery } from "@/store/postApi";
+import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowersQuery, useDeletePostMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import EditPost from "../../EditPost/EditPost";
 
 interface Profile {
   id: string | number;
@@ -41,8 +43,11 @@ const Post = ({ post, profile }: PostProps) => {
   const [editText, setEditText] = useState("");
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(10);
   const [commentToDelete, setCommentToDelete] = useState<number | string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<number | string | null>(null);
   
   const [likePost, { isLoading: isLiking }] = useLikePostMutation();
+  const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
   const { data: commentsData, isLoading: isLoadingComments } = useGetCommentsQuery(post?.id, {
     skip: !showComments || !post?.id,
   });
@@ -121,6 +126,49 @@ const Post = ({ post, profile }: PostProps) => {
       return `${baseUrl}media/${cleanPath}`;
     });
   }, [post?.media_file]);
+
+  // Helper function to detect if a media URL is a video
+  const isVideoUrl = (url: string, index?: number): boolean => {
+    // Check original media_file path first (most reliable)
+    if (post?.media_file && typeof index === 'number' && post.media_file[index]) {
+      const mediaPath = post.media_file[index].toLowerCase();
+      const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv'];
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+      
+      // Check if it ends with video extension
+      const hasVideoExt = videoExtensions.some(ext => mediaPath.endsWith(ext));
+      // Check if it ends with image extension (to exclude false positives)
+      const hasImageExt = imageExtensions.some(ext => mediaPath.endsWith(ext));
+      
+      if (hasImageExt) return false; // Definitely an image
+      if (hasVideoExt) return true; // Definitely a video
+    }
+    
+    // Fallback: Check URL filename extension
+    const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv'];
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+    const lowerUrl = url.toLowerCase();
+    
+    // Extract filename from URL (remove query params if any)
+    const urlWithoutParams = lowerUrl.split('?')[0];
+    const urlParts = urlWithoutParams.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    
+    // Check if filename ends with image extension first (to exclude false positives)
+    if (imageExtensions.some(ext => filename.endsWith(ext))) {
+      return false;
+    }
+    
+    // Check if filename ends with video extension
+    if (videoExtensions.some(ext => filename.endsWith(ext))) {
+      return true;
+    }
+    
+    // Last resort: check URL path (but be cautious)
+    // Only return true if URL explicitly contains '/video/' and not '/image/'
+    return lowerUrl.includes('/video/') && !lowerUrl.includes('/image/') && !lowerUrl.includes('/media/images/');
+  };
+
   const comments = useMemo(() => {
     const source =
       commentsData?.data ??
@@ -349,6 +397,38 @@ const Post = ({ post, profile }: PostProps) => {
   
   // Check if post is created by another user (not the current user)
   const isOtherUserPost = postUserId && profile?.id && String(postUserId) !== String(profile.id);
+  
+  // Check if post belongs to current user
+  const isCurrentUserPost = postUserId && profile?.id && String(postUserId) === String(profile.id);
+
+  const handleEditPost = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeletePost = () => {
+    if (!post?.id) return;
+    setPostToDelete(post.id);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!post?.id || postToDelete == null) return;
+    try {
+      await deletePost({ postId: postToDelete }).unwrap();
+      setPostToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+    } finally {
+      setPostToDelete(null);
+    }
+  };
+
+  const cancelDeletePost = () => {
+    setPostToDelete(null);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditModalOpen(false);
+  };
 
   const renderComment = (comment: CommentItem & { replies: CommentItem[] }, depth = 0) => {
     const commentAuthor = comment.author || comment.user;
@@ -535,28 +615,131 @@ const Post = ({ post, profile }: PostProps) => {
     const displayImages = imageCount > 5 ? allMediaUrls.slice(0, 5) : allMediaUrls;
     const remainingCount = imageCount > 5 ? imageCount - 5 : 0;
 
-    // 1 image: full width
+    // 1 media: full width
     if (imageCount === 1) {
+      const isVideo = isVideoUrl(allMediaUrls[0], 0);
       return (
-        <div className="rounded-lg overflow-hidden cursor-pointer" onClick={() => handleImageClick(0)}>
-          <Image
-            src={allMediaUrls[0]}
-            alt={post?.title || "post media"}
-            width={800}
-            height={400}
-            className="w-full h-[50vh] object-contain"
-            unoptimized
-          />
+        <div className="rounded-lg overflow-hidden cursor-pointer relative" onClick={() => handleImageClick(0)}>
+          {isVideo ? (
+            <div className="relative w-full h-[50vh]">
+              <video
+                src={allMediaUrls[0]}
+                className="w-full h-full object-contain"
+                muted
+                preload="metadata"
+                playsInline
+                onLoadedMetadata={(e) => {
+                  const video = e.currentTarget;
+                  video.currentTime = 0.1;
+                }}
+              />
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                <div className="w-16 h-16 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                  <svg
+                    className="w-8 h-8 text-white ml-1"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Image
+              src={allMediaUrls[0]}
+              alt={post?.title || "post media"}
+              width={800}
+              height={400}
+              className="w-full h-[50vh] object-contain"
+              unoptimized
+            />
+          )}
         </div>
       );
     }
 
-    // 2 images: 2 column grid
+    // 2 media: 2 column grid
     if (imageCount === 2) {
       return (
         <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
-          {displayImages.map((url, idx) => (
-            <div key={idx} className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(idx)}>
+          {displayImages.map((url, idx) => {
+            const isVideo = isVideoUrl(url, idx);
+            return (
+              <div key={idx} className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(idx)}>
+                {isVideo ? (
+                  <>
+                    <video
+                      src={url}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      muted
+                      preload="metadata"
+                      playsInline
+                      onLoadedMetadata={(e) => {
+                        const video = e.currentTarget;
+                        video.currentTime = 0.1;
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                      <div className="w-10 h-10 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                        <svg
+                          className="w-5 h-5 text-white ml-1"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <Image
+                    src={url}
+                    alt={`${post?.title || "post"} ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // 3 media: first full width, second row 2 columns
+    if (imageCount === 3) {
+      const renderMediaItem = (url: string, idx: number, className: string) => {
+        const isVideo = isVideoUrl(url, idx);
+        return (
+          <div className={className} onClick={() => handleImageClick(idx)}>
+            {isVideo ? (
+              <>
+                <video
+                  src={url}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  muted
+                  preload="metadata"
+                  playsInline
+                  onLoadedMetadata={(e) => {
+                    const video = e.currentTarget;
+                    video.currentTime = 0.1;
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-5 h-5 text-white ml-1"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </>
+            ) : (
               <Image
                 src={url}
                 alt={`${post?.title || "post"} ${idx + 1}`}
@@ -564,53 +747,101 @@ const Post = ({ post, profile }: PostProps) => {
                 className="object-cover"
                 unoptimized
               />
-            </div>
-          ))}
-        </div>
-      );
-    }
+            )}
+          </div>
+        );
+      };
 
-    // 3 images: first full width, second row 2 columns
-    if (imageCount === 3) {
       return (
         <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
-          <div className="row-span-2 relative cursor-pointer" onClick={() => handleImageClick(0)}>
-            <Image
-              src={allMediaUrls[0]}
-              alt={`${post?.title || "post"} 1`}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(1)}>
-            <Image
-              src={allMediaUrls[1]}
-              alt={`${post?.title || "post"} 2`}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(2)}>
-            <Image
-              src={allMediaUrls[2]}
-              alt={`${post?.title || "post"} 3`}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
+          {renderMediaItem(allMediaUrls[0], 0, "row-span-2 relative cursor-pointer")}
+          {renderMediaItem(allMediaUrls[1], 1, "relative aspect-square cursor-pointer")}
+          {renderMediaItem(allMediaUrls[2], 2, "relative aspect-square cursor-pointer")}
         </div>
       );
     }
 
-    // 4 images: 2x2 grid
+    // 4 media: 2x2 grid
     if (imageCount === 4) {
       return (
         <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
-          {displayImages.map((url, idx) => (
-            <div key={idx} className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(idx)}>
+          {displayImages.map((url, idx) => {
+            const isVideo = isVideoUrl(url, idx);
+            return (
+              <div key={idx} className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(idx)}>
+                {isVideo ? (
+                  <>
+                    <video
+                      src={url}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      muted
+                      preload="metadata"
+                      playsInline
+                      onLoadedMetadata={(e) => {
+                        const video = e.currentTarget;
+                        video.currentTime = 0.1;
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                      <div className="w-10 h-10 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                        <svg
+                          className="w-5 h-5 text-white ml-1"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <Image
+                    src={url}
+                    alt={`${post?.title || "post"} ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // 5 media: first row 2, second row 3
+    if (imageCount === 5) {
+      const renderMediaItem = (url: string, idx: number) => {
+        const isVideo = isVideoUrl(url, idx);
+        return (
+          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(idx)}>
+            {isVideo ? (
+              <>
+                <video
+                  src={url}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  muted
+                  preload="metadata"
+                  playsInline
+                  onLoadedMetadata={(e) => {
+                    const video = e.currentTarget;
+                    video.currentTime = 0.1;
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-5 h-5 text-white ml-1"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </>
+            ) : (
               <Image
                 src={url}
                 alt={`${post?.title || "post"} ${idx + 1}`}
@@ -618,130 +849,93 @@ const Post = ({ post, profile }: PostProps) => {
                 className="object-cover"
                 unoptimized
               />
-            </div>
-          ))}
-        </div>
-      );
-    }
+            )}
+          </div>
+        );
+      };
 
-    // 5 images: first row 2, second row 3
-    if (imageCount === 5) {
       return (
         <div className="space-y-2 rounded-lg overflow-hidden">
-          {/* First row: 2 images */}
+          {/* First row: 2 media */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(0)}>
-              <Image
-                src={allMediaUrls[0]}
-                alt={`${post?.title || "post"} 1`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-            <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(1)}>
-              <Image
-                src={allMediaUrls[1]}
-                alt={`${post?.title || "post"} 2`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
+            {renderMediaItem(allMediaUrls[0], 0)}
+            {renderMediaItem(allMediaUrls[1], 1)}
           </div>
-          {/* Second row: 3 images */}
+          {/* Second row: 3 media */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(2)}>
-              <Image
-                src={allMediaUrls[2]}
-                alt={`${post?.title || "post"} 3`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-            <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(3)}>
-              <Image
-                src={allMediaUrls[3]}
-                alt={`${post?.title || "post"} 4`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-            <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(4)}>
-              <Image
-                src={allMediaUrls[4]}
-                alt={`${post?.title || "post"} 5`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
+            {renderMediaItem(allMediaUrls[2], 2)}
+            {renderMediaItem(allMediaUrls[3], 3)}
+            {renderMediaItem(allMediaUrls[4], 4)}
           </div>
         </div>
       );
     }
 
-    // More than 5 images: first row 2, second row 3 (last one with overlay)
-    return (
-      <div className="space-y-2 rounded-lg overflow-hidden">
-        {/* First row: 2 images */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(0)}>
+    // More than 5 media: first row 2, second row 3 (last one with overlay)
+    const renderMediaItem = (url: string, idx: number, showOverlay = false) => {
+      const isVideo = isVideoUrl(url, idx);
+      return (
+        <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(idx)}>
+          {isVideo ? (
+            <>
+              <video
+                src={url}
+                className={`absolute inset-0 w-full h-full object-cover ${showOverlay ? 'opacity-30' : ''}`}
+                muted
+                preload="metadata"
+                playsInline
+                onLoadedMetadata={(e) => {
+                  const video = e.currentTarget;
+                  video.currentTime = 0.1;
+                }}
+              />
+              {!showOverlay && (
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-5 h-5 text-white ml-1"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
             <Image
-              src={allMediaUrls[0]}
-              alt={`${post?.title || "post"} 1`}
+              src={url}
+              alt={`${post?.title || "post"} ${idx + 1}`}
               fill
-              className="object-cover"
+              className={`object-cover ${showOverlay ? 'opacity-30' : ''}`}
               unoptimized
             />
-          </div>
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(1)}>
-            <Image
-              src={allMediaUrls[1]}
-              alt={`${post?.title || "post"} 2`}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-        </div>
-        {/* Second row: 3 images (last one with overlay) */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(2)}>
-            <Image
-              src={allMediaUrls[2]}
-              alt={`${post?.title || "post"} 3`}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(3)}>
-            <Image
-              src={allMediaUrls[3]}
-              alt={`${post?.title || "post"} 4`}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-          <div className="relative aspect-square cursor-pointer" onClick={() => handleImageClick(4)}>
-            <Image
-              src={allMediaUrls[4]}
-              alt={`${post?.title || "post"} 5`}
-              fill
-              className="object-cover opacity-30"
-              unoptimized
-            />
+          )}
+          {showOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40">
               <div className="text-center text-white">
                 <div className="text-2xl font-bold">+{remainingCount}</div>
                 <div className="text-sm">more</div>
               </div>
             </div>
-          </div>
+          )}
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-2 rounded-lg overflow-hidden">
+        {/* First row: 2 media */}
+        <div className="grid grid-cols-2 gap-2">
+          {renderMediaItem(allMediaUrls[0], 0)}
+          {renderMediaItem(allMediaUrls[1], 1)}
+        </div>
+        {/* Second row: 3 media (last one with overlay) */}
+        <div className="grid grid-cols-3 gap-2">
+          {renderMediaItem(allMediaUrls[2], 2)}
+          {renderMediaItem(allMediaUrls[3], 3)}
+          {renderMediaItem(allMediaUrls[4], 4, true)}
         </div>
       </div>
     );
@@ -769,21 +963,42 @@ const Post = ({ post, profile }: PostProps) => {
             <p className="text-white/70 text-xs sm:text-sm">{createdAt}</p>
           </div>
         </div>
-        {isOtherUserPost && (
-          <button 
-            onClick={handleFollowClick}
-            disabled={isFollowing || isUnfollowing}
-            className={`text-xs cursor-pointer text-white px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
-              (isFollowing || isUnfollowing)
-                && "bg-slate-600 opacity-50 cursor-not-allowed" 
+        <div className="flex items-center gap-2">
+          {isCurrentUserPost && (
+            <>
+              <button
+                onClick={handleEditPost}
+                className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+                title="Edit post"
+              >
+                <FiEdit2 size={18} />
+              </button>
+              <button
+                onClick={handleDeletePost}
+                disabled={isDeletingPost}
+                className="text-red-400/60 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-red-500/10 disabled:opacity-50"
+                title="Delete post"
+              >
+                <FiTrash2 size={18} />
+              </button>
+            </>
+          )}
+          {isOtherUserPost && (
+            <button 
+              onClick={handleFollowClick}
+              disabled={isFollowing || isUnfollowing}
+              className={`text-xs cursor-pointer text-white px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
+                (isFollowing || isUnfollowing)
+                  && "bg-slate-600 opacity-50 cursor-not-allowed" 
                
-            }`}
-          >
-            {isFollowing || isUnfollowing 
-              ? (isFollowing ? "Following..." : "Unfollowing...") 
-              : (isFollowingUser ? "Unfollow" : "Follow")}
-          </button>
-        )}
+              }`}
+            >
+              {isFollowing || isUnfollowing 
+                ? (isFollowing ? "Following..." : "Unfollowing...") 
+                : (isFollowingUser ? "Unfollow" : "Follow")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div>
@@ -922,17 +1137,27 @@ const Post = ({ post, profile }: PostProps) => {
               </button>
             )}
 
-            {/* Image */}
+            {/* Media (Image or Video) */}
             {allMediaUrls[currentImageIndex] && (
               <div className="relative w-full h-full flex items-center justify-center">
-                <Image
-                  src={allMediaUrls[currentImageIndex]}
-                  alt={`${post?.title || "post"} ${currentImageIndex + 1}`}
-                  width={1200}
-                  height={800}
-                  className="max-w-full max-h-full object-contain"
-                  unoptimized
-                />
+                {isVideoUrl(allMediaUrls[currentImageIndex], currentImageIndex) ? (
+                  <video
+                    src={allMediaUrls[currentImageIndex]}
+                    className="max-w-full max-h-full object-contain"
+                    controls
+                    autoPlay
+                    playsInline
+                  />
+                ) : (
+                  <Image
+                    src={allMediaUrls[currentImageIndex]}
+                    alt={`${post?.title || "post"} ${currentImageIndex + 1}`}
+                    width={1200}
+                    height={800}
+                    className="max-w-full max-h-full object-contain"
+                    unoptimized
+                  />
+                )}
               </div>
             )}
 
@@ -965,6 +1190,26 @@ const Post = ({ post, profile }: PostProps) => {
         variant="destructive"
         onConfirm={confirmDeleteComment}
         onCancel={cancelDeleteComment}
+      />
+      
+      {/* Delete Post Confirm Dialog */}
+      <ConfirmDialog
+        open={postToDelete !== null}
+        title="Delete post?"
+        description="Are you sure you want to delete this post? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeletePost}
+        onCancel={cancelDeletePost}
+      />
+      
+      {/* Edit Post Modal */}
+      <EditPost
+        post={post}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );
