@@ -9,10 +9,12 @@ import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
-import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowersQuery } from "@/store/postApi";
+import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowersQuery, useDeletePostMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import EditPost from "../../EditPost/EditPost";
 
 interface Profile {
   id: string | number;
@@ -41,8 +43,11 @@ const Post = ({ post, profile }: PostProps) => {
   const [editText, setEditText] = useState("");
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(10);
   const [commentToDelete, setCommentToDelete] = useState<number | string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<number | string | null>(null);
   
   const [likePost, { isLoading: isLiking }] = useLikePostMutation();
+  const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
   const { data: commentsData, isLoading: isLoadingComments } = useGetCommentsQuery(post?.id, {
     skip: !showComments || !post?.id,
   });
@@ -349,6 +354,38 @@ const Post = ({ post, profile }: PostProps) => {
   
   // Check if post is created by another user (not the current user)
   const isOtherUserPost = postUserId && profile?.id && String(postUserId) !== String(profile.id);
+  
+  // Check if post belongs to current user
+  const isCurrentUserPost = postUserId && profile?.id && String(postUserId) === String(profile.id);
+
+  const handleEditPost = () => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeletePost = () => {
+    if (!post?.id) return;
+    setPostToDelete(post.id);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!post?.id || postToDelete == null) return;
+    try {
+      await deletePost({ postId: postToDelete }).unwrap();
+      setPostToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+    } finally {
+      setPostToDelete(null);
+    }
+  };
+
+  const cancelDeletePost = () => {
+    setPostToDelete(null);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditModalOpen(false);
+  };
 
   const renderComment = (comment: CommentItem & { replies: CommentItem[] }, depth = 0) => {
     const commentAuthor = comment.author || comment.user;
@@ -769,21 +806,42 @@ const Post = ({ post, profile }: PostProps) => {
             <p className="text-white/70 text-xs sm:text-sm">{createdAt}</p>
           </div>
         </div>
-        {isOtherUserPost && (
-          <button 
-            onClick={handleFollowClick}
-            disabled={isFollowing || isUnfollowing}
-            className={`text-xs cursor-pointer text-white px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
-              (isFollowing || isUnfollowing)
-                && "bg-slate-600 opacity-50 cursor-not-allowed" 
+        <div className="flex items-center gap-2">
+          {isCurrentUserPost && (
+            <>
+              <button
+                onClick={handleEditPost}
+                className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+                title="Edit post"
+              >
+                <FiEdit2 size={18} />
+              </button>
+              <button
+                onClick={handleDeletePost}
+                disabled={isDeletingPost}
+                className="text-red-400/60 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-red-500/10 disabled:opacity-50"
+                title="Delete post"
+              >
+                <FiTrash2 size={18} />
+              </button>
+            </>
+          )}
+          {isOtherUserPost && (
+            <button 
+              onClick={handleFollowClick}
+              disabled={isFollowing || isUnfollowing}
+              className={`text-xs cursor-pointer text-white px-4 py-1.5 rounded-full border border-white/10 transition-colors ${
+                (isFollowing || isUnfollowing)
+                  && "bg-slate-600 opacity-50 cursor-not-allowed" 
                
-            }`}
-          >
-            {isFollowing || isUnfollowing 
-              ? (isFollowing ? "Following..." : "Unfollowing...") 
-              : (isFollowingUser ? "Unfollow" : "Follow")}
-          </button>
-        )}
+              }`}
+            >
+              {isFollowing || isUnfollowing 
+                ? (isFollowing ? "Following..." : "Unfollowing...") 
+                : (isFollowingUser ? "Unfollow" : "Follow")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div>
@@ -965,6 +1023,26 @@ const Post = ({ post, profile }: PostProps) => {
         variant="destructive"
         onConfirm={confirmDeleteComment}
         onCancel={cancelDeleteComment}
+      />
+      
+      {/* Delete Post Confirm Dialog */}
+      <ConfirmDialog
+        open={postToDelete !== null}
+        title="Delete post?"
+        description="Are you sure you want to delete this post? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={confirmDeletePost}
+        onCancel={cancelDeletePost}
+      />
+      
+      {/* Edit Post Modal */}
+      <EditPost
+        post={post}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );
