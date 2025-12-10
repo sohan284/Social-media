@@ -29,7 +29,10 @@ export interface MarketplaceItem {
   image?: string;
   images?: string[];
   category?: string;
+  category_name?: string;
   subcategory?: string;
+  subcategory_name?: string;
+  sub_category_name?: string;
   seller?: {
     id?: number | string;
     username?: string;
@@ -69,6 +72,40 @@ export interface CreateProductResponse {
   message?: string;
   success?: boolean;
   [key: string]: unknown;
+}
+
+export interface CreateMarketplaceCategoryRequest {
+  name: string;
+}
+
+export interface CreateMarketplaceCategoryResponse {
+  success: boolean;
+  message: string;
+  data?: MarketplaceCategory;
+  [key: string]: unknown;
+}
+
+export interface UpdateMarketplaceCategoryRequest {
+  id: number;
+  name: string;
+}
+
+export interface CreateMarketplaceSubcategoryRequest {
+  category: number;
+  name: string;
+}
+
+export interface CreateMarketplaceSubcategoryResponse {
+  success: boolean;
+  message: string;
+  data?: MarketplaceSubcategory;
+  [key: string]: unknown;
+}
+
+export interface UpdateMarketplaceSubcategoryRequest {
+  id: number;
+  name: string;
+  category?: number;
 }
 
 export const marketplaceApi = baseApi.injectEndpoints({
@@ -120,6 +157,59 @@ export const marketplaceApi = baseApi.injectEndpoints({
         url: "/api/marketplace/categories",
         method: "GET",
       }),
+      providesTags: ["Categories"],
+    }),
+    createMarketplaceCategory: builder.mutation<CreateMarketplaceCategoryResponse, CreateMarketplaceCategoryRequest>({
+      query: (data) => ({
+        url: "/api/marketplace/categories/",
+        method: "POST",
+        body: { name: data.name },
+      }),
+      invalidatesTags: ["Categories"],
+    }),
+    updateMarketplaceCategory: builder.mutation<CreateMarketplaceCategoryResponse, UpdateMarketplaceCategoryRequest>({
+      query: (data) => ({
+        url: `/api/marketplace/categories/${data.id}/`,
+        method: "PUT",
+        body: { name: data.name },
+      }),
+      invalidatesTags: ["Categories"],
+    }),
+    deleteMarketplaceCategory: builder.mutation<{ success: boolean; message: string }, number>({
+      query: (id) => ({
+        url: `/api/marketplace/categories/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Categories"],
+    }),
+    createMarketplaceSubcategory: builder.mutation<CreateMarketplaceSubcategoryResponse, CreateMarketplaceSubcategoryRequest>({
+      query: (data) => ({
+        url: "/api/marketplace/subcategories/",
+        method: "POST",
+        body: {
+          category: data.category,
+          name: data.name,
+        },
+      }),
+      invalidatesTags: ["Categories"],
+    }),
+    updateMarketplaceSubcategory: builder.mutation<CreateMarketplaceSubcategoryResponse, UpdateMarketplaceSubcategoryRequest>({
+      query: (data) => ({
+        url: `/api/marketplace/subcategories/${data.id}/`,
+        method: "PUT",
+        body: {
+          name: data.name,
+          ...(data.category && { category: data.category }),
+        },
+      }),
+      invalidatesTags: ["Categories"],
+    }),
+    deleteMarketplaceSubcategory: builder.mutation<{ success: boolean; message: string }, number>({
+      query: (id) => ({
+        url: `/api/marketplace/subcategories/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Categories"],
     }),
   }),
 });
@@ -128,5 +218,11 @@ export const {
   useGetMarketplaceItemsQuery, 
   useCreateProductMutation,
   useGetMarketplaceCategoriesQuery,
+  useCreateMarketplaceCategoryMutation,
+  useUpdateMarketplaceCategoryMutation,
+  useDeleteMarketplaceCategoryMutation,
+  useCreateMarketplaceSubcategoryMutation,
+  useUpdateMarketplaceSubcategoryMutation,
+  useDeleteMarketplaceSubcategoryMutation,
 } = marketplaceApi;
 

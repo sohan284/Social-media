@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   Home,
@@ -9,25 +10,46 @@ import {
   LogOut,
   BarChart2,
   ChevronRight,
+  Tag,
+  ShoppingBag,
 } from "lucide-react";
 import Link from "next/link";
 
+const menu = [
+  { name: "Home", icon: Home, path: '/dashboard' },
+  { name: "All Posts", icon: FileText, path: '/dashboard/all-posts' },
+  { name: "Rejected Posts", icon: FileText, path: '/dashboard/rejected-posts' },
+  { name: "User Management", icon: Users, path: '/dashboard/user-management' },
+  { name: "Interest Category", icon: Tag, path: '/dashboard/interest-categories' },
+  { name: "Marketplace Category", icon: ShoppingBag, path: '/dashboard/marketplace-categories' },
+  { name: "Statistics", icon: BarChart2, path: '/dashboard/statistics' },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [active, setActive] = useState("Home");
 
-  const menu = [
-    { name: "Home", icon: Home, path: '/dashboard' },
-    { name: "All Posts", icon: FileText, path: '/dashboard/all-posts' },
-    { name: "Rejected Posts", icon: FileText, path: '/dashboard/rejected-posts' },
-    { name: "User Management", icon: Users, path: '/dashboard/user-management' },
-    { name: "Statistics", icon: BarChart2, path: '/dashboard/statistics' },
-  ];
+  // Sync active state with current pathname
+  useEffect(() => {
+    const currentMenuItem = menu.find((item) => {
+      // Handle exact match for home
+      if (item.path === '/dashboard') {
+        return pathname === '/dashboard' || pathname === '/dashboard/';
+      }
+      // Handle other paths
+      return pathname?.startsWith(item.path);
+    });
+    
+    if (currentMenuItem) {
+      setActive(currentMenuItem.name);
+    }
+  }, [pathname]);
 
   return (
     <div style={{ backgroundImage: "url('/admin-bg.jpg')" }} className="flex h-screen bg-cover bg-center text-white p-4 overflow-hidden">
       
       {/* SIDEBAR */}
-      <aside className="w-64 bg-white text-gray-900 rounded-xl p-6 shadow-xl flex flex-col h-full">
+      <aside className="w-72 bg-white text-gray-900 rounded-xl p-6 shadow-xl flex flex-col h-full">
         
         {/* LOGO */}
         <div className="flex items-center justify-center mb-6">
@@ -43,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <button
                   key={item.name}
                   onClick={() => setActive(item.name)}
-                  className={`flex items-center w-full px-4 py-3 rounded-xl text-left text-sm font-medium transition
+                  className={`flex items-center w-full px-4 py-3 rounded-xl cursor-pointer text-left text-sm font-medium transition
                   ${
                     active === item.name
                       ? "bg-[#2A2A46] text-white"

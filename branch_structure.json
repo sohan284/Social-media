@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "main",
+    "nafiz",
+    "srsohanV2"
+  ],
+  "parent": {
+    "main": null,
+    "nafiz": "main",
+    "srsohanV2": "main"
+  },
+  "order": [
+    "main",
+    "nafiz",
+    "srsohanV2"
+  ]
+}

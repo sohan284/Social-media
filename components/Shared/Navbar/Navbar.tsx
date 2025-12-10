@@ -13,6 +13,7 @@ import { FaAlignRight } from "react-icons/fa";
 import MessagePopup from "../../Message/MessagePopup";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import NotificationDropdown from "../../Message/NotificationDropdown";
+import { IoPersonOutline } from "react-icons/io5";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -41,7 +42,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const avatarUrl =
     (profile?.profile_image as string) ||
     (profile?.avatar as string) ||
-    "/profile.jpg";
+    null;
 
   const pathname = usePathname();
 
@@ -128,14 +129,20 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
               onClick={() => setIsProfileSidebarOpen(true)}
               aria-label="Open profile"
             >
-              <div className="h-[30px] w-[30px] rounded-full overflow-hidden border border-white/30 bg-gray-700">
-                <Image
-                  src={avatarUrl || "/profile.jpg"}
-                  alt={profile?.username ? `${profile.username} avatar` : "profile"}
-                  width={30}
-                  height={30}
-                  className="h-full w-full object-cover"
-                />
+              <div className="h-[30px] w-[30px] rounded-full overflow-hidden border border-white/30">
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt={profile?.username ? `${profile.username} avatar` : "profile"}
+                    width={30}
+                    height={30}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center">
+                    <IoPersonOutline className="text-white" size={16} />
+                  </div>
+                )}
               </div>
             </button>
           </div>

@@ -1,18 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { AiOutlineArrowLeft } from 'react-icons/ai';
 import Image from 'next/image';
 import MessageBubble from './MessageBubble';
 import { PiPaperPlaneRightFill } from 'react-icons/pi';
-
-interface Message {
-  id: string;
-  text: string;
-  senderId: string;
-  timestamp: string;
-  isRead: boolean;
-}
+import { useGetRoomMessagesQuery, useSendMessageMutation } from '@/store/chatApi';
+import { useGetCurrentUserProfileQuery } from '@/store/authApi';
+import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 
 interface User {
   id: string;
@@ -20,6 +15,7 @@ interface User {
   avatar: string;
   username: string;
   isOnline: boolean;
+  roomId?: number | string;
 }
 
 interface ConversationViewProps {
@@ -29,43 +25,60 @@ interface ConversationViewProps {
 
 const ConversationView = ({ user, onBack }: ConversationViewProps) => {
   const [newMessage, setNewMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hey, did you see the new post about React hooks?',
-      senderId: user.id,
-      timestamp: '2:30 PM',
-      isRead: true
-    },
-    {
-      id: '2',
-      text: 'Yes! It\'s really interesting. I\'ve been using them in my latest project.',
-      senderId: 'current-user',
-      timestamp: '2:32 PM',
-      isRead: true
-    },
-    {
-      id: '3',
-      text: 'That\'s awesome! Which hooks are you using the most?',
-      senderId: user.id,
-      timestamp: '2:35 PM',
-      isRead: true
-    },
-    {
-      id: '4',
-      text: 'Mainly useState and useEffect, but I\'m starting to explore useCallback and useMemo for optimization.',
-      senderId: 'current-user',
-      timestamp: '2:37 PM',
-      isRead: true
-    },
-    {
-      id: '5',
-      text: 'Nice! Those are great for performance. Have you tried useReducer yet?',
-      senderId: user.id,
-      timestamp: '2:40 PM',
-      isRead: false
-    }
-  ]);
+  const roomId = user.roomId || user.id;
+  const { data: currentUser } = useGetCurrentUserProfileQuery();
+  const { data: messagesResponse, isLoading: isLoadingMessages } = useGetRoomMessagesQuery(
+    typeof roomId === 'string' && isNaN(Number(roomId)) ? 0 : (roomId as number | string),
+    { skip: !roomId }
+  );
+  const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
+  
+
+
+
+
+
+
+     
+  // Enable WebSocket for real-time messages in this room
+  useChatWebSocket({ enabled: !!roomId });
+
+  const currentUserId = useMemo(() => {
+    return currentUser?.data?.id || currentUser?.id || currentUser?.user?.id;
+  }, [currentUser]);
+
+  const messages = useMemo(() => {
+    if (!messagesResponse) return [];
+    const messagesData = 
+      messagesResponse.data ??
+      messagesResponse.results?.data ??
+      messagesResponse.messages ??
+      [];
+    
+    return messagesData.map((msg: {
+      id: number | string;
+      content?: string;
+      text?: string;
+      sender?: { id?: number | string };
+      user?: { id?: number | string };
+      sender_id?: number | string;
+      created_at?: string;
+      is_read?: boolean;
+    }) => {
+      const senderId = msg.sender?.id || msg.user?.id || msg.sender_id;
+      const isCurrentUser = String(senderId) === String(currentUserId);
+      
+      return {
+        id: String(msg.id),
+        text: msg.content || msg.text || '',
+        senderId: isCurrentUser ? 'current-user' : String(senderId),
+        timestamp: msg.created_at 
+          ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'just now',
+        isRead: msg.is_read !== false,
+      };
+    });
+  }, [messagesResponse, currentUserId]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -77,19 +90,18 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim()) {
-      const message: Message = {
-        id: Date.now().toString(),
-        text: newMessage.trim(),
-        senderId: 'current-user',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isRead: false
-      };
-      
-      setMessages(prev => [...prev, message]);
+    if (!newMessage.trim() || !roomId || isSending) return;
+    
+    try {
+      await sendMessage({
+        content: newMessage.trim(),
+        room: roomId,
+      }).unwrap();
       setNewMessage('');
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
@@ -127,14 +139,29 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
-        {messages.map((message) => (
-          <MessageBubble 
-            key={message.id} 
-            message={message} 
-            isCurrentUser={message.senderId === 'current-user'}
-          />
-        ))}
-        <div ref={messagesEndRef} />
+        {isLoadingMessages ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+              <p className="text-sm text-gray-500">Loading messages...</p>
+            </div>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <p className="text-sm text-gray-500">No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          <>
+            {messages.map((message) => (
+              <MessageBubble 
+                key={message.id} 
+                message={message} 
+                isCurrentUser={message.senderId === 'current-user'}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
       {/* Message Input */}
@@ -150,10 +177,14 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
           />
           <button 
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || isSending}
             className="p-2 bg-[#0059ff] text-white rounded-full hover:bg-[#0059ffcd] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            <PiPaperPlaneRightFill  size={16} />
+            {isSending ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <PiPaperPlaneRightFill size={16} />
+            )}
           </button>
         </form>
       </div>
