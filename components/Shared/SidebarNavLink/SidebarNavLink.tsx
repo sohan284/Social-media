@@ -20,7 +20,7 @@ const menuItems = [
   {
     icon: <FriendsIcon />,
     label: "Friends",
-    href: "/",
+    href: "/main/friends",
   },
   // {
   //   icon: <IoTrendingUp size={24} />,

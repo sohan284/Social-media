@@ -45,6 +45,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
     null;
 
   const pathname = usePathname();
+  const isHomePage = pathname === '/' || pathname === '/main/';
 
   return (
     <nav className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-40 border-b border-white/10">
@@ -64,17 +65,21 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           </div>
         </div>
 
-        {/* Search Bar - Hidden on mobile, visible on tablet and up */}
-        <div className="hidden md:absolute md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl">
-          <div className="relative">
-            <GoSearch className="text-2xl absolute top-1/2 left-5 -translate-y-1/2 text-[#BEBEBE]" />
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full px-14 py-3 bg-transparent border border-[#BEBEBE] rounded-full text-white placeholder-[#BEBEBE] focus:outline-none"
-            />
+        {/* Search Bar - Only visible on home page, matches create post design */}
+        {isHomePage && (
+          <div className="hidden md:flex md:absolute md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl md:px-4">
+            <div className="w-full bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl  p-1">
+              <div className="relative flex items-center">
+                <GoSearch className="absolute left-3 text-white/60" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  className="w-full pl-10 pr-4 py-2 bg-black/30 border border-white/20 rounded-xl text-white/60 placeholder-white/40 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {user ? (
           <div className="relative flex items-center gap-2 md:gap-4 text-white">
