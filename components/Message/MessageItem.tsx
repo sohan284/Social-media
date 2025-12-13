@@ -5,6 +5,7 @@ import Image from 'next/image';
 
 interface Message {
   id: string;
+  roomId?: number | string;
   sender: {
     name: string;
     avatar: string;
@@ -23,6 +24,7 @@ interface User {
   username: string;
   isOnline: boolean;
   timestamp?: string;
+  roomId?: number | string;
 }
 
 interface MessageItemProps {

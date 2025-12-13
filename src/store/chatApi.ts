@@ -106,6 +106,8 @@ export const chatApi = baseApi.injectEndpoints({
         body: { content: data.content },
       }),
       async onQueryStarted({ room }, { dispatch, queryFulfilled }) {
+        if (!room) return;
+        
         // Optimistically update the messages cache
         const patchResult = dispatch(
           chatApi.util.updateQueryData("getRoomMessages", room, (draft) => {
