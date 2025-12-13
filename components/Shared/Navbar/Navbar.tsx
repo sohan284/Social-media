@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { AiOutlineMessage } from "react-icons/ai";
 import { GoSearch } from "react-icons/go";
 import NotificationIcon from "../../Icons/NotificationIcon";
@@ -14,6 +14,7 @@ import MessagePopup from "../../Message/MessagePopup";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import NotificationDropdown from "../../Message/NotificationDropdown";
 import { IoPersonOutline } from "react-icons/io5";
+import { useGetNotificationsQuery } from "@/store/notificationApi";
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -32,7 +33,20 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
     isError: isProfileError,
   } = useGetCurrentUserProfileQuery();
 
+  const { data: notificationsData } = useGetNotificationsQuery();
+
   const profile = profileData?.data;
+
+  // Calculate unread notification count
+  const unreadNotificationCount = useMemo(() => {
+    if (!notificationsData) return 0;
+    const notifications =
+      notificationsData.data ??
+      notificationsData.notifications ??
+      notificationsData.results?.data ??
+      [];
+    return notifications.filter((n) => !n.is_read).length;
+  }, [notificationsData]);
 
   const handleCloseSidebar = () => {
     setIsProfileSidebarOpen(false);
@@ -120,6 +134,12 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
                 className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
               >
                 <NotificationIcon />
+                {/* Notification badge */}
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                  </span>
+                )}
               </button>
 
               {/* Notification Dropdown */}
