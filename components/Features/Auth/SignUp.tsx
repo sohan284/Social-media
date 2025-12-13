@@ -33,7 +33,7 @@ const SignUp = () => {
   const [selectedInterests, setSelectedInterests] = useState<number[]>([]);
   const [sendOtp, { isLoading: isSendingOtp, error: otpError }] = useSendOtpMutation();
   const [verifyOtp, { isLoading: isVerifyingOtp, error: verifyOtpError }] = useVerifyOtpMutation();
-  const [setCredentials, { isLoading: isSettingCredentials, error: setCredentialsError }] = useSetCredentialsMutation();
+  const [setCredentials, { isLoading: isSettingCredentials }] = useSetCredentialsMutation();
   const [updateUserProfile, { isLoading: isUpdatingProfile, error: updateProfileError }] = useUpdateUserProfileMutation();
   const {
     data: categoriesData,
@@ -45,6 +45,8 @@ const SignUp = () => {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
+    clearErrors,
   } = useForm<SignUpForm>();
 
   useEffect(() => {
@@ -58,6 +60,10 @@ const SignUp = () => {
     if (!data.username || !data.password || !userEmail) {
       return;
     }
+
+    // Clear any previous API errors
+    clearErrors("username");
+    clearErrors("password");
 
     try {
       // Call credentials API when form is submitted
@@ -80,9 +86,53 @@ const SignUp = () => {
 
       // Move to step 4 (category selection)
       setCurrentStep(4);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to set credentials:", error);
-      // Error will be shown via setCredentialsError in the UI
+      
+      // Handle field-specific validation errors
+      const apiError = error as { data?: { username?: string[]; password?: string[]; email?: string[]; message?: string } };
+      if (apiError?.data) {
+        const errorData = apiError.data;
+        
+        // Handle username errors
+        if (errorData.username && Array.isArray(errorData.username)) {
+          setError("username", {
+            type: "server",
+            message: errorData.username[0] || "Username validation failed",
+          });
+        }
+        
+        // Handle password errors
+        if (errorData.password && Array.isArray(errorData.password)) {
+          setError("password", {
+            type: "server",
+            message: errorData.password[0] || "Password validation failed",
+          });
+        }
+        
+        // Handle other field errors (email, etc.)
+        if (errorData.email && Array.isArray(errorData.email)) {
+          // Email errors can be shown as a general error
+          setError("root", {
+            type: "server",
+            message: errorData.email[0] || "Email validation failed",
+          });
+        }
+        
+        // Handle non-field errors
+        if (errorData.message && !errorData.username && !errorData.password && !errorData.email) {
+          setError("root", {
+            type: "server",
+            message: errorData.message || "Failed to create account. Please try again.",
+          });
+        }
+      } else {
+        // Fallback for unexpected error format
+        setError("root", {
+          type: "server",
+          message: "Failed to create account. Please try again.",
+        });
+      }
     }
   };
 
@@ -314,7 +364,7 @@ const SignUp = () => {
           <input
             {...register("username", {
               required: "Username is required",
-              minLength: { value: 3, message: "Username must be at least 3 characters" }
+              minLength: { value: 6, message: "Username must be at least 6 characters" }
             })}
             type="text"
             placeholder={userEmail}
@@ -331,7 +381,7 @@ const SignUp = () => {
           <input
             {...register("password", {
               required: "Password is required",
-              minLength: { value: 6, message: "Password must be at least 6 characters" }
+              minLength: { value: 8, message: "Password must be at least 8 characters" }
             })}
             type="password"
             placeholder="Password"
@@ -373,9 +423,9 @@ const SignUp = () => {
         >
           {isSettingCredentials ? "Creating account..." : "Continue"}
         </button>
-        {setCredentialsError && (
+        {errors.root && (
           <p className="text-red-400 text-xs mt-2 text-center">
-            Failed to create account. Please try again.
+            {errors.root.message}
           </p>
         )}
       </form>

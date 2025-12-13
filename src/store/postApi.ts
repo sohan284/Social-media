@@ -113,7 +113,10 @@ export interface FollowItem {
   id?: number | string;
   following?: number | string;
   follower?: number | string;
+  following_name?: string;
+  follower_name?: string;
   user?: number | string;
+  created_at?: string;
   [key: string]: unknown;
 }
 
@@ -428,9 +431,16 @@ export const postApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'Followers' }],
     }),
-    getFollowers: builder.query<GetFollowersResponse, void>({
+    getFollowing: builder.query<GetFollowersResponse, void>({
       query: () => ({
         url: `/api/follows/?following=true`,
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'Followers' }],
+    }),
+    getFollowers: builder.query<GetFollowersResponse, void>({
+      query: () => ({
+        url: `/api/follows/?followers=true`,
         method: "GET",
       }),
       providesTags: () => [{ type: 'Followers' }],
@@ -452,5 +462,6 @@ export const {
   useUpdateCommentMutation,
   useFollowUserMutation,
   useUnfollowUserMutation,
+  useGetFollowingQuery,
   useGetFollowersQuery,
 } = postApi;

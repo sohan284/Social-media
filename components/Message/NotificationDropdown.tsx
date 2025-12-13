@@ -45,16 +45,32 @@ const NotificationDropdown = ({
   };
 
   const getNotificationTitle = (notification: NotificationItem) => {
-    if (notification.notification_type === "comment") {
-      return `${notification.sender_name ?? "Someone"} commented on your post`;
+    const senderName = notification.sender_name ?? "Someone";
+    
+    if (notification.notification_type === "follow") {
+      return `${senderName} following you`;
     }
-    return notification.post_title ?? "New notification";
+    
+    if (notification.notification_type === "like") {
+      return `${senderName} like your post`;
+    }
+    
+    if (notification.notification_type === "comment") {
+      return `${senderName} commented on your post`;
+    }
+    
+    return "New notification";
   };
 
   const getNotificationSubtitle = (notification: NotificationItem) => {
-    if (notification.post_title) {
-      return `Post: ${notification.post_title}`;
+    if (notification.notification_type === "like" && notification.post_title) {
+      return notification.post_title;
     }
+    
+    if (notification.post_title) {
+      return notification.post_title;
+    }
+    
     return "";
   };
 
