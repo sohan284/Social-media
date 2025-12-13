@@ -16,6 +16,8 @@ import { IoPersonOutline } from "react-icons/io5";
 import { UserProfile } from "@/store/authApi";
 import { useRouter } from "next/navigation";
 import { clearStoredTokens, getStoredAccessToken } from "@/lib/auth";
+import { store } from "@/store/store";
+import { baseApi } from "@/store/baseApi";
 
 interface ProfileSidebarProps {
   onClose: () => void;
@@ -109,6 +111,15 @@ const ProfileSidebar = ({
   const handleLogout = useCallback(() => {
     clearStoredTokens();
     setAuthToken(null);
+    // Clear RTK Query cache
+    store.dispatch(baseApi.util.resetApiState());
+    // Clear user data from storage
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("user");
+      window.sessionStorage.removeItem("user");
+      window.localStorage.removeItem("role");
+      window.sessionStorage.removeItem("role");
+    }
     onClose();
     router.push("/auth/login");
   }, [onClose, router]);

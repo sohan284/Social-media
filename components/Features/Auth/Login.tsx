@@ -10,6 +10,8 @@ import { useLoginMutation } from "@/store/authApi";
 import { useRouter } from "next/navigation";
 import { getRoleFromToken, storeAuthTokens } from "@/lib/auth";
 import { toast } from "sonner";
+import { store } from "@/store/store";
+import { baseApi } from "@/store/baseApi";
 
 type LoginForm = {
   email: string;
@@ -50,6 +52,9 @@ const Login = () => {
       const refreshToken = response.tokens?.refresh;
       const persistSession = Boolean(data.keepMeLoggedIn);
 
+      // Clear RTK Query cache before storing new tokens
+      store.dispatch(baseApi.util.resetApiState());
+      
       storeAuthTokens({
         accessToken,
         refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,

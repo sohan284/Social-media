@@ -15,6 +15,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import EditPost from "../../EditPost/EditPost";
+import CreatePost from "../../CreatePost/CreatePost";
 
 interface Profile {
   id: string | number;
@@ -45,6 +46,7 @@ const Post = ({ post, profile }: PostProps) => {
   const [commentToDelete, setCommentToDelete] = useState<number | string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<number | string | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   
   const [likePost, { isLoading: isLiking }] = useLikePostMutation();
   const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
@@ -258,6 +260,12 @@ const Post = ({ post, profile }: PostProps) => {
     } catch (error) {
       console.error("Failed to like post:", error);
     }
+  };
+
+  const handleShareClick = () => {
+    console.log("Share button clicked - handler called");
+    setIsShareModalOpen(true);
+    console.log("Modal state set to:", true);
   };
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
@@ -1044,7 +1052,14 @@ const Post = ({ post, profile }: PostProps) => {
         >
           <FaRegComment size={18} /> {post?.comments_count as number || 0}
         </button>
-        <button className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full">
+        <button 
+          type="button"
+          onClick={() => {
+            console.log("Share button onClick triggered");
+            handleShareClick();
+          }}
+          className="text-sm text-white cursor-pointer flex items-center gap-2 px-2.5 py-[5px] bg-slate-700 rounded-full hover:bg-slate-600 transition-colors"
+        >
           <FaRegShareFromSquare size={18} /> Share
         </button>
       </div>
@@ -1211,6 +1226,22 @@ const Post = ({ post, profile }: PostProps) => {
         onClose={() => setIsEditModalOpen(false)}
         onSuccess={handleEditSuccess}
       />
+
+      {/* Share Post Modal */}
+      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <CreatePost 
+            sharedPostData={{
+              content: post?.content || "",
+              title: post?.title || "",
+              mediaUrls: allMediaUrls || [],
+            }}
+            onSuccess={() => {
+              setIsShareModalOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
