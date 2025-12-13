@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import MessageItem from './MessageItem';
-import { useGetChatRoomsQuery } from '@/store/chatApi';
+import { useGetChatRoomsQuery, type ChatRoom, type ChatUser } from '@/store/chatApi';
 import { getApiBaseUrl } from '@/lib/utils';
 
 interface User {
@@ -50,7 +50,7 @@ const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
     return date.toLocaleDateString();
   };
 
-  const getOtherParticipant = (room: any) => {
+  const getOtherParticipant = (room: ChatRoom) => {
     // Get the participant that is not the current user
     // This assumes participants array contains users
     if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
@@ -58,23 +58,24 @@ const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
       return room.participants[0];
     }
     // Fallback to room data
+    const roomData = room as ChatRoom & { user?: ChatUser; participant?: ChatUser; username?: string; avatar?: string };
     return {
-      id: room.user?.id || room.participant?.id || room.id,
-      username: room.user?.username || room.participant?.username || room.username || 'Unknown',
-      display_name: room.user?.display_name || room.participant?.display_name || room.name || 'Unknown User',
-      avatar: room.user?.avatar || room.participant?.avatar || room.avatar || '/profile.jpg',
-      is_online: room.user?.is_online || room.participant?.is_online || false,
+      id: roomData.user?.id || roomData.participant?.id || room.id,
+      username: roomData.user?.username || roomData.participant?.username || roomData.username || 'Unknown',
+      display_name: roomData.user?.display_name || roomData.participant?.display_name || room.name || 'Unknown User',
+      avatar: roomData.user?.avatar || roomData.participant?.avatar || roomData.avatar || '/profile.jpg',
+      is_online: roomData.user?.is_online || roomData.participant?.is_online || false,
     };
   };
 
   const transformedRooms = useMemo(() => {
-    return rooms.map((room) => {
+    return rooms.map((room: ChatRoom) => {
       const participant = getOtherParticipant(room);
-      const lastMessage = room.last_message || {};
+      const lastMessage = (room.last_message as { content?: string; created_at?: string } | undefined) || {};
       const apiBase = getApiBaseUrl();
       
       return {
-        id: room.id,
+        id: String(room.id),
         roomId: room.id,
         sender: {
           name: participant.display_name || participant.username || 'Unknown',

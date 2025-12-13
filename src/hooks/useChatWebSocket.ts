@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { store } from '@/store/store';
-import { chatApi } from '@/store/chatApi';
+import { chatApi, type ChatMessage, type ChatUser } from '@/store/chatApi';
 import { getStoredAccessToken } from '@/lib/auth';
 import { getApiBaseUrl } from '@/lib/utils';
 
@@ -110,14 +110,19 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
 
                   if (!messageExists) {
                     // Ensure message has required fields
-                    const formattedMessage = {
-                      id: message.id,
-                      room: roomId,
-                      sender: message.sender || (message as { user?: unknown }).user,
-                      content: message.content || message.text || '',
-                      created_at: message.created_at || new Date().toISOString(),
-                      is_read: message.is_read !== false,
+                    const messageWithText = message as { content?: string; text?: string; [key: string]: unknown };
+                    const messageContent = message.content || messageWithText.text || '';
+                    const messageCreatedAt = message.created_at || new Date().toISOString();
+                    const messageSender = message.sender || (message as { user?: ChatUser }).user;
+                    
+                    const formattedMessage: ChatMessage = {
                       ...message,
+                      id: message.id as number | string,
+                      room: roomId,
+                      sender: messageSender as ChatUser | undefined,
+                      content: typeof messageContent === 'string' ? messageContent : '',
+                      created_at: typeof messageCreatedAt === 'string' ? messageCreatedAt : new Date().toISOString(),
+                      is_read: message.is_read !== false,
                     };
                     messagesData.push(formattedMessage);
                   }
