@@ -1,9 +1,10 @@
-"use client";
+ "use client";
 import Image from "next/image";
 import { useMemo } from "react";
 import { useGetUsersQuery, User } from "@/store/authApi";
-import { getApiBaseUrl } from "@/lib/utils";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
+import { IoPersonOutline } from "react-icons/io5";
+import { getApiBaseUrl } from "@/lib/utils";
 
 export default function UserManagementTable() {
   const { data, isLoading, isError } = useGetUsersQuery();
@@ -17,15 +18,6 @@ export default function UserManagementTable() {
       []
     );
   }, [data]);
-
-  const getImageUrl = (image: string | undefined | null) => {
-    if (!image) return "/sheep.jpg";
-    if (image.startsWith("http")) return image;
-    const baseUrl = getApiBaseUrl();
-    const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-    const cleanPath = image.startsWith("/") ? image.slice(1) : image;
-    return `${cleanBase}/${cleanPath}`;
-  };
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -57,26 +49,42 @@ export default function UserManagementTable() {
     }
   };
 
+  const getAvatarUrl = (avatar?: string | null) => {
+    if (!avatar) return null;
+    if (avatar.startsWith("http")) return avatar;
+    const baseUrl = getApiBaseUrl();
+    const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanPath = avatar.startsWith("/") ? avatar.slice(1) : avatar;
+    return `${cleanBase}/${cleanPath}`;
+  };
+
   type UserRow = User;
 
   const columns: Column<UserRow>[] = [
     {
       header: "SL",
-      accessor: (row, index) => <span>{index + 1}.</span>,
+      accessor: (_row, index) => <span>{index + 1}.</span>,
     },
     {
       header: "Avatar",
-      accessor: (row) => (
-        <div className="relative w-12 h-12 rounded-full overflow-hidden">
-          <Image
-            src={getImageUrl(row.avatar || row.profile_image)}
-            alt={row.display_name || row.username || "User"}
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        </div>
-      ),
+      accessor: (row) => {
+        const avatarUrl = getAvatarUrl((row as { avatar?: string | null }).avatar);
+        return (
+          <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/20 bg-slate-800 flex items-center justify-center">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={row.display_name || row.username || "User"}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <IoPersonOutline className="w-6 h-6 text-white" />
+            )}
+          </div>
+        );
+      },
     },
     {
       header: "Username",
@@ -89,8 +97,8 @@ export default function UserManagementTable() {
     {
       header: "Display Name",
       accessor: (row) => (
-        <div className="max-w-xs truncate" title={row.display_name || "N/A"}>
-          {row.display_name || "N/A"}
+        <div className="max-w-xs truncate" title={row.display_name || row.username || "N/A"}>
+          {row.display_name || row.username || "N/A"}
         </div>
       ),
     },
@@ -130,19 +138,25 @@ export default function UserManagementTable() {
     },
     {
       header: "Date Joined",
-      accessor: (row) => <span>{formatDate(row.date_joined)}</span>,
+      accessor: (row) => <span>{formatDate((row as { date_joined?: string }).date_joined)}</span>,
     },
     {
-      header: "Last Login",
-      accessor: (row) => <span>{formatDateTime(row.last_login)}</span>,
+      header: "Posts",
+      accessor: (row) => <span>{(row as { posts_count?: number }).posts_count ?? 0}</span>,
+    },
+    {
+      header: "Interests",
+      accessor: (row) => <span>{(row as { interests_count?: number }).interests_count ?? 0}</span>,
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <h2 className="text-2xl font-semibold text-center mb-8">All Users</h2>
-        <div className="animate-pulse space-y-4">
+      <div>
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-2xl font-semibold text-center text-white mb-8">All Users</h2>
+        </div>
+        <div className="animate-pulse space-y-4 mt-8">
           {Array.from({ length: 5 }).map((_, idx) => (
             <div key={idx} className="h-20 bg-white/10 rounded-xl" />
           ))}
@@ -152,18 +166,15 @@ export default function UserManagementTable() {
   }
 
   return (
-    <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-      <h2 className="text-2xl font-semibold text-center mb-8">All Users</h2>
-
-      <div className="mt-8">
-        <CustomTable
-          columns={columns}
-          data={users}
-          emptyMessage="No users found."
-          isError={isError}
-          errorMessage="Failed to load users. Please try again later."
-        />
-      </div>
+    <div>
+      <CustomTable
+        title="All Users"
+        columns={columns}
+        data={users}
+        emptyMessage="No users found."
+        isError={isError}
+        errorMessage="Failed to load users. Please try again later."
+      />
     </div>
   );
 }

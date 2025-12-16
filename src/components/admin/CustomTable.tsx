@@ -20,6 +20,7 @@ export interface Column<T> {
 interface CustomTableProps<T> {
   columns: Column<T>[];
   data: T[];
+  title?: string;
   emptyMessage?: string;
   emptyIcon?: React.ReactNode;
   isError?: boolean;
@@ -36,6 +37,7 @@ const ITEMS_PER_PAGE = 10;
 export function CustomTable<T extends { id?: string | number } | Record<string, unknown>>({
   columns,
   data,
+  title,
   emptyMessage = "No data available",
   emptyIcon,
   isError = false,
@@ -143,9 +145,14 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   };
 
   return (
-    <div className={`w-full overflow-hidden rounded-2xl border border-white/20 flex flex-col ${className}`}>
-      <div className="relative overflow-x-auto">
-        <Table>
+    <div className={`w-[88vw] lg:w-full rounded-2xl  border bg-black/30 backdrop-blur-sm  border-white/20  flex flex-col ${className}`}>
+      {title && (
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-2xl font-semibold text-center text-white">{title}</h2>
+        </div>
+      )}
+      <div className="relative w-full">
+        <Table className="min-w-max">
           <TableHeader>
             <TableRow className={`bg-white/10 text-left ${headerClassName}`}>
               {columns.map((column, index) => (

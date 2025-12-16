@@ -143,8 +143,10 @@ export default function AllPostsTable() {
   if (isLoading) {
     return (
       <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <h2 className="text-2xl font-semibold text-center mb-8">All Posts</h2>
-        <div className="animate-pulse space-y-4">
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-2xl font-semibold text-center text-white mb-8">All Posts</h2>
+        </div>
+        <div className="animate-pulse space-y-4 mt-8">
           {Array.from({ length: 5 }).map((_, idx) => (
             <div key={idx} className="h-20 bg-white/10 rounded-xl" />
           ))}
@@ -154,18 +156,15 @@ export default function AllPostsTable() {
   }
 
   return (
-    <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-      <h2 className="text-2xl font-semibold text-center mb-8">All Posts</h2>
-
-      <div className="mt-8">
-        <CustomTable
-          columns={columns}
-          data={posts}
-          emptyMessage="No posts found."
-          isError={isError}
-          errorMessage="Failed to load posts. Please try again later."
-        />
-      </div>
+    <div>
+      <CustomTable
+        title="All Posts"
+        columns={columns}
+        data={posts}
+        emptyMessage="No posts found."
+        isError={isError}
+        errorMessage="Failed to load posts. Please try again later."
+      />
     </div>
   );
 }

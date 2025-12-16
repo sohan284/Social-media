@@ -1,7 +1,7 @@
-"use client";
+ "use client";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
   Home,
@@ -13,46 +13,167 @@ import {
   Tag,
   ShoppingBag,
   Package,
+  Menu,
 } from "lucide-react";
 import Link from "next/link";
+import { useGetCurrentUserProfileQuery } from "@/store/authApi";
+import { clearStoredTokens, getUsernameFromToken, getStoredAccessToken } from "@/lib/auth";
+import { store } from "@/store/store";
+import { baseApi } from "@/store/baseApi";
 
 const menu = [
-  { name: "Home", icon: Home, path: '/dashboard' },
-  { name: "All Posts", icon: FileText, path: '/dashboard/all-posts' },
-  { name: "Rejected Posts", icon: FileText, path: '/dashboard/rejected-posts' },
-  { name: "User Management", icon: Users, path: '/dashboard/user-management' },
-  { name: "Interest Category", icon: Tag, path: '/dashboard/interest-categories' },
-  { name: "Marketplace Category", icon: ShoppingBag, path: '/dashboard/marketplace-categories' },
-  { name: "All Products", icon: Package, path: '/dashboard/all-products' },
-  { name: "Statistics", icon: BarChart2, path: '/dashboard/statistics' },
+  { name: "Home", icon: Home, path: "/dashboard" },
+  { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
+  { name: "Rejected Posts", icon: FileText, path: "/dashboard/rejected-posts" },
+  { name: "User Management", icon: Users, path: "/dashboard/user-management" },
+  { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
+  { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
+  { name: "All Products", icon: Package, path: "/dashboard/all-products" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [active, setActive] = useState("Home");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch current user profile
+  const { data: profileResponse } = useGetCurrentUserProfileQuery();
+  const profile = profileResponse?.data;
+  
+  // Get username from token or profile
+  const username = profile?.display_name || profile?.username || getUsernameFromToken(getStoredAccessToken()) || "User";
 
   // Sync active state with current pathname
   useEffect(() => {
     const currentMenuItem = menu.find((item) => {
       // Handle exact match for home
-      if (item.path === '/dashboard') {
-        return pathname === '/dashboard' || pathname === '/dashboard/';
+      if (item.path === "/dashboard") {
+        return pathname === "/dashboard" || pathname === "/dashboard/";
       }
       // Handle other paths
       return pathname?.startsWith(item.path);
     });
-    
+
     if (currentMenuItem) {
       setActive(currentMenuItem.name);
     }
   }, [pathname]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // Handle logout
+  const handleLogout = () => {
+    clearStoredTokens();
+    store.dispatch(baseApi.util.resetApiState());
+    // Clear user data from storage
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("user");
+      window.sessionStorage.removeItem("user");
+      window.localStorage.removeItem("role");
+      window.sessionStorage.removeItem("role");
+    }
+    setIsDropdownOpen(false);
+    router.push("/auth/login");
+  };
+
+  // Handle home navigation
+  const handleHome = () => {
+    setIsDropdownOpen(false);
+    router.push("/");
+  };
+
+  const renderMenuItems = (onItemClick?: () => void) =>
+    menu.map((item) => {
+      const Icon = item.icon;
+      const isActive = active === item.name;
+      return (
+        <Link
+          key={item.name}
+          href={item.path}
+          className="block"
+          onClick={() => {
+            setActive(item.name);
+            onItemClick?.();
+          }}
+        >
+          <button
+            className={`flex items-center w-full px-4 py-3 rounded-xl cursor-pointer text-left text-sm font-medium transition
+            ${
+              isActive
+                ? "bg-[#2A2A46] text-white"
+                : "bg-white border border-gray-300"
+            }`}
+          >
+            <Icon className="w-4 h-4 mr-3" />
+            {item.name}
+
+            <span className="ml-auto">
+              <ChevronRight className="w-4 h-4 ml-auto" />
+            </span>
+          </button>
+        </Link>
+      );
+    });
+
   return (
-    <div style={{ backgroundImage: "url('/admin-bg.jpg')" }} className="flex h-screen bg-cover bg-center text-white p-4 overflow-hidden">
-      
-      {/* SIDEBAR */}
-      <aside className="w-72 bg-white text-gray-900 rounded-xl p-6 shadow-xl flex flex-col h-full">
-        
+    <div
+      style={{ backgroundImage: "url('/admin-bg.jpg')" }}
+      className="flex h-screen bg-cover bg-center text-white p-4 overflow-hidden"
+    >
+      {/* MOBILE SIDEBAR DRAWER */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        >
+          <aside
+            className="absolute left-0 top-0 h-full w-72 bg-white text-gray-900 rounded-r-xl p-6 shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* LOGO */}
+            <div className="flex items-center justify-between mb-6">
+              <Image src="/admin-logo.png" alt="Logo" width={40} height={40} />
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-200 transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* MENU */}
+            <nav className="space-y-6 flex-1 overflow-y-auto pr-1">
+              {renderMenuItems(() => setIsSidebarOpen(false))}
+            </nav>
+
+            {/* LOGOUT */}
+            <button className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4">
+              <LogOut className="w-4 h-4 mr-2" /> Logout
+            </button>
+          </aside>
+        </div>
+      )}
+
+      {/* DESKTOP SIDEBAR */}
+      <aside className="hidden lg:flex w-72 bg-white text-gray-900 rounded-xl p-6 shadow-xl flex-col h-full">
         {/* LOGO */}
         <div className="flex items-center justify-center mb-6">
           <Image src="/admin-logo.png" alt="Logo" width={40} height={40} />
@@ -60,30 +181,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* MENU */}
         <nav className="space-y-6 flex-1 overflow-y-auto pr-1">
-          {menu.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.name} href={item.path} className="block">
-                <button
-                  key={item.name}
-                  onClick={() => setActive(item.name)}
-                  className={`flex items-center w-full px-4 py-3 rounded-xl cursor-pointer text-left text-sm font-medium transition
-                  ${
-                    active === item.name
-                      ? "bg-[#2A2A46] text-white"
-                      : "bg-white border border-gray-300"
-                  }`}
-                >
-                  <Icon className="w-4 h-4 mr-3" />
-                  {item.name}
-
-                  <span className="ml-auto">
-                    <ChevronRight className="w-4 h-4 ml-auto" />
-                  </span>
-                </button>
-              </Link>
-            );
-          })}
+          {renderMenuItems()}
         </nav>
 
         {/* LOGOUT → STAYS AT BOTTOM */}
@@ -93,23 +191,56 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* MAIN AREA */}
-      <main className="flex-1 relative rounded-xl ml-4 h-full flex flex-col">
-
+      <main className="flex-1 relative rounded-xl lg:ml-4 h-full flex flex-col">
         {/* FIXED TOP BAR */}
-        <div className="sticky top-0 left-0 z-20 flex items-center justify-end
-                        px-10 py-6 rounded-xl">
-          <button className="bg-[#6B83FA] px-8 py-4 rounded-[20px] flex items-center text-xl">
-            <span>Hi Mr.man</span>
-            <ChevronDown className="w-6 h-6 ml-2" />
+        <div className="sticky top-0 left-0 z-20 flex items-center justify-between px-4 md:px-10 py-4 md:py-6 rounded-xl">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-full bg-black/30 border border-white/20 hover:bg-black/50 transition"
+            aria-label="Open admin menu"
+          >
+            <Menu className="w-5 h-5" />
           </button>
+
+          <div className="flex-1 flex justify-end">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[20px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors"
+              >
+                <span>Hi {username}</span>
+                <ChevronDown className={`w-5 h-5 md:w-6 md:h-6 ml-2 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white/20 backdrop-blur-sm rounded-lg shadow-lg border border-gray-400 py-2 z-50">
+                  <button
+                    onClick={handleHome}
+                    className="w-full px-4 py-2 text-left text-gray-100 hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
+                  >
+                    <Home className="w-4 h-4 text-white" />
+                    <span>Home</span>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-700 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* SCROLLABLE INNER CONTENT */}
-        <div className="flex-1 overflow-y-auto px-10 py-8">
+        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-8">
           {children}
         </div>
       </main>
-
     </div>
   );
 }

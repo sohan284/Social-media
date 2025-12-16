@@ -249,7 +249,7 @@ export const authApi = baseApi.injectEndpoints({
     }),
     getUsers: builder.query<GetUsersResponse, void>({
       query: () => ({
-        url: "/users/",
+        url: "/auth/admin/users/",
         method: "GET",
       }),
       providesTags: ["UserProfile"],
