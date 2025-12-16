@@ -106,6 +106,29 @@ export interface CategoriesResponse {
   data: Category[];
 }
 
+export interface User {
+  id: string | number;
+  email?: string;
+  username?: string;
+  display_name?: string | null;
+  avatar?: string | null;
+  profile_image?: string | null;
+  role?: string;
+  is_active?: boolean;
+  date_joined?: string;
+  last_login?: string;
+  [key: string]: unknown;
+}
+
+export interface GetUsersResponse {
+  data?: User[];
+  results?: {
+    data?: User[];
+  };
+  users?: User[];
+  [key: string]: unknown;
+}
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     sendOtp: builder.mutation<SendOtpResponse, SendOtpRequest>({
@@ -224,6 +247,13 @@ export const authApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    getUsers: builder.query<GetUsersResponse, void>({
+      query: () => ({
+        url: "/users/",
+        method: "GET",
+      }),
+      providesTags: ["UserProfile"],
+    }),
   }),
 });
 
@@ -234,6 +264,7 @@ export const {
   useLoginMutation,
   useUpdateUserProfileMutation,
   useGetCategoriesQuery,
+  useGetUsersQuery,
 } = authApi;
 
 export const useGetCurrentUserProfileQuery = (

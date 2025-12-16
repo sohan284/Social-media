@@ -271,6 +271,20 @@ export const postApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    getAllPosts: builder.query<GetPostsResponse, void>({
+      query: () => ({
+        url: "/api/posts/",
+        method: "GET",
+      }),
+      providesTags: ["UserProfile"],
+    }),
+    getRejectedPosts: builder.query<GetPostsResponse, void>({
+      query: () => ({
+        url: "/api/posts/",
+        method: "GET",
+      }),
+      providesTags: ["UserProfile"],
+    }),
     getCommunityPosts: builder.query<GetPostsResponse, string>({
       query: (communityName) => ({
         url: `/api/posts/community_posts/?community=${communityName}`,
@@ -454,6 +468,8 @@ export const {
   useDeletePostMutation,
   useGetMyPostsQuery, 
   useGetNewsFeedQuery,
+  useGetAllPostsQuery,
+  useGetRejectedPostsQuery,
   useGetCommunityPostsQuery,
   useLikePostMutation,
   useGetCommentsQuery,

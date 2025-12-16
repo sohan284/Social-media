@@ -6,6 +6,7 @@ import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
 import { usePathname } from "next/navigation";
 import RightSidebar from "../Shared/SidebarNavLink/RightSidebar";
+import { SearchProvider } from "@/contexts/SearchContext";
 
 export default function HomeLayout({
   children,
@@ -19,8 +20,9 @@ export default function HomeLayout({
 
 
   return (
-    <div className="flex flex-col">
-      <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
+    <SearchProvider>
+      <div className="flex flex-col">
+        <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
 
       <div className="flex flex-1">
         {/* LEFT SIDEBAR */}
@@ -86,5 +88,6 @@ export default function HomeLayout({
         )}
       </div>
     </div>
+    </SearchProvider>
   );
 }

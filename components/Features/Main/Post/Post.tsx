@@ -9,7 +9,7 @@ import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
-import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowersQuery, useDeletePostMutation } from "@/store/postApi";
+import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowingQuery, useDeletePostMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -62,25 +62,27 @@ const Post = ({ post, profile }: PostProps) => {
   const [isFollowingUser, setIsFollowingUser] = useState(false);
 
   // Extract user_id for the follow button
-  const postUserId = (post as { user?: number | string }).user 
+  const postUserId = (post as { user?: number | string }).user;
 
-  // Fetch followers to check if user is already following
-  const { data: followersData } = useGetFollowersQuery(undefined, {
+  // Fetch following list to check if user is already following the post author
+  const { data: followingData } = useGetFollowingQuery(undefined, {
     skip: !postUserId || !profile?.id,
   });
 
-  // Check if user is already following from followers API (takes precedence)
+  // Check if user is already following from following API
   useEffect(() => {
     if (!postUserId) return;
 
-    // If we have followers data, use it to determine follow state
-    if (followersData) {
-      const followersRaw =  followersData.results?.data || [];
-      const followers = Array.isArray(followersRaw) ? followersRaw : [];
+    // If we have following data, use it to determine follow state
+    if (followingData) {
+      const followingRaw = followingData.data || followingData.results?.data || [];
+      const following = Array.isArray(followingRaw) ? followingRaw : [];
       
-      const followItem = followers.find((item) => {
-        const followingId = item.following || item.id || item.following;
-        return followingId && String(followingId) === String(postUserId);
+      // Find if the post's user ID is in the following list
+      // The following API returns items where 'following' is the user ID being followed
+      const followItem = following.find((item) => {
+        const followingUserId = item.following;
+        return followingUserId && String(followingUserId) === String(postUserId);
       });
 
       if (followItem && followItem.id) {
@@ -91,7 +93,7 @@ const Post = ({ post, profile }: PostProps) => {
         setFollowingId(null);
       }
     } else {
-      // Fallback to post data if followers API hasn't loaded yet
+      // Fallback to post data if following API hasn't loaded yet
       const postFollowingId = (post as { following_id?: number | string })?.following_id;
       const postIsFollowing = (post as { is_following?: boolean })?.is_following;
       
@@ -102,7 +104,7 @@ const Post = ({ post, profile }: PostProps) => {
         setIsFollowingUser(postIsFollowing);
       }
     }
-  }, [followersData, postUserId, post]);
+  }, [followingData, postUserId, post]);
 
   const isLiked = post?.is_liked || false;
   const likeCount = post?.likes_count as number || 0;

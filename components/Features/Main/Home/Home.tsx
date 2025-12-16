@@ -7,14 +7,25 @@ import Post from "../Post/Post";
 import { useGetNewsFeedQuery } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { FiEdit3, FiImage, FiLink } from "react-icons/fi";
+import { useSearch } from "@/contexts/SearchContext";
+
+// Fallback hook for when SearchContext is not available
+const useSearchSafe = () => {
+  try {
+    return useSearch();
+  } catch {
+    return { searchQuery: "", setSearchQuery: () => {} };
+  }
+};
 
 const Home = () => {
   const router = useRouter();
   const { data: postsResponse, isLoading, isError } = useGetNewsFeedQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
+  const { searchQuery } = useSearchSafe();
 
-  const posts = useMemo(() => {
+  const allPosts = useMemo(() => {
     if (!postsResponse) return [];
     return (
       postsResponse.data ??
@@ -23,6 +34,20 @@ const Home = () => {
       []
     );
   }, [postsResponse]);
+
+  // Filter posts based on search query
+  const posts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allPosts;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return allPosts.filter((post) => {
+      const title = (post.title || "").toLowerCase();
+      const content = (post.content || "").toLowerCase();
+      return title.includes(query) || content.includes(query);
+    });
+  }, [allPosts, searchQuery]);
 
   const renderPosts = () => {
     if (isLoading) {

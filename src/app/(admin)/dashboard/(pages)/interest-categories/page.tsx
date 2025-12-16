@@ -343,6 +343,8 @@ export default function InterestCategories() {
             columns={columns}
             data={tableData}
             emptyMessage="No categories found. Create your first category!"
+            isError={isError}
+            errorMessage="Failed to load categories. Please try again later."
             rowClassName={(row) =>
               row.type === "subcategory" ? "bg-white/5 border-white/5" : ""
             }

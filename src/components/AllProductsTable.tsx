@@ -266,18 +266,6 @@ export default function AllProductsTable() {
     );
   }
 
-  if (isError) {
-    return (
-      <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <h2 className="text-2xl font-semibold text-center mb-8">All Products</h2>
-        <div className="text-center py-12">
-          <p className="text-red-400 text-lg mb-2">Failed to load products</p>
-          <p className="text-white/60 text-sm">Please try again later</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
@@ -288,6 +276,8 @@ export default function AllProductsTable() {
             columns={columns}
             data={publishedProducts}
             emptyMessage="No published products found."
+            isError={isError}
+            errorMessage="Failed to load products. Please try again later."
             onRowClick={handleRowClick}
           />
         </div>
