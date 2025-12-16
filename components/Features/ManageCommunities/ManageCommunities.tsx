@@ -144,6 +144,13 @@ const ManageCommunities = () => {
     );
   };
 
+  const handleCardClick = (community: CommunityItem) => {
+    const communityName = community.name || community.id?.toString() || "";
+    if (communityName) {
+      router.push(`/main/communities?community=${encodeURIComponent(communityName)}`);
+    }
+  };
+
   const renderCommunities = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -154,10 +161,12 @@ const ManageCommunities = () => {
             variant="grid"
             showCreatedBy={false}
             formatDate={formatDate}
+            onCardClick={() => handleCardClick(community)}
             actions={
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const communityName = community.name || community.id?.toString() || "";
                     router.push(`/main/edit-community/${encodeURIComponent(communityName)}`);
                   }}
@@ -166,7 +175,10 @@ const ManageCommunities = () => {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDeleteClick(community)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(community);
+                  }}
                   disabled={isDeleting}
                   className={`py-2.5 px-4 cursor-pointer rounded-lg font-medium transition-all bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >

@@ -9,7 +9,7 @@ import { useUpdateCommunityMutation, useGetMyCommunitiesQuery, type CommunityIte
 import { toast } from "sonner";
 
 type FormValues = {
-  name: string;
+  title: string;
   description: string;
   profile_image?: FileList;
   cover_image?: FileList;
@@ -52,7 +52,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
       if (foundCommunity) {
         setCommunity(foundCommunity);
         reset({
-          name: foundCommunity.name || "",
+          title: foundCommunity.title || "",
           description: foundCommunity.description || "",
           visibility: foundCommunity.visibility || "public",
         });
@@ -100,7 +100,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
       await updateCommunity({
         communityName: communityName,
         data: {
-          name: data.name,
+          title: data.title as string,
           description: data.description,
           visibility: data.visibility,
           profile_image: profileImageFile,
@@ -109,7 +109,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
       }).unwrap();
 
       toast.success("Community updated successfully!", {
-        description: `Your community "${data.name}" has been updated.`,
+        description: `Your community "${data.title as string}" has been updated.`,
       });
 
       router.push("/main/manage-communities");
@@ -129,7 +129,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
     }
   };
 
-  const name = watch("name") || "Community Name";
+  const title = watch("title") || "Community Name";
   const description = watch("description") || "Your community description";
 
   const handleFileChange = (file: File | null, type: 'cover_image' | 'profile_image') => {
@@ -245,7 +245,7 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
                     Community Name
                   </label>
                   <input
-                    {...register("name", { required: true })}
+                    {...register("title", { required: true })}
                     className="w-full p-2.5 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
                 </div>
@@ -542,12 +542,12 @@ const EditCommunityForm = ({ communityName }: EditCommunityFormProps) => {
             ) : (
               <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">
-                  {name.charAt(0).toUpperCase()}
+                  {title.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
           </div>
-          <h3 className="font-semibold text-lg">{name}</h3>
+          <h3 className="font-semibold text-lg">{title}</h3>
           <p className="text-sm text-gray-300 mt-1">{description}</p>
           <div className="flex justify-center gap-2 mt-4 text-xs text-gray-400">
             <span>{community.members_count || 0} member{(community.members_count || 0) !== 1 ? "s" : ""}</span>•<span>{community.posts_count || 0} post{(community.posts_count || 0) !== 1 ? "s" : ""}</span>

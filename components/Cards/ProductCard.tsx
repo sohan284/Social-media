@@ -19,6 +19,7 @@ interface ProductCardProps {
     isOwner?: boolean;
     onEdit?: () => void;
     onDelete?: () => void;
+    onCardClick?: () => void;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -32,7 +33,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     user_name,
     isOwner = false,
     onEdit,
-    onDelete
+    onDelete,
+    onCardClick
 }) => {
     const imageUrl = image 
         ? (image.startsWith('http') ? image : `${getApiBaseUrl()}${image.startsWith('/') ? image.slice(1) : image}`)
@@ -45,7 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         : "Price not available";
 
     return (
-        <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div onClick={onCardClick} className="group relative flex flex-col overflow-hidden cursor-pointer rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             {/* Product Image */}
             <div className="relative w-full aspect-square overflow-hidden">
                 <Image

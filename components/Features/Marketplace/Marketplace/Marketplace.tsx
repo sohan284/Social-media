@@ -8,12 +8,14 @@ import { getUsernameFromToken, getStoredAccessToken } from '@/lib/auth';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EditProductModal from '@/components/admin/EditProductModal';
+import { useRouter } from 'next/navigation';
 
 const Marketplace = () => {
     const { data: itemsResponse, isLoading, isError, refetch } = useGetMarketplaceItemsQuery();
     const { data: userProfile } = useGetCurrentUserProfileQuery();
     const [deleteProduct] = useDeleteProductMutation();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const router = useRouter();
     const [productToDelete, setProductToDelete] = useState<{
         id: number | string;
         name: string;
@@ -149,6 +151,7 @@ const Marketplace = () => {
                             isOwner={isOwner}
                             onEdit={isOwner ? () => handleEditClick(item) : undefined}
                             onDelete={isOwner ? () => handleDeleteClick(item) : undefined}
+                            onCardClick={() => {router.push(`/marketplace/product/${item.id}`)}}
                         />
                     );
                 })}

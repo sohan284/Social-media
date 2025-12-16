@@ -14,7 +14,7 @@ export interface CreateCommunityRequest {
 }
 
 export interface UpdateCommunityRequest {
-  name: string;
+  title: string;
   description?: string;
   profile_image?: File;
   cover_image?: File;
@@ -139,7 +139,7 @@ export const communityApi = baseApi.injectEndpoints({
     updateCommunity: builder.mutation<CreateCommunityResponse, { communityName: string; data: UpdateCommunityRequest }>({
       query: ({ communityName, data }) => {
         const formData = new FormData();
-        formData.append("name", data.name);
+        formData.append("title", data.title);
         
         if (data.description !== undefined) {
           formData.append("description", data.description);
