@@ -55,6 +55,16 @@ export interface GetMarketplaceItemsResponse {
   [key: string]: unknown;
 }
 
+export interface GetProductsResponse {
+  data?: MarketplaceItem[];
+  results?: {
+    data?: MarketplaceItem[];
+  };
+  items?: MarketplaceItem[];
+  products?: MarketplaceItem[];
+  [key: string]: unknown;
+}
+
 export interface CreateProductRequest {
   name: string;
   image: File;
@@ -62,6 +72,19 @@ export interface CreateProductRequest {
   condition: string;
   status: "draft" | "published";
   sub_category: number;
+  color?: string;
+  description?: string;
+  location?: string;
+}
+
+export interface UpdateProductRequest {
+  id: number | string;
+  name?: string;
+  image?: File;
+  price?: string;
+  condition?: string;
+  status?: "draft" | "published";
+  sub_category?: number;
   color?: string;
   description?: string;
   location?: string;
@@ -125,6 +148,7 @@ export const marketplaceApi = baseApi.injectEndpoints({
           method: "GET",
         };
       },
+      providesTags: ["MarketplaceItems"],
     }),
     createProduct: builder.mutation<CreateProductResponse, CreateProductRequest>({
       query: (data) => {
@@ -150,7 +174,7 @@ export const marketplaceApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: () => [{ type: 'Followers' }],
+      invalidatesTags: ["MarketplaceItems"],
     }),
     getMarketplaceCategories: builder.query<GetMarketplaceCategoriesResponse, void>({
       query: () => ({
@@ -209,7 +233,46 @@ export const marketplaceApi = baseApi.injectEndpoints({
         url: `/api/marketplace/subcategories/${id}/`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Categories"],
+      invalidatesTags: ["MarketplaceItems"],
+    }),
+    getProducts: builder.query<GetProductsResponse, void>({
+      query: () => ({
+        url: "/api/marketplace/items/",
+        method: "GET",
+      }),
+      providesTags: ["MarketplaceItems"],
+    }),
+    deleteProduct: builder.mutation<{ success: boolean; message: string }, number | string>({
+      query: (id) => ({
+        url: `/api/marketplace/items/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["MarketplaceItems"],
+    }),
+    updateProduct: builder.mutation<CreateProductResponse, UpdateProductRequest>({
+      query: (data) => {
+        const formData = new FormData();
+        // Always send required fields
+        if (data.name !== undefined) formData.append("name", data.name);
+        if (data.price !== undefined) formData.append("price", data.price);
+        if (data.condition !== undefined) formData.append("condition", data.condition);
+        if (data.status !== undefined) formData.append("status", data.status);
+        if (data.sub_category !== undefined) formData.append("sub_category", data.sub_category.toString());
+        // Image is required - always send it (either new or existing)
+        if (data.image instanceof File) {
+          formData.append("image", data.image);
+        }
+        // Optional fields - only send if they have values
+        if (data.color !== undefined && data.color) formData.append("color", data.color);
+        if (data.description !== undefined && data.description) formData.append("description", data.description);
+        if (data.location !== undefined && data.location) formData.append("location", data.location);
+        return {
+          url: `/api/marketplace/items/${data.id}/`,
+          method: "PUT",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["MarketplaceItems"],
     }),
   }),
 });
@@ -224,5 +287,8 @@ export const {
   useCreateMarketplaceSubcategoryMutation,
   useUpdateMarketplaceSubcategoryMutation,
   useDeleteMarketplaceSubcategoryMutation,
+  useGetProductsQuery,
+  useDeleteProductMutation,
+  useUpdateProductMutation,
 } = marketplaceApi;
 

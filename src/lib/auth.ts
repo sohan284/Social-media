@@ -66,6 +66,24 @@ export const getRoleFromToken = (token?: string | null): UserRole | null => {
   }
 };
 
+export const getUsernameFromToken = (token?: string | null): string | null => {
+  if (!token) return null;
+
+  try {
+    const payload = decodePayload(token);
+    return (
+      payload?.username ||
+      payload?.user?.username ||
+      payload?.data?.username ||
+      payload?.user_name ||
+      null
+    );
+  } catch (error) {
+    console.error("Failed to decode token username:", error);
+    return null;
+  }
+};
+
 export const getStoredAccessToken = (): string | null => {
   if (!isBrowser()) return null;
   return (

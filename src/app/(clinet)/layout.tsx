@@ -3,7 +3,7 @@ import ProtectedLayout from "../../../components/Layouts/ProtectedLayout";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedLayout allowedRoles={["user"]} fallbackRedirect="/dashboard">
+    <ProtectedLayout allowedRoles={["user", "admin"]} fallbackRedirect="/dashboard">
       <HomeLayout>{children}</HomeLayout>
     </ProtectedLayout>
   );

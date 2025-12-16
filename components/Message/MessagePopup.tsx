@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { AiOutlineClose, AiOutlineSearch, AiOutlinePlus } from 'react-icons/ai';
 import ConversationView from './ConversationView';
 import MessageList from './MessageList';
+import MessageUserList from './MessageUserList';
 import { useGetChatRoomsQuery, useCreateChatRoomMutation } from '@/store/chatApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ interface User {
 const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState<"users" | "rooms">("users");
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [roomName, setRoomName] = useState('');
   const { data: roomsResponse } = useGetChatRoomsQuery(undefined, { skip: !isOpen });
@@ -135,13 +137,41 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
             </div>
           )}
 
+          {/* Tabs */}
+          <div className="px-3 pt-2 border-b border-gray-800 bg-[#06133f]">
+            <div className="flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("users")}
+                className={`flex-1 py-1.5 rounded-full cursor-pointer transition-colors ${
+                  activeTab === "users"
+                    ? "bg-white text-black font-semibold"
+                    : "bg-transparent text-white/60 hover:text-white"
+                }`}
+              >
+                Users
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("rooms")}
+                className={`flex-1 py-1.5 rounded-full cursor-pointer transition-colors ${
+                  activeTab === "rooms"
+                    ? "bg-white text-black font-semibold"
+                    : "bg-transparent text-white/60 hover:text-white"
+                }`}
+              >
+                Rooms
+              </button>
+            </div>
+          </div>
+
           {/* Search Bar */}
           <div className="p-3 border-b border-gray-700">
             <div className="relative">
               <AiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
               <input
                 type="text"
-                placeholder="Search messages..."
+                placeholder={activeTab === "users" ? "Search users..." : "Search messages..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full text-white pl-9 pr-4 py-2 border border-gray-800 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-700 focus:border-transparent text-sm"
@@ -150,9 +180,13 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
           </div>
 
 
-          {/* Message List */}
+          {/* Message / User List */}
           <div className="flex-1 overflow-hidden">
-            <MessageList searchQuery={searchQuery} onUserSelect={handleUserSelect} />
+            {activeTab === "users" ? (
+              <MessageUserList searchQuery={searchQuery} onUserSelect={handleUserSelect} />
+            ) : (
+              <MessageList searchQuery={searchQuery} onUserSelect={handleUserSelect} />
+            )}
           </div>
         </>
       )}

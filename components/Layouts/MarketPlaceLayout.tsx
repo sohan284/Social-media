@@ -11,7 +11,6 @@ const topNavLinks = [
   { label: "Browse", href: "/marketplace" },
   { label: "Categories", href: "/marketplace/categories" },
   { label: "Sell", href: "/marketplace/sell" },
-  { label: "Buy", href: "/marketplace/buy" },
 ];
 
 export default function MarketPlaceLayout({ children }: { children: React.ReactNode }) {

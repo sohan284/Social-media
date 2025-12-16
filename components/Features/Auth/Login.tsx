@@ -10,6 +10,8 @@ import { useLoginMutation } from "@/store/authApi";
 import { useRouter } from "next/navigation";
 import { getRoleFromToken, storeAuthTokens } from "@/lib/auth";
 import { toast } from "sonner";
+import { store } from "@/store/store";
+import { baseApi } from "@/store/baseApi";
 
 type LoginForm = {
   email: string;
@@ -50,6 +52,9 @@ const Login = () => {
       const refreshToken = response.tokens?.refresh;
       const persistSession = Boolean(data.keepMeLoggedIn);
 
+      // Clear RTK Query cache before storing new tokens
+      store.dispatch(baseApi.util.resetApiState());
+      
       storeAuthTokens({
         accessToken,
         refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,
@@ -186,23 +191,23 @@ const Login = () => {
                 </div>
 
                 <div className="flex justify-between items-center text-xs sm:text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  {/* <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       {...loginForm.register("keepMeLoggedIn")}
                       className="accent-green-500"
                     />
                     <span className="text-[#299616]">Keep me Log in</span>
-                  </label>
+                  </label> */}
 
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  {/* <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       {...loginForm.register("rememberMe")}
                       className="accent-green-500"
                     />
                     <span className="text-[#299616]">Remember me</span>
-                  </label>
+                  </label> */}
                 </div>
 
                 <div className="flex items-center my-4">

@@ -32,13 +32,16 @@ const CreateCommunityForm = () => {
       const profileImageFile = data.profile_image && data.profile_image.length > 0 ? data.profile_image[0] : undefined;
       const coverImageFile = data.cover_image && data.cover_image.length > 0 ? data.cover_image[0] : undefined;
 
+      // Convert name to single word (remove spaces, lowercase)
+      const nameAsSingleWord = data.name.toLowerCase().replace(/\s+/g, '');
+
       console.log("Submitting form with files:", {
         profile_image: profileImageFile ? { name: profileImageFile.name, size: profileImageFile.size } : undefined,
         cover_image: coverImageFile ? { name: coverImageFile.name, size: coverImageFile.size } : undefined,
       });
 
       await createCommunity({
-        name: data.name,
+        name: nameAsSingleWord,
         description: data.description,
         visibility: data.visibility,
         profile_image: profileImageFile,
@@ -55,7 +58,7 @@ const CreateCommunityForm = () => {
       });
 
       // Navigate to home or community page
-      router.push("/main");
+      router.push("/");
     } catch (error: unknown) {
       console.error('Error creating community:', error);
       const errorMessage = 

@@ -142,7 +142,7 @@ const Friends = () => {
   };
 
   return (
-    <div className="px-2 md:px-4 xl:px-10">
+    <div className=" max-w-[1220px] mx-auto px-4 pt-2 text-white">
       <div className="mt-6 bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl p-4 xl:p-6">
         <h1 className="text-2xl font-bold text-white mb-6">Friends</h1>
 

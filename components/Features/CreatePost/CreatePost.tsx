@@ -38,7 +38,23 @@ type MediaPreview = {
   url: string;
 };
 
-const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?: boolean; communityId?: number | string; onSuccess?: () => void }) => {
+interface SharedPostData {
+  content?: string;
+  title?: string;
+  mediaUrls?: string[];
+}
+
+const CreatePost = ({ 
+  isProfile = false, 
+  communityId, 
+  onSuccess,
+  sharedPostData 
+}: { 
+  isProfile?: boolean; 
+  communityId?: number | string; 
+  onSuccess?: () => void;
+  sharedPostData?: SharedPostData;
+}) => {
   const [activeTab, setActiveTab] = useState<"text" | "image" | "link">("text");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -64,14 +80,65 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
     reset,
   } = useForm<FormData>({
     defaultValues: {
-      title: "",
-      content: "",
+      title: sharedPostData?.title || "",
+      content: sharedPostData?.content || "",
       tags: [],
-      postType: "text",
+      postType: sharedPostData?.mediaUrls && sharedPostData.mediaUrls.length > 0 ? "image" : "text",
       linkUrl: "",
       files: [],
     },
   });
+
+  const updateFormFiles = (items: MediaPreview[]) => {
+    previewsRef.current = items;
+    setValue("files", items.length ? items.map((item) => item.file) : undefined);
+  };
+
+  // Pre-fill form when sharedPostData is provided
+  useEffect(() => {
+    if (sharedPostData) {
+      if (sharedPostData.title) {
+        setValue("title", sharedPostData.title);
+      }
+      if (sharedPostData.content) {
+        setValue("content", sharedPostData.content);
+      }
+      if (sharedPostData.mediaUrls && sharedPostData.mediaUrls.length > 0) {
+        setActiveTab("image");
+        setValue("postType", "image");
+        
+        // Convert URLs to File objects for preview
+        const loadMediaFromUrls = async () => {
+          const mediaPreviews: MediaPreview[] = [];
+          
+          for (let i = 0; i < sharedPostData.mediaUrls!.length; i++) {
+            const url = sharedPostData.mediaUrls![i];
+            try {
+              const response = await fetch(url);
+              const blob = await response.blob();
+              const fileName = url.split('/').pop() || `image-${i}.jpg`;
+              const file = new File([blob], fileName, { type: blob.type });
+              
+              mediaPreviews.push({
+                id: `shared-${i}-${Date.now()}`,
+                file: file,
+                url: URL.createObjectURL(blob),
+              });
+            } catch (error) {
+              console.error(`Failed to load media from ${url}:`, error);
+            }
+          }
+          
+          if (mediaPreviews.length > 0) {
+            setMediaPreviews(mediaPreviews);
+            updateFormFiles(mediaPreviews);
+          }
+        };
+        
+        loadMediaFromUrls();
+      }
+    }
+  }, [sharedPostData, setValue]);
 
   const titleValue = watch("title");
   const contentValue = watch("content");
@@ -103,11 +170,6 @@ const CreatePost = ({ isProfile = false, communityId, onSuccess }: { isProfile?:
     file,
     url: URL.createObjectURL(file),
   });
-
-  const updateFormFiles = (items: MediaPreview[]) => {
-    previewsRef.current = items;
-    setValue("files", items.length ? items.map((item) => item.file) : undefined);
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

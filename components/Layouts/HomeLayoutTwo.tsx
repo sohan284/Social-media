@@ -4,6 +4,7 @@ import { FiX, FiMenu } from "react-icons/fi";
 import SidebarNavLink from "../../components/Shared/SidebarNavLink/SidebarNavLink";
 import bg from "../../public/main-bg.jpg";
 import Navbar from "../Shared/Navbar/Navbar";
+import { SearchProvider } from "@/contexts/SearchContext";
 
 export default function HomeLayoutTwo({
   children,
@@ -113,10 +114,12 @@ export default function HomeLayoutTwo({
           lg:ml-[370px]
         `}
       >
-        <div className=" mx-auto mt-16">
-          <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
-          {children}
-        </div>
+        <SearchProvider>
+          <div className=" mx-auto mt-16">
+            <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
+            {children}
+          </div>
+        </SearchProvider>
       </main>
     </div>
   );

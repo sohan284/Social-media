@@ -15,6 +15,17 @@ import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import NotificationDropdown from "../../Message/NotificationDropdown";
 import { IoPersonOutline } from "react-icons/io5";
 import { useGetNotificationsQuery } from "@/store/notificationApi";
+import { useSearch } from "@/contexts/SearchContext";
+
+// Fallback hook for when SearchContext is not available
+const useSearchSafe = () => {
+  try {
+    return useSearch();
+  } catch {
+    // Return default values if context is not available
+    return { searchQuery: "", setSearchQuery: () => {} };
+  }
+};
 
 interface NavbarProps {
   onMenuToggle?: () => void;
@@ -25,6 +36,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
   const [isMessagePopupOpen, setIsMessagePopupOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const { searchQuery, setSearchQuery } = useSearchSafe();
 
   const router = useRouter();
   const {
@@ -87,8 +99,10 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
                 <GoSearch className="absolute left-3 text-white/60" size={20} />
                 <input
                   type="text"
-                  placeholder="Search"
-                  className="w-full pl-10 pr-4 py-2 bg-black/30 border border-white/20 rounded-xl text-white/60 placeholder-white/40 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300"
+                  placeholder="Search posts by title or content..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-black/30 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300"
                 />
               </div>
             </div>

@@ -335,20 +335,17 @@ export default function InterestCategories() {
       </div>
 
       {/* TABLE */}
-      <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <h2 className="text-2xl font-semibold text-center mb-8">All Categories</h2>
-
-        <div className="mt-8">
-          <CustomTable
-            columns={columns}
-            data={tableData}
-            emptyMessage="No categories found. Create your first category!"
-            rowClassName={(row) =>
-              row.type === "subcategory" ? "bg-white/5 border-white/5" : ""
-            }
-          />
-        </div>
-      </div>
+      <CustomTable
+          title="All Categories"
+          columns={columns}
+          data={tableData}
+          emptyMessage="No categories found. Create your first category!"
+          isError={isError}
+          errorMessage="Failed to load categories. Please try again later."
+          rowClassName={(row) =>
+            row.type === "subcategory" ? "bg-white/5 border-white/5" : ""
+          }
+        />
 
       {/* MODAL */}
       <CategoryModal
