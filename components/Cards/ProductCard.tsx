@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import { Edit, Trash2 } from "lucide-react";
 import { getApiBaseUrl } from "@/lib/utils";
 
 interface ProductCardProps {
@@ -14,6 +15,10 @@ interface ProductCardProps {
         username?: string;
         display_name?: string;
     };
+    user_name?: string;
+    isOwner?: boolean;
+    onEdit?: () => void;
+    onDelete?: () => void;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -23,7 +28,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
     description,
     condition,
     location,
-    seller
+    seller,
+    user_name,
+    isOwner = false,
+    onEdit,
+    onDelete
 }) => {
     const imageUrl = image 
         ? (image.startsWith('http') ? image : `${getApiBaseUrl()}${image.startsWith('/') ? image.slice(1) : image}`)
@@ -36,7 +45,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         : "Price not available";
 
     return (
-        <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+        <div className="group relative flex flex-col overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             {/* Product Image */}
             <div className="relative w-full aspect-square overflow-hidden">
                 <Image
@@ -47,6 +56,36 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                {/* Edit/Delete Buttons - Only show if user is owner */}
+                {isOwner && (
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        {onEdit && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit();
+                                }}
+                                className="p-2 bg-blue-500/80 hover:bg-blue-500 rounded-lg transition text-white"
+                                title="Edit product"
+                            >
+                                <Edit className="w-4 h-4" />
+                            </button>
+                        )}
+                        {onDelete && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete();
+                                }}
+                                className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition text-white"
+                                title="Delete product"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Product Info */}

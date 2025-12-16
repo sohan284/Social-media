@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Tag,
   ShoppingBag,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,6 +23,7 @@ const menu = [
   { name: "User Management", icon: Users, path: '/dashboard/user-management' },
   { name: "Interest Category", icon: Tag, path: '/dashboard/interest-categories' },
   { name: "Marketplace Category", icon: ShoppingBag, path: '/dashboard/marketplace-categories' },
+  { name: "All Products", icon: Package, path: '/dashboard/all-products' },
   { name: "Statistics", icon: BarChart2, path: '/dashboard/statistics' },
 ];
 
