@@ -94,5 +94,5 @@ export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
   endpoints: () => ({}),
-  tagTypes: ["UserProfile", "Comments", "Communities", "Categories", "Followers", "ChatRooms", "Messages", "MarketplaceItems"],
+  tagTypes: ["UserProfile", "Comments", "Communities", "Categories", "Followers", "ChatRooms", "Messages", "MarketplaceItems", "Conversations", "ChatUsers"],
 });

@@ -40,6 +40,7 @@ export default function EditProductModal({
   const [status, setStatus] = useState<"draft" | "published">("published");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [link, setLink] = useState("");
   const [subCategory, setSubCategory] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export default function EditProductModal({
       setStatus((product.status as "draft" | "published") || "published");
       setDescription((product.description as string) || "");
       setLocation((product.location as string) || "");
+      setLink((product.link as string) || "");
       
       // Find subcategory ID from product data
       const subcategoryName = product.subcategory_name || product.sub_category_name;
@@ -158,6 +160,7 @@ export default function EditProductModal({
         sub_category: number;
         description?: string;
         location?: string;
+        link?: string;
         image: File;
       } = {
         id: product.id,
@@ -175,6 +178,10 @@ export default function EditProductModal({
 
       if (location.trim()) {
         updateData.location = location.trim();
+      }
+
+      if (link.trim()) {
+        updateData.link = link.trim();
       }
 
       await updateProduct(updateData).unwrap();
@@ -197,6 +204,7 @@ export default function EditProductModal({
     setStatus("published");
     setDescription("");
     setLocation("");
+    setLink("");
     setSubCategory(null);
     setImageFile(null);
     setImagePreview(null);
@@ -350,6 +358,20 @@ export default function EditProductModal({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Enter location"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
+                />
+              </div>
+
+              {/* Product Link */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Product Link
+                </label>
+                <input
+                  type="url"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  placeholder="https://example.com/product"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
                 />
               </div>

@@ -1,24 +1,126 @@
-import { BarChart } from "@/components/BarChart";
-import { Column, DataTable } from "@/components/DataTable";
-import { SlidersHorizontal } from "lucide-react"
+"use client";
 
+import { useMemo } from "react";
+import Image from "next/image";
+import { PieChart } from "@/components/PieChart";
+import { LineChart } from "@/components/LineChart";
+import { Column, DataTable } from "@/components/DataTable";
+import { useGetDashboardAnalyticsQuery } from "@/store/dashboardApi";
+import { getApiBaseUrl } from "@/lib/utils";
 
 interface PostData {
   postHead: string;
   postDate: string;
   totalLikes: string;
-  totalShare: string;
+  user_name: string;
+  avatar?: string;
 }
 
 export default function AdminDashboardHome() {
+  const { data: analyticsData, isLoading, isError } = useGetDashboardAnalyticsQuery();
+  
+  // Format date helper
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "2-digit",
+      });
+    } catch {
+      return "N/A";
+    }
+  };
+
+  // Format number helper
+  const formatNumber = (num: number | undefined) => {
+    if (!num) return "0";
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+  };
+
+  // Get image URL helper
+  const getImageUrl = (image: string | undefined) => {
+    if (!image) return "/sheep.jpg";
+    if (image.startsWith("http")) return image;
+    const baseUrl = getApiBaseUrl();
+    const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanPath = image.startsWith("/") ? image.slice(1) : image;
+    return `${cleanBase}/${cleanPath}`;
+  };
+
+  // Get user initials helper
+  const getUserInitials = (name: string) => {
+    if (!name) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Transform top posts to table data
+  const postData: PostData[] = useMemo(() => {
+    if (!analyticsData?.data?.top_posts) return [];
+    
+    return analyticsData.data.top_posts.map((post) => {
+      // Extract avatar URL - handle different possible structures
+      let avatarUrl: string | undefined;
+      if (typeof post.avatar === 'string') {
+        avatarUrl = post.avatar;
+      } else if (post.author?.avatar && typeof post.author.avatar === 'string') {
+        avatarUrl = post.author.avatar;
+      } else if (post.media && Array.isArray(post.media) && post.media[0] && typeof post.media[0] === 'string') {
+        avatarUrl = post.media[0];
+      }
+      
+      return {
+        postHead: post.title || "Untitled Post",
+        postDate: formatDate(post.created_at),
+        totalLikes: formatNumber(post.likes_count),
+        user_name: post.user_name || post.author?.username || post.username || "Unknown",
+        avatar: avatarUrl,
+      };
+    });
+  }, [analyticsData]);
   const postColumns: Column<PostData>[] = [
     {
-      header: 'SL',
-      accessor: (row, index) => index + 1
+      header: 'Avatar',
+      accessor: (row) => (
+        <div className="flex items-center justify-center">
+          {row.avatar ? (
+            <div className="relative w-10 h-10 rounded-full overflow-hidden">
+              <Image
+                src={getImageUrl(row.avatar)}
+                alt={row.user_name}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-[#6B83FA] flex items-center justify-center text-white font-semibold text-sm">
+              {getUserInitials(row.user_name)}
+            </div>
+          )}
+        </div>
+      )
     },
     {
       header: 'Post Head',
-      accessor: (row) => row.postHead
+      accessor: (row) => (
+        <div className="max-w-xs truncate" title={row.postHead}>
+          {row.postHead}
+        </div>
+      )
+    },
+    {
+      header: 'Username',
+      accessor: (row) => row.user_name
     },
     {
       header: 'Post Date',
@@ -28,91 +130,104 @@ export default function AdminDashboardHome() {
       header: 'Total Likes',
       accessor: (row) => row.totalLikes
     },
-    {
-      header: 'Total Share',
-      accessor: (row) => row.totalShare
-    }
-  ];
-
-  // Your post data with proper typing
-  const postData: PostData[] = [
-    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' },
-    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' },
-    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' },
-    { postHead: 'Post Head', postDate: '01.12.25', totalLikes: '10K', totalShare: '200' }
   ];
 
   return (
     <div className="space-y-10">
 
-      {/* WELCOME SECTION */}
-      <div className="flex items-center justify-between">
-        <div>
-        <h2 className="text-xl opacity-70">Hi Mr.man</h2>
-        <h1 className="text-4xl font-semibold">Welcome Back</h1>
-      </div>
-      <div>    
-        <button className="bg-[#6B83FA] flex items-center px-8 py-4 rounded-[20px] backdrop-blur-lg text-lg">
-          <SlidersHorizontal className="w-5 h-5 mr-2 inline-block" />
-          <span>Customize Dashboard</span>
-        </button>
-      </div>
-      </div>
+     
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-        {/* KPI CARDS */}
-        <div className="grid grid-cols-1 gap-6">
-          {[
-            { title: "Active Users", percent: 50, count: "123K users" },
-            { title: "Total Users", percent: 70, count: "1.2M users" },
-            { title: "New Signup", percent: 20, count: "12,345 users" },
-          ].map((item) => (
-            <div key={item.title} className=" p-6 rounded-xl border border-white/20">
-              <h3 className="mb-4 text-center">{item.title}</h3>
-
-              <div className="flex items-center flex-col space-y-4">
-                {/* Circle Progress Mock */}
-                <div className="relative w-20 h-20">
-                  <svg className="w-full h-full">
-                    <circle cx="40" cy="40" r="32" stroke="#ffffff40" strokeWidth="8" fill="none" />
-                    <circle
-                      cx="40"
-                      cy="40"
-                      r="32"
-                      stroke="#ff4db8"
-                      strokeWidth="8"
-                      fill="none"
-                      strokeDasharray={200}
-                      strokeDashoffset={200 - (200 * item.percent) / 100}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xl font-semibold">
-                    {item.percent}%
-                  </span>
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-pulse text-white/60">Loading dashboard analytics...</div>
+        </div>
+      ) : isError ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-red-400">Failed to load dashboard analytics</div>
+        </div>
+      ) : analyticsData ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 space-y-10 sm:gap-10 overflow-y-auto">
+          {/* KPI CARDS - Left Column */}
+          <div className="grid grid-cols-1 gap-6">
+            {[
+              { 
+                title: "Total Users", 
+                count: `${analyticsData.data.total_users.toLocaleString()} users`,
+                color: "#6B83FA"
+              },
+              { 
+                title: "Total Posts", 
+                count: `${analyticsData.data.total_posts.toLocaleString()} posts`,
+                color: "#517EE0"
+              },
+              { 
+                title: "New Signup (7d)", 
+                count: `${analyticsData.data.recent_activity.new_users_7d.toLocaleString()} users`,
+                color: "#ff4db8"
+              },
+              { 
+                title: "Total Communities", 
+                count: `${analyticsData.data.total_communities.toLocaleString()} communities`,
+                color: "#10B981"
+              },
+            ].map((item) => (
+              <div key={item.title} className="  rounded-xl border border-white/20 bg-black/30 backdrop-blur-sm py-6 md:py-0 flex items-center justify-center">
+               <div>
+               <h3 className="mb-2 text-center text-white text-sm font-medium">{item.title}</h3>
+                <div className="flex items-center justify-center">
+                  <p className="text-2xl font-semibold text-white">{item.count}</p>
                 </div>
-                <p className="opacity-70">{item.count}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="col-span-3 space-y-10">
+            {/* CHARTS GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* LINE CHART - Activity Timeline */}
+              <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm  ">
+                <h1 className="text-center text-2xl font-semibold mb-4 text-white">Recent Activity (Last 7 Days)</h1>
+                <LineChart
+                  data={analyticsData.data.activity_timeline}
+                  title=""
+                />
+              </div>
+
+              {/* PIE CHART - Post Status Distribution */}
+              <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
+                <h1 className="text-center text-2xl font-semibold mb-4 text-white">Post Status Distribution</h1>
+                <PieChart
+                  data={{
+                    labels: ['Approved', 'Rejected'],
+                    values: [
+                      analyticsData.data.post_status.approved,
+                      analyticsData.data.post_status.rejected,
+                    ],
+                    colors: ['#387135', '#B53939'],
+                  }}
+                />
               </div>
             </div>
-          ))}
-        </div>
 
-        <div className="col-span-3 space-y-10">
-              {/* ALL POSTS TABLE */}
-            
-              <DataTable 
-                title="All Posts" 
-                columns={postColumns} 
-                data={postData} 
+            {/* BAR CHART - Post Stats */}
+            {/* <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6">
+              <h1 className="text-center text-2xl font-semibold mb-4 text-white">Post Status Breakdown</h1>
+              <BarChart
+                approved={analyticsData.data.post_status.approved}
+                rejected={analyticsData.data.post_status.rejected}
               />
+            </div> */}
 
-            {/* POST STATS GRAPH MOCK */}
-            <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6">
-              <h1 className="text-center text-2xl font-semibold mb-4">Post Stats</h1>
-              <BarChart />
-            </div>
+            {/* TOP POSTS TABLE */}
+            <DataTable 
+              title="Top 10 Most Liked Posts" 
+              columns={postColumns} 
+              data={postData} 
+            />
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

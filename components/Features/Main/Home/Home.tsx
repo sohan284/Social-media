@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Post from "../Post/Post";
-import { useGetNewsFeedQuery } from "@/store/postApi";
+import { useGetNewsFeedQuery, PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { FiEdit3, FiImage, FiLink } from "react-icons/fi";
 import { useSearch } from "@/contexts/SearchContext";
@@ -25,24 +25,36 @@ const Home = () => {
   const profile = profileResponse?.data;
   const { searchQuery } = useSearchSafe();
 
-  const allPosts = useMemo(() => {
+  const allPosts = useMemo((): PostItem[] => {
     if (!postsResponse) return [];
-    return (
-      postsResponse.data ??
-      postsResponse.results?.data ??
-      postsResponse.posts ??
-      []
-    );
+    
+    // Handle different response structures
+    if (Array.isArray(postsResponse.data)) {
+      return postsResponse.data;
+    }
+    if (Array.isArray(postsResponse.posts)) {
+      return postsResponse.posts;
+    }
+    if (postsResponse.results) {
+      if (Array.isArray(postsResponse.results)) {
+        return postsResponse.results;
+      }
+      if (postsResponse.results.data && Array.isArray(postsResponse.results.data)) {
+        return postsResponse.results.data;
+      }
+    }
+    
+    return [];
   }, [postsResponse]);
 
   // Filter posts based on search query
-  const posts = useMemo(() => {
+  const posts = useMemo((): PostItem[] => {
     if (!searchQuery.trim()) {
       return allPosts;
     }
 
     const query = searchQuery.toLowerCase().trim();
-    return allPosts.filter((post) => {
+    return allPosts.filter((post: PostItem) => {
       const title = (post.title || "").toLowerCase();
       const content = (post.content || "").toLowerCase();
       return title.includes(query) || content.includes(query);

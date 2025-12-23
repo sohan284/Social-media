@@ -1,14 +1,25 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard from '../../../../../components/Cards/ProductCard';
-import { useGetMarketplaceItemsQuery, useGetMarketplaceCategoriesQuery } from '@/store/marketplaceApi';
+import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
+import { useGetMarketplaceItemsQuery, useGetMarketplaceCategoriesQuery, MarketplaceItem } from '@/store/marketplaceApi';
 
 const BuyPage = () => {
     const searchParams = useSearchParams();
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [productToView, setProductToView] = useState<MarketplaceItem & {
+        status?: string;
+        name?: string;
+        user_name?: string;
+        condition?: string;
+        location?: string;
+        description?: string;
+        link?: string;
+    } | null>(null);
 
     // Fetch all items and categories
     const { data: itemsResponse, isLoading, isError } = useGetMarketplaceItemsQuery();
@@ -102,6 +113,19 @@ const BuyPage = () => {
         return filtered;
     }, [allItems, selectedCategoryName, selectedSubcategoryName]);
 
+    const handleViewDetails = (item: MarketplaceItem) => {
+        setProductToView(item as MarketplaceItem & {
+            status?: string;
+            name?: string;
+            user_name?: string;
+            condition?: string;
+            location?: string;
+            description?: string;
+            link?: string;
+        });
+        setIsDetailsModalOpen(true);
+    };
+
     if (isLoading) {
         return (
             <div>
@@ -176,16 +200,29 @@ const BuyPage = () => {
                     <ProductCard
                         key={item.id}
                         id={item.id}
-                        title={item.title}
+                        title={(item.title || (item as { name?: string }).name) as string | undefined}
                         price={item.price}
                         image={item.image || item.images?.[0]}
                         description={item.description}
                         condition={item.condition}
                         location={item.location}
+                        link={item.link}
                         seller={item.seller}
+                        user_name={(item as { user_name?: string }).user_name}
+                        onViewDetails={() => handleViewDetails(item)}
                     />
                 ))}
             </div>
+
+            {/* Product Details Modal */}
+            <ProductDetailsModal
+                isOpen={isDetailsModalOpen}
+                onClose={() => {
+                    setIsDetailsModalOpen(false);
+                    setProductToView(null);
+                }}
+                product={productToView}
+            />
         </div>
     );
 };

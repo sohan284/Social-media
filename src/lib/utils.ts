@@ -6,5 +6,5 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_API_URL || "https://socialmedia.lumivancelabs.com";
+  return process.env.NEXT_PUBLIC_API_URL || "https://socialmedia.lumivancelabs.com/";
 }

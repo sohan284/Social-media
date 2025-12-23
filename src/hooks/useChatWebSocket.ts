@@ -28,12 +28,13 @@ type WebSocketMessage = {
 
 type UseChatWebSocketOptions = {
   enabled?: boolean;
+  roomId?: number | string;
   onMessage?: (message: WebSocketMessage) => void;
   onError?: (error: Event) => void;
 };
 
 export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
-  const { enabled = true, onMessage, onError } = options;
+  const { enabled = true, roomId, onMessage, onError } = options;
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -47,18 +48,13 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     // Convert HTTP/HTTPS URL to WebSocket URL
     let wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/$/, '');
     
-    // Common WebSocket endpoints for chat (try different formats)
-    // Format 1: /ws/chat/
-    // Format 2: /ws/chat
-    // Format 3: /chat/ws/
-    const possibleEndpoints = ['/ws/chat/', '/ws/chat', '/chat/ws/', '/chat/ws'];
-    
-    // Check if URL already contains a WebSocket endpoint
-    const hasEndpoint = possibleEndpoints.some(endpoint => wsUrl.includes(endpoint));
-    
-    if (!hasEndpoint) {
-      // Default to /ws/chat/
-      wsUrl += '/ws/chat/';
+    // For direct messaging, always use the direct endpoint
+    // Room-based chats can use room-specific endpoints later
+    if (roomId) {
+      wsUrl += `/ws/chat/${roomId}/`;
+    } else {
+      // Direct messaging endpoint
+      wsUrl += '/ws/chat/direct/';
     }
     
     // Add token as query parameter if available
@@ -68,7 +64,7 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     }
     
     return wsUrl;
-  }, []);
+  }, [roomId]);
 
   const connect = useCallback(() => {
     if (!enabled || wsRef.current?.readyState === WebSocket.OPEN) {
@@ -82,56 +78,74 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
       ws.onopen = () => {
         console.log('WebSocket connected');
         reconnectAttemptsRef.current = 0;
+        // User is now online - backend handles this via WebSocket connection
       };
 
       ws.onmessage = (event) => {
         try {
           const data: WebSocketMessage = JSON.parse(event.data);
           
-          // Handle different message types
-          if (data.type === 'message' || data.message || data.content) {
-            const message = data.message || data;
-            const roomId = message.room || data.room || (message as { room_id?: number | string }).room_id;
+          // Handle different message types - backend sends 'data' field for room messages
+          const message = data.message || data.data || data;
+          const messageType = data.type;
+          
+          // For room messages, check room_id in the message object
+          const roomId = message.room_id || message.room || data.room || (message as { room_id?: number | string }).room_id;
 
-            if (roomId && message.id) {
-              // Update the messages cache for the specific room
-              store.dispatch(
-                chatApi.util.updateQueryData('getRoomMessages', roomId, (draft) => {
-                  const messagesData = 
-                    draft.data ?? 
-                    draft.results?.data ?? 
-                    draft.messages ?? 
-                    [];
+          if (messageType === 'message' && roomId && message.id) {
+            console.log('WebSocket room message received:', { roomId, messageId: message.id, content: message.content });
+            
+            // Update the messages cache for the specific room
+            store.dispatch(
+              chatApi.util.updateQueryData('getRoomMessages', roomId, (draft) => {
+                const messagesData = 
+                  draft.data ?? 
+                  draft.results?.data ?? 
+                  draft.messages ?? 
+                  [];
 
-                  // Check if message already exists
-                  const messageExists = messagesData.some(
-                    (msg: { id: number | string }) => String(msg.id) === String(message.id)
-                  );
+                // Check if message already exists
+                const messageExists = messagesData.some(
+                  (msg: { id: number | string }) => String(msg.id) === String(message.id)
+                );
 
-                  if (!messageExists) {
-                    // Ensure message has required fields
-                    const messageWithText = message as { content?: string; text?: string; [key: string]: unknown };
-                    const messageContent = message.content || messageWithText.text || '';
-                    const messageCreatedAt = message.created_at || new Date().toISOString();
-                    const messageSender = message.sender || (message as { user?: ChatUser }).user;
-                    
-                    const formattedMessage: ChatMessage = {
-                      ...message,
-                      id: message.id as number | string,
-                      room: roomId,
-                      sender: messageSender as ChatUser | undefined,
-                      content: typeof messageContent === 'string' ? messageContent : '',
-                      created_at: typeof messageCreatedAt === 'string' ? messageCreatedAt : new Date().toISOString(),
-                      is_read: message.is_read !== false,
-                    };
-                    messagesData.push(formattedMessage);
-                  }
-                })
-              );
+                if (!messageExists) {
+                  // Ensure message has required fields
+                  const messageWithText = message as { content?: string; text?: string; [key: string]: unknown };
+                  const messageContent = message.content || messageWithText.text || '';
+                  const messageCreatedAt = message.created_at || new Date().toISOString();
+                  const messageSender = message.sender || (message as { user?: ChatUser }).user;
+                  
+                  const formattedMessage: ChatMessage = {
+                    ...message,
+                    id: message.id as number | string,
+                    room: roomId,
+                    room_id: roomId,
+                    sender: messageSender as ChatUser | undefined,
+                    sender_id: (message as { sender_id?: number | string }).sender_id || (messageSender as ChatUser)?.id,
+                    sender_username: (message as { sender_username?: string }).sender_username || (messageSender as ChatUser)?.username,
+                    content: typeof messageContent === 'string' ? messageContent : '',
+                    created_at: typeof messageCreatedAt === 'string' ? messageCreatedAt : new Date().toISOString(),
+                    is_read: message.is_read !== false,
+                  };
+                  messagesData.push(formattedMessage);
+                  console.log('Added message to cache:', formattedMessage);
+                } else {
+                  console.log('Message already exists in cache');
+                }
+              })
+            );
 
-              // Invalidate chat rooms to update last message and unread count
-              store.dispatch(chatApi.util.invalidateTags(['ChatRooms']));
-            }
+            // Invalidate chat rooms to update last message and unread count
+            store.dispatch(chatApi.util.invalidateTags(['ChatRooms']));
+          }
+
+          // Handle online status updates
+          if (data.type === 'online_status') {
+            const statusData = data as { user_id?: number | string; is_online?: boolean; [key: string]: unknown };
+            // Invalidate chat users and conversations to refresh online status
+            store.dispatch(chatApi.util.invalidateTags(['ChatUsers']));
+            store.dispatch(chatApi.util.invalidateTags(['Conversations']));
           }
 
           // Call custom onMessage handler if provided
@@ -170,7 +184,7 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     } catch (error) {
       console.error('Error creating WebSocket connection:', error);
     }
-  }, [enabled, getWebSocketUrl, onMessage, onError]);
+  }, [enabled, roomId, getWebSocketUrl, onMessage, onError]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

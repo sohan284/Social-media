@@ -8,6 +8,7 @@ import { getUsernameFromToken, getStoredAccessToken } from '@/lib/auth';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EditProductModal from '@/components/admin/EditProductModal';
+import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
 import { useRouter } from 'next/navigation';
 
 const Marketplace = () => {
@@ -21,6 +22,7 @@ const Marketplace = () => {
         name: string;
     } | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [productToEdit, setProductToEdit] = useState<MarketplaceItem & {
         status?: string;
         name?: string;
@@ -28,6 +30,15 @@ const Marketplace = () => {
         condition?: string;
         location?: string;
         description?: string;
+    } | null>(null);
+    const [productToView, setProductToView] = useState<MarketplaceItem & {
+        status?: string;
+        name?: string;
+        user_name?: string;
+        condition?: string;
+        location?: string;
+        description?: string;
+        link?: string;
     } | null>(null);
 
     // Get current user's username
@@ -102,6 +113,23 @@ const Marketplace = () => {
         setDeleteDialogOpen(true);
     };
 
+    const handleCardClick = (item: MarketplaceItem) => {
+        router.push(`/marketplace/product/${item.id}`);
+    };
+
+    const handleViewDetails = (item: MarketplaceItem) => {
+        setProductToView(item as MarketplaceItem & {
+            status?: string;
+            name?: string;
+            user_name?: string;
+            condition?: string;
+            location?: string;
+            description?: string;
+            link?: string;
+        });
+        setIsDetailsModalOpen(true);
+    };
+
     const handleDeleteConfirm = async () => {
         if (!productToDelete) return;
 
@@ -146,12 +174,14 @@ const Marketplace = () => {
                             description={item.description}
                             condition={item.condition}
                             location={item.location}
+                            link={item.link}
                             seller={item.seller}
                             user_name={(item as { user_name?: string }).user_name}
                             isOwner={isOwner}
                             onEdit={isOwner ? () => handleEditClick(item) : undefined}
                             onDelete={isOwner ? () => handleDeleteClick(item) : undefined}
-                            onCardClick={() => {router.push(`/marketplace/product/${item.id}`)}}
+                            onCardClick={isOwner ? () => handleCardClick(item) : undefined}
+                            onViewDetails={() => handleViewDetails(item)}
                         />
                     );
                 })}
@@ -170,6 +200,16 @@ const Marketplace = () => {
                     setProductToEdit(null);
                     handleProductUpdated();
                 }}
+            />
+
+            {/* Product Details Modal */}
+            <ProductDetailsModal
+                isOpen={isDetailsModalOpen}
+                onClose={() => {
+                    setIsDetailsModalOpen(false);
+                    setProductToView(null);
+                }}
+                product={productToView}
             />
 
             {/* Delete Confirmation Dialog */}

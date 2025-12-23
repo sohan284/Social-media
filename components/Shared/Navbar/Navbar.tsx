@@ -15,6 +15,7 @@ import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import NotificationDropdown from "../../Message/NotificationDropdown";
 import { IoPersonOutline } from "react-icons/io5";
 import { useGetNotificationsQuery } from "@/store/notificationApi";
+import { useGetConversationsListQuery, useGetChatRoomsQuery } from "@/store/chatApi";
 import { useSearch } from "@/contexts/SearchContext";
 
 // Fallback hook for when SearchContext is not available
@@ -46,6 +47,8 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   } = useGetCurrentUserProfileQuery();
 
   const { data: notificationsData } = useGetNotificationsQuery();
+  const { data: conversationsData } = useGetConversationsListQuery();
+  const { data: roomsData } = useGetChatRoomsQuery();
 
   const profile = profileData?.data;
 
@@ -59,6 +62,37 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
       [];
     return notifications.filter((n) => !n.is_read).length;
   }, [notificationsData]);
+
+  // Calculate unread message count (direct messages + rooms)
+  const unreadMessageCount = useMemo(() => {
+    let totalUnread = 0;
+    
+    // Count unread from direct message conversations
+    if (conversationsData) {
+      const conversations = 
+        conversationsData.data ??
+        conversationsData.results?.data ??
+        conversationsData.conversations ??
+        [];
+      totalUnread += conversations.reduce((sum: number, conv: { unread_count?: number }) => {
+        return sum + (conv.unread_count || 0);
+      }, 0);
+    }
+    
+    // Count unread from rooms
+    if (roomsData) {
+      const rooms = 
+        roomsData.data ??
+        roomsData.results ??
+        roomsData.rooms ??
+        [];
+      totalUnread += rooms.reduce((sum: number, room: { unread_count?: number }) => {
+        return sum + (room.unread_count || 0);
+      }, 0);
+    }
+    
+    return totalUnread;
+  }, [conversationsData, roomsData]);
 
   const handleCloseSidebar = () => {
     setIsProfileSidebarOpen(false);
@@ -93,7 +127,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
         {/* Search Bar - Only visible on home page, matches create post design */}
         {isHomePage && (
-          <div className="hidden md:flex md:absolute md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl md:px-4">
+          <div className="hidden md:flex md:absolute md:left-1/2 md:-translate-x-1/2 w-[35vw]  md:max-w-xl md:px-4">
             <div className="w-full bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl  p-1">
               <div className="relative flex items-center">
                 <GoSearch className="absolute left-3 text-white/60" size={20} />
@@ -135,9 +169,11 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             >
               <AiOutlineMessage size={20} className="md:w-6 md:h-6" />
               {/* Message notification badge */}
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                3
-              </span>
+              {unreadMessageCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#ff4500] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 font-medium">
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
             </button>
             <div className="relative">
               <button

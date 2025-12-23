@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from "@/lib/utils";
 import { baseApi } from "./baseApi";
 
 export interface CreatePostRequest {
@@ -52,10 +53,13 @@ export interface PostItem {
 
 export interface GetPostsResponse {
   data?: PostItem[];
-  results?: {
+  results?: PostItem[] | {
     data?: PostItem[];
   };
   posts?: PostItem[];
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
 }
 
 export interface CommentAuthor {
@@ -207,7 +211,13 @@ export const postApi = baseApi.injectEndpoints({
           };
           if (draft.posts) updatePost(draft.posts);
           if (draft.data) updatePost(draft.data);
-          if (draft.results) updatePost(draft.results.data);
+          if (draft.results) {
+            if (Array.isArray(draft.results)) {
+              updatePost(draft.results);
+            } else if (draft.results.data) {
+              updatePost(draft.results.data);
+            }
+          }
         };
 
         const patchResults = [
@@ -239,20 +249,29 @@ export const postApi = baseApi.injectEndpoints({
           };
           if (draft.posts) removePost(draft.posts);
           if (draft.data) removePost(draft.data);
-          if (draft.results) removePost(draft.results.data);
+          if (draft.results) {
+            if (Array.isArray(draft.results)) {
+              removePost(draft.results);
+            } else if (draft.results.data) {
+              removePost(draft.results.data);
+            }
+          }
         };
 
         const patchResults = [
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, removePostFromCache)),
           dispatch(postApi.util.updateQueryData("getMyPosts", undefined, removePostFromCache)),
+          dispatch(postApi.util.updateQueryData("getAllPosts", undefined, removePostFromCache)),
+          dispatch(postApi.util.updateQueryData("getRejectedPosts", undefined, removePostFromCache)),
         ];
 
         try {
           await queryFulfilled;
           // Invalidate queries to refetch and ensure data is up to date
           dispatch(postApi.util.invalidateTags([{ type: 'UserProfile' }]));
-          // Also directly refetch getMyPosts to ensure instant update
+          // Also directly refetch queries to ensure instant update
           dispatch(postApi.endpoints.getMyPosts.initiate(undefined, { forceRefetch: true }));
+          dispatch(postApi.endpoints.getAllPosts.initiate(undefined, { forceRefetch: true }));
         } catch {
           patchResults.forEach((patch) => patch.undo());
         }
@@ -271,11 +290,19 @@ export const postApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
-    getAllPosts: builder.query<GetPostsResponse, void>({
-      query: () => ({
-        url: "/api/posts/",
-        method: "GET",
-      }),
+    getAllPosts: builder.query<GetPostsResponse, { page?: number; limit?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object') {
+          if (params.page) searchParams.append('page', params.page.toString());
+          if (params.limit) searchParams.append('limit', params.limit.toString());
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/api/posts/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
       providesTags: ["UserProfile"],
     }),
     getRejectedPosts: builder.query<GetPostsResponse, void>({
@@ -314,7 +341,13 @@ export const postApi = baseApi.injectEndpoints({
           };
           if (draft.posts) updatePost(draft.posts);
           if (draft.data) updatePost(draft.data);
-          if (draft.results) updatePost(draft.results.data);
+          if (draft.results) {
+            if (Array.isArray(draft.results)) {
+              updatePost(draft.results);
+            } else if (draft.results.data) {
+              updatePost(draft.results.data);
+            }
+          }
         };
 
         // Optimistic updates
@@ -333,8 +366,8 @@ export const postApi = baseApi.injectEndpoints({
             
             if (likeId) {
               const { getStoredAccessToken } = await import("@/lib/auth");
-              const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://socialmedia.lumivancelabs.com/";
               
+              const baseUrl = getApiBaseUrl();
               await fetch(`${baseUrl}api/likes/${likeId}/`, {
                 method: "DELETE",
                 headers: {
@@ -378,7 +411,13 @@ export const postApi = baseApi.injectEndpoints({
             };
             if (draft.posts) updatePost(draft.posts);
             if (draft.data) updatePost(draft.data);
-            if (draft.results) updatePost(draft.results.data);
+            if (draft.results) {
+              if (Array.isArray(draft.results)) {
+                updatePost(draft.results);
+              } else if (draft.results.data) {
+                updatePost(draft.results.data);
+              }
+            }
           };
 
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostCommentCount));
@@ -418,7 +457,13 @@ export const postApi = baseApi.injectEndpoints({
             };
             if (draft.posts) updatePost(draft.posts);
             if (draft.data) updatePost(draft.data);
-            if (draft.results) updatePost(draft.results.data);
+            if (draft.results) {
+              if (Array.isArray(draft.results)) {
+                updatePost(draft.results);
+              } else if (draft.results.data) {
+                updatePost(draft.results.data);
+              }
+            }
           };
 
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostCommentCount));

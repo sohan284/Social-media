@@ -43,6 +43,7 @@ export interface MarketplaceItem {
   updated_at?: string;
   condition?: string;
   location?: string;
+  link?: string;
   [key: string]: unknown;
 }
 
@@ -72,9 +73,9 @@ export interface CreateProductRequest {
   condition: string;
   status: "draft" | "published";
   sub_category: number;
-  color?: string;
   description?: string;
   location?: string;
+  link?: string;
 }
 
 export interface UpdateProductRequest {
@@ -85,9 +86,9 @@ export interface UpdateProductRequest {
   condition?: string;
   status?: "draft" | "published";
   sub_category?: number;
-  color?: string;
   description?: string;
   location?: string;
+  link?: string;
 }
 
 export interface CreateProductResponse {
@@ -159,14 +160,14 @@ export const marketplaceApi = baseApi.injectEndpoints({
         formData.append("condition", data.condition);
         formData.append("status", data.status);
         formData.append("sub_category", data.sub_category.toString());
-        if (data.color) {
-          formData.append("color", data.color);
-        }
         if (data.description) {
           formData.append("description", data.description);
         }
         if (data.location) {
           formData.append("location", data.location);
+        }
+        if (data.link) {
+          formData.append("link", data.link);
         }
         return {
           url: "/api/marketplace/items/",
@@ -263,9 +264,9 @@ export const marketplaceApi = baseApi.injectEndpoints({
           formData.append("image", data.image);
         }
         // Optional fields - only send if they have values
-        if (data.color !== undefined && data.color) formData.append("color", data.color);
         if (data.description !== undefined && data.description) formData.append("description", data.description);
         if (data.location !== undefined && data.location) formData.append("location", data.location);
+        if (data.link !== undefined && data.link) formData.append("link", data.link);
         return {
           url: `/api/marketplace/items/${data.id}/`,
           method: "PUT",

@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { AiOutlineMore } from 'react-icons/ai';
 
 interface Message {
   id: string;
@@ -15,6 +16,15 @@ interface Message {
   timestamp: string;
   unreadCount: number;
   isOnline: boolean;
+  isGroup?: boolean;
+  isAdmin?: boolean;
+}
+
+interface MessageItemProps {
+  message: Message;
+  onUserSelect: (user: User) => void;
+  onManageRoom?: (roomId: number | string) => void;
+  onDeleteRoom?: (roomId: number | string) => void;
 }
 
 interface User {
@@ -25,43 +35,93 @@ interface User {
   isOnline: boolean;
   timestamp?: string;
   roomId?: number | string;
+  isGroup?: boolean;
 }
 
-interface MessageItemProps {
-  message: Message;
-  onUserSelect: (user: User) => void;
-}
+const MessageItem = ({ message, onUserSelect, onManageRoom, onDeleteRoom }: MessageItemProps) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-const MessageItem = ({ message, onUserSelect }: MessageItemProps) => {
-  const handleClick = () => {
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on the menu
+    if ((e.target as HTMLElement).closest('.room-menu')) {
+      return;
+    }
+    
     const user: User = {
-      id: message.sender.username,
+      id: message.isGroup ? String(message.roomId || message.id) : message.id, // For rooms, use roomId
       name: message.sender.name,
       avatar: message.sender.avatar,
       username: message.sender.username,
       isOnline: message.isOnline,
       timestamp: message.timestamp,
-      roomId: message.roomId || message.id, // Pass room ID if available
+      roomId: message.roomId || message.id, // Room ID for group chats
+      isGroup: message.isGroup,
     };
     onUserSelect(user);
   };
 
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
+  };
+
+  const handleManageRoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (onManageRoom && message.roomId) {
+      onManageRoom(message.roomId);
+    }
+  };
+
+  const handleDeleteRoom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (onDeleteRoom && message.roomId) {
+      onDeleteRoom(message.roomId);
+    }
+  };
+
   return (
     <div 
-      className="flex items-center gap-3 p-3 hover:bg-slate-800 cursor-pointer border-b border-gray-800 last:border-b-0 transition-colors group"
+      className="flex items-center gap-3 p-3 hover:bg-slate-800 cursor-pointer border-b border-gray-800 last:border-b-0 transition-colors group relative"
       onClick={handleClick}
     >
       {/* Avatar with online indicator */}
       <div className="relative flex-shrink-0">
-        <Image
-          src={message.sender.avatar}
-          alt={message.sender.name}
-          width={36}
-          height={36}
-          className="rounded-full object-cover"
-        />
-        {message.isOnline && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+        {message.sender.avatar && message.sender.avatar !== "/profile.jpg" && !message.sender.avatar.includes("profile.jpg") ? (
+          <Image
+            src={message.sender.avatar}
+            alt={message.sender.name}
+            width={36}
+            height={36}
+            className="rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center text-white text-xs font-semibold">
+            {message.sender.name.substring(0, 2).toUpperCase()}
+          </div>
+        )}
+        {/* Only show online indicator for non-group chats */}
+        {!message.isGroup && (
+          <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full z-10 ${message.isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
         )}
       </div>
 
@@ -87,6 +147,36 @@ const MessageItem = ({ message, onUserSelect }: MessageItemProps) => {
           )}
         </div>
       </div>
+
+      {/* 3-dot menu for rooms (only for admins) */}
+      {message.isGroup && message.isAdmin && (
+        <div className="relative room-menu" ref={menuRef}>
+          <button
+            onClick={handleMenuClick}
+            className="p-1 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white z-10"
+            title="Room options"
+          >
+            <AiOutlineMore size={16} />
+          </button>
+          
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-[100] min-w-[150px]">
+              <button
+                onClick={handleManageRoom}
+                className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 rounded-t-lg transition-colors"
+              >
+                Manage Room
+              </button>
+              <button
+                onClick={handleDeleteRoom}
+                className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 rounded-b-lg transition-colors"
+              >
+                Delete Room
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

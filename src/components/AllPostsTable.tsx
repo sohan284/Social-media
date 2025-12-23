@@ -1,23 +1,65 @@
 "use client";
-import { useMemo } from "react";
-import { useGetAllPostsQuery, PostItem } from "@/store/postApi";
+import { useMemo, useState } from "react";
+import { useGetAllPostsQuery, useDeletePostMutation, PostItem } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { getApiBaseUrl } from "@/lib/utils";
 import Image from "next/image";
-import { Edit, Trash2 } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AllPostsTable() {
-  const { data, isLoading, isError } = useGetAllPostsQuery();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = ITEMS_PER_PAGE;
+  
+  const { data, isLoading, isError, refetch } = useGetAllPostsQuery({
+    page: currentPage,
+    limit: pageSize,
+  });
+  const [deletePost] = useDeletePostMutation();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<{
+    id: number | string;
+    title: string;
+  } | null>(null);
 
-  const posts = useMemo(() => {
+  const posts = useMemo((): PostItem[] => {
     if (!data) return [];
-    return (
-      data.data ??
-      data.results?.data ??
-      data.posts ??
-      []
-    );
+    
+    // Handle DRF paginated response structure:
+    // { count, next, previous, results: { success, message, data: [...] } }
+    if (data.results) {
+      // If results is an object with data property (DRF pagination wrapper)
+      if (typeof data.results === 'object' && !Array.isArray(data.results)) {
+        if (data.results.data && Array.isArray(data.results.data)) {
+          return data.results.data;
+        }
+      }
+      // If results is directly an array
+      if (Array.isArray(data.results)) {
+        return data.results;
+      }
+    }
+    
+    // Fallback to other possible structures
+    if (Array.isArray(data.data)) {
+      return data.data;
+    }
+    if (Array.isArray(data.posts)) {
+      return data.posts;
+    }
+    
+    return [];
   }, [data]);
+
+  // Extract pagination info from response
+  // DRF pagination returns: { count, next, previous, results: {...} }
+  const totalCount = data?.count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasNext = data?.next !== null && data?.next !== undefined;
+  const hasPrevious = data?.previous !== null && data?.previous !== undefined;
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -40,6 +82,85 @@ export default function AllPostsTable() {
     const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
     const cleanPath = image.startsWith("/") ? image.slice(1) : image;
     return `${cleanBase}/${cleanPath}`;
+  };
+
+  const handleDeleteClick = (post: PostItem) => {
+    const postTitle = post.title || "Post";
+    setPostToDelete({ id: post.id!, title: postTitle });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!postToDelete) return;
+
+    try {
+      await deletePost({ postId: postToDelete.id }).unwrap();
+      toast.success("Post deleted successfully!");
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
+      // If current page becomes empty after deletion, go to previous page
+      if (posts.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      } else {
+        refetch();
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to delete post";
+      toast.error("Failed to delete post", { description: errorMessage });
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      if (currentPage <= 3) {
+        for (let i = 2; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push("...");
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+    return pages;
   };
 
   type PostRow = PostItem;
@@ -120,15 +241,19 @@ export default function AllPostsTable() {
     },
     {
       header: "Actions",
-      accessor: (_row) => (
+      accessor: (row) => (
         <div className="flex items-center justify-center space-x-3">
-          <button
+          {/* <button
             className="p-2 cursor-pointer text-blue-400 rounded-lg bg-white/10 hover:bg-white/20 transition"
             title="Edit post"
           >
             <Edit className="w-4 h-4" />
-          </button>
+          </button> */}
           <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteClick(row);
+            }}
             className="p-2 cursor-pointer text-red-500 rounded-lg bg-white/10 hover:bg-white/20 transition"
             title="Delete post"
           >
@@ -156,15 +281,103 @@ export default function AllPostsTable() {
   }
 
   return (
-    <div>
-      <CustomTable
-        title="All Posts"
-        columns={columns}
-        data={posts}
-        emptyMessage="No posts found."
-        isError={isError}
-        errorMessage="Failed to load posts. Please try again later."
+    <>
+      <div className="w-[88vw] lg:w-full rounded-2xl border  border-white/20 flex flex-col">
+      
+        
+        <CustomTable
+          columns={columns}
+          data={posts}
+          title="All Posts"
+          emptyMessage="No posts found."
+          isError={isError}
+          errorMessage="Failed to load posts. Please try again later."
+          disablePagination={true}
+        />
+
+        {/* Server-side Pagination Controls */}
+        {totalCount > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-white/5">
+            <div className="text-sm text-white/60">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Previous Button */}
+              <button
+                onClick={handlePreviousPage}
+                disabled={!hasPrevious || currentPage === 1}
+                className={`p-2 rounded-lg transition ${
+                  !hasPrevious || currentPage === 1
+                    ? "bg-white/5 text-white/30 cursor-not-allowed"
+                    : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+                }`}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {getPageNumbers().map((page, index) => {
+                  if (page === "...") {
+                    return (
+                      <span key={`ellipsis-${index}`} className="px-2 text-white/60">
+                        ...
+                      </span>
+                    );
+                  }
+                  const pageNum = page as number;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-1 rounded-lg text-sm transition ${
+                        currentPage === pageNum
+                          ? "bg-[#6B83FA] text-white"
+                          : "bg-white/10 text-white/80 hover:bg-white/20"
+                      }`}
+                      aria-label={`Go to page ${pageNum}`}
+                      aria-current={currentPage === pageNum ? "page" : undefined}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={handleNextPage}
+                disabled={!hasNext || currentPage === totalPages}
+                className={`p-2 rounded-lg transition ${
+                  !hasNext || currentPage === totalPages
+                    ? "bg-white/5 text-white/30 cursor-not-allowed"
+                    : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+                }`}
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Post?"
+        description={`Are you sure you want to delete "${postToDelete?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setPostToDelete(null);
+        }}
       />
-    </div>
+    </>
   );
 }

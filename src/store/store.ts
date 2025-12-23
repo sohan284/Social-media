@@ -6,6 +6,7 @@ import "./postApi";
 import "./notificationApi";
 import "./communityApi";
 import "./marketplaceApi";
+import "./dashboardApi";
 
 export const store = configureStore({
   reducer: {

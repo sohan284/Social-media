@@ -1,19 +1,23 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { IoPersonOutline } from "react-icons/io5";
+import Image from "next/image";
 import {
-  useGetFollowingQuery,
-  useGetFollowersQuery,
-  type FollowItem,
-} from "@/store/postApi";
+  useGetConversationsListQuery,
+  useSearchChatUsersQuery,
+  type ChatUser,
+  type ConversationItem,
+} from "@/store/chatApi";
+import { getApiBaseUrl } from "@/lib/utils";
 
 interface User {
   id: string;
   name: string;
   avatar: string;
   username: string;
+  email?: string;
   isOnline: boolean;
+  lastSeen?: string;
   timestamp?: string;
   roomId?: number | string;
 }
@@ -24,57 +28,92 @@ interface MessageUserListProps {
 }
 
 const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) => {
-  // Fetch who I follow and who follows me
-  const { data: followingResponse, isLoading: isLoadingFollowing } = useGetFollowingQuery();
-  const { data: followersResponse, isLoading: isLoadingFollowers } = useGetFollowersQuery();
+  const apiBase = getApiBaseUrl();
+  // Use search if query exists, otherwise get conversations list
+  const shouldSearch = searchQuery.trim().length >= 2;
+  const { data: conversationsResponse, isLoading: isLoadingConversations } = useGetConversationsListQuery(undefined, {
+    skip: shouldSearch,
+    refetchOnMountOrArgChange: true,
+  });
+  const { data: searchResponse, isLoading: isLoadingSearch } = useSearchChatUsersQuery(
+    searchQuery.trim(),
+    { skip: !shouldSearch }
+  );
 
-  const following = useMemo(() => {
-    if (!followingResponse) return [];
-    return followingResponse.data ?? followingResponse.results?.data ?? [];
-  }, [followingResponse]);
+  const isLoading = isLoadingConversations || isLoadingSearch;
 
-  const followers = useMemo(() => {
-    if (!followersResponse) return [];
-    return followersResponse.data ?? followersResponse.results?.data ?? [];
-  }, [followersResponse]);
+  const formatTimestamp = (dateString?: string) => {
+    if (!dateString) return 'just now';
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return dateString;
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-  // Merge following and followers into a unique user list
-  const users = useMemo(() => {
-    const userMap = new Map<string, { id: string; name: string }>();
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    if (days < 7) return `${days}d`;
+    return date.toLocaleDateString();
+  };
 
-    const addUserFromFollowItem = (item: FollowItem, type: "following" | "follower") => {
-      const userIdRaw =
-        type === "following" ? item.following : item.follower;
-      const userName =
-        type === "following" ? item.following_name : item.follower_name;
+  const conversations = useMemo(() => {
+    if (shouldSearch) {
+      // For search, return users without conversation data
+      if (!searchResponse) return [];
+      const usersData = searchResponse.data ?? searchResponse.results?.data ?? searchResponse.users ?? [];
+      return usersData.map((user: ChatUser) => ({
+        id: String(user.id),
+        name: user.display_name || user.username || "Unknown User",
+        username: user.username || String(user.id),
+        email: user.email || "",
+        avatar: user.avatar || "/profile.jpg",
+        isOnline: user.is_online || false,
+        lastSeen: (user as { last_seen?: string }).last_seen,
+        lastMessage: 'Click to start conversation',
+        timestamp: '',
+        unreadCount: 0,
+      }));
+    }
+    
+    // For conversations list, show users with last message and unread count
+    if (!conversationsResponse) return [];
+    const conversationsData = conversationsResponse.data ?? conversationsResponse.results?.data ?? conversationsResponse.conversations ?? [];
+    
+    return conversationsData.map((conversation: ConversationItem) => {
+      const user = conversation.user || {} as ChatUser;
+      const lastMessage = conversation.last_message || {} as { content?: string; created_at?: string };
+      
+      return {
+        id: String(user.id || ''),
+        name: user.display_name || user.username || "Unknown User",
+        username: user.username || String(user.id),
+        email: user.email || "",
+        avatar: user.avatar || "/profile.jpg",
+        isOnline: user.is_online || false,
+        lastSeen: (user as { last_seen?: string }).last_seen,
+        lastMessage: lastMessage.content || 'No messages yet',
+        timestamp: formatTimestamp(lastMessage.created_at || conversation.last_message_time),
+        unreadCount: conversation.unread_count || 0,
+      };
+    });
+  }, [shouldSearch, conversationsResponse, searchResponse]);
 
-      if (!userIdRaw) return;
-      const userId = String(userIdRaw);
-
-      if (!userMap.has(userId)) {
-        userMap.set(userId, {
-          id: userId,
-          name: userName || "Unknown User",
-        });
-      }
-    };
-
-    following.forEach((item) => addUserFromFollowItem(item, "following"));
-    followers.forEach((item) => addUserFromFollowItem(item, "follower"));
-
-    return Array.from(userMap.values());
-  }, [following, followers]);
-
-  const isLoading = isLoadingFollowing || isLoadingFollowers;
-
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const query = searchQuery.toLowerCase();
-    return users.filter((user) =>
-      user.name.toLowerCase().includes(query) ||
-      user.id.toLowerCase().includes(query)
-    );
-  }, [users, searchQuery]);
+  const handleUserClick = async (conversation: typeof conversations[0]) => {
+    // For direct messaging, we just need the user ID - no room creation needed
+    onUserSelect({
+      id: conversation.id,
+      name: conversation.name,
+      username: conversation.username,
+      email: conversation.email || "",
+      avatar: conversation.avatar,
+      isOnline: conversation.isOnline,
+      lastSeen: conversation.lastSeen,
+      timestamp: conversation.timestamp,
+    });
+  };
 
   if (isLoading) {
     return (
@@ -87,14 +126,14 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
     );
   }
 
-  if (filteredUsers.length === 0) {
+  if (conversations.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500">
         <div className="text-center px-4">
           <p className="text-sm">
             {searchQuery
               ? "No users found. Try a different search."
-              : "No users available from your followers/following yet."}
+              : "No conversations yet. Start chatting with someone!"}
           </p>
         </div>
       </div>
@@ -104,31 +143,54 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
   return (
     <div className="flex flex-col h-full">
       <div className="overflow-y-auto custom-scroll">
-        {filteredUsers.map((user) => (
+        {conversations.map((conversation) => (
           <button
-            key={user.id}
+            key={conversation.id}
             type="button"
-            onClick={() =>
-              onUserSelect({
-                id: user.id,
-                name: user.name,
-                avatar: "/profile.jpg",
-                username: user.id,
-                isOnline: false,
-              })
-            }
+            onClick={() => handleUserClick(conversation)}
             className="w-full flex items-center gap-3 p-3 hover:bg-slate-800 cursor-pointer border-b border-gray-800 last:border-b-0 transition-colors text-left"
           >
-            <div className="h-9 w-9 rounded-full overflow-hidden border border-white/20 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79]">
-              <IoPersonOutline className="text-white" size={18} />
+            <div className="relative h-9 w-9 flex-shrink-0">
+              <div className="h-9 w-9 rounded-full overflow-hidden border border-white/20 flex items-center justify-center bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79]">
+                {conversation.avatar && conversation.avatar !== "/profile.jpg" && !conversation.avatar.includes("profile.jpg") ? (
+                  <Image
+                    src={conversation.avatar.startsWith('http') 
+                      ? conversation.avatar 
+                      : `${apiBase}${conversation.avatar?.startsWith('/') ? conversation.avatar?.slice(1) : conversation.avatar}`}
+                    alt={conversation.name}
+                    width={36}
+                    height={36}
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="text-white text-xs font-semibold">
+                    {conversation.name.substring(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-[#06133f] rounded-full z-10 ${conversation.isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user.name}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                @{user.id}
-              </p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-medium text-white truncate">
+                  {conversation.name}
+                </p>
+                {conversation.timestamp && (
+                  <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
+                    {conversation.timestamp}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600 truncate flex-1">
+                  {conversation.lastMessage}
+                </p>
+                {conversation.unreadCount > 0 && (
+                  <div className="bg-[#ff4500] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2 flex-shrink-0 font-medium">
+                    {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
+                  </div>
+                )}
+              </div>
             </div>
           </button>
         ))}
