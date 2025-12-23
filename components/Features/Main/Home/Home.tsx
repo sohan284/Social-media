@@ -104,7 +104,7 @@ const Home = () => {
       {/* <Story /> */}
       
       {/* Create Post Section */}
-      <div className="mt-6 mb-6 sticky top-14 z-10">
+      <div className="my-2 top-14 z-10">
         <div 
           onClick={handleCreatePostClick}
           className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-white/20 transition-all duration-300"
@@ -136,8 +136,8 @@ const Home = () => {
           </div>
           
           {/* Action Icons */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-            <div className="flex items-center gap-6">
+          <div className="flex items-center  justify-between mt-4 pt-4 border-t border-white/10">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={(e) => {
@@ -170,7 +170,7 @@ const Home = () => {
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-300 font-medium"
             >
               <FiEdit3 size={18} />
-              <span>Create Post</span>
+              <span className="text-nowrap text-xs md:text-md">Create Post</span>
             </button>
           </div>
         </div>
