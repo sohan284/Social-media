@@ -38,32 +38,21 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000; // 3 seconds
 
-  const getWebSocketUrl = useCallback(() => {
-    const apiUrl = getApiBaseUrl();
-    const token = getStoredAccessToken();
-    
-    // Convert HTTP/HTTPS URL to WebSocket URL
-    let wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/$/, '');
-    
-    // For direct messaging, always use the direct endpoint
-    // Room-based chats can use room-specific endpoints later
-    if (roomId) {
-      wsUrl += `/ws/chat/${roomId}/`;
-    } else {
-      // Direct messaging endpoint
-      wsUrl += '/ws/chat/direct/';
-    }
-    
-    // Add token as query parameter if available
-    if (token) {
-      const separator = wsUrl.includes('?') ? '&' : '?';
-      wsUrl += `${separator}token=${encodeURIComponent(token)}`;
-    }
-    
-    return wsUrl;
+  // Update refs when callbacks change (without triggering reconnection)
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onErrorRef.current = onError;
+  }, [onMessage, onError]);
+
+  // Store roomId in ref to avoid recreating connect function
+  const roomIdRef = useRef(roomId);
+  useEffect(() => {
+    roomIdRef.current = roomId;
   }, [roomId]);
 
   const connect = useCallback(() => {
@@ -72,7 +61,28 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     }
 
     try {
-      const wsUrl = getWebSocketUrl();
+      // Use ref to get current roomId without adding it to dependencies
+      const currentRoomId = roomIdRef.current;
+      const apiUrl = getApiBaseUrl();
+      const token = getStoredAccessToken();
+      
+      // Convert HTTP/HTTPS URL to WebSocket URL
+      let wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/$/, '');
+      
+      // For direct messaging, always use the direct endpoint
+      if (currentRoomId) {
+        wsUrl += `/ws/chat/${currentRoomId}/`;
+      } else {
+        // Direct messaging endpoint
+        wsUrl += '/ws/chat/direct/';
+      }
+      
+      // Add token as query parameter if available
+      if (token) {
+        const separator = wsUrl.includes('?') ? '&' : '?';
+        wsUrl += `${separator}token=${encodeURIComponent(token)}`;
+      }
+      
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -149,8 +159,8 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
           }
 
           // Call custom onMessage handler if provided
-          if (onMessage) {
-            onMessage(data);
+          if (onMessageRef.current) {
+            onMessageRef.current(data);
           }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -159,8 +169,8 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
 
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        if (onError) {
-          onError(error);
+        if (onErrorRef.current) {
+          onErrorRef.current(error);
         }
       };
 
@@ -184,7 +194,7 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     } catch (error) {
       console.error('Error creating WebSocket connection:', error);
     }
-  }, [enabled, roomId, getWebSocketUrl, onMessage, onError]);
+  }, [enabled]); // Only depend on enabled, use ref for roomId
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -208,15 +218,32 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
     }
   }, []);
 
+  // Reconnect when enabled or roomId changes
   useEffect(() => {
-    if (enabled) {
-      connect();
-    }
-
-    return () => {
+    // Disconnect existing connection if roomId changed
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       disconnect();
-    };
-  }, [enabled, connect, disconnect]);
+    }
+    
+    if (enabled) {
+      // Small delay to ensure cleanup completes
+      const timeoutId = setTimeout(() => {
+        connect();
+      }, 100);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        disconnect();
+      };
+    } else {
+      disconnect();
+      return () => {
+        disconnect();
+      };
+    }
+    // Only reconnect when enabled or roomId actually changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, roomId]);
 
   return {
     isConnected: wsRef.current?.readyState === WebSocket.OPEN,

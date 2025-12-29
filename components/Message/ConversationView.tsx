@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { AiOutlineArrowLeft } from 'react-icons/ai';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { AiOutlineArrowLeft, AiOutlineMore } from 'react-icons/ai';
+import { MdBlock, MdReport } from 'react-icons/md';
 import Image from 'next/image';
 import MessageBubble from './MessageBubble';
 import { PiPaperPlaneRightFill } from 'react-icons/pi';
-import { useGetConversationQuery, useSendDirectMessageMutation, chatApi } from '@/store/chatApi';
+import { useGetConversationQuery, useSendDirectMessageMutation, useBlockUserMutation, useUnblockUserMutation, useGetBlockedUsersQuery, chatApi } from '@/store/chatApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { store } from '@/store/store';
 import { getApiBaseUrl } from '@/lib/utils';
+import ReportUserModal from './ReportUserModal';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -27,12 +30,31 @@ interface ConversationViewProps {
 }
 
 const ConversationView = ({ user, onBack }: ConversationViewProps) => {
-  const apiBase = getApiBaseUrl();
+  const apiBase = useMemo(() => getApiBaseUrl(), []);
   const [newMessage, setNewMessage] = useState('');
-  const userId = user.id; // Use user ID for direct messaging
+  const [showMenu, setShowMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  // Memoize userId to prevent unnecessary re-renders
+  const userId = useMemo(() => String(user.id), [user.id]);
   const { data: currentUser } = useGetCurrentUserProfileQuery();
+  const [blockUser, { isLoading: isBlocking }] = useBlockUserMutation();
+  const [unblockUser, { isLoading: isUnblocking }] = useUnblockUserMutation();
+  const { data: blockedUsersResponse } = useGetBlockedUsersQuery(undefined, {
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false,
+  });
   
-  const formatLastSeen = (lastSeenString: string) => {
+  const blockedUsers = useMemo(() => {
+    if (!blockedUsersResponse?.data) return [];
+    return blockedUsersResponse.data.map((b: { blocked_user_id?: number | string }) => String(b.blocked_user_id || ''));
+  }, [blockedUsersResponse?.data]);
+  
+  const isBlocked = useMemo(() => {
+    return blockedUsers.includes(String(userId));
+  }, [blockedUsers, userId]);
+  
+  const formatLastSeen = useCallback((lastSeenString: string) => {
     if (!lastSeenString) return 'recently';
     const lastSeen = new Date(lastSeenString);
     const now = new Date();
@@ -46,13 +68,15 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
     if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
     if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
     return lastSeen.toLocaleDateString([], { month: 'short', day: 'numeric', year: lastSeen.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-  };
+  }, []);
   
-  const { data: messagesResponse, isLoading: isLoadingMessages } = useGetConversationQuery(
+  const { data: messagesResponse, isLoading: isLoadingMessages, refetch: refetchConversation } = useGetConversationQuery(
     userId,
     { 
       skip: !userId,
-      refetchOnMountOrArgChange: true,
+      refetchOnMountOrArgChange: true, // Only refetch when userId changes
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
     }
   );
   const [sendDirectMessage, { isLoading: isSending }] = useSendDirectMessageMutation();
@@ -62,43 +86,94 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
     return currentUser?.data?.id || currentUser?.id || currentUser?.user?.id;
   }, [currentUser]);
   
-  // Get user info from response (includes last_seen)
+  // Get user info and block status from response
   const userInfo = useMemo(() => {
     if (!messagesResponse) return null;
     return (messagesResponse as { user?: { is_online?: boolean; last_seen?: string; [key: string]: unknown } }).user;
   }, [messagesResponse]);
   
+  const blockStatus = useMemo(() => {
+    if (!messagesResponse) return { i_blocked_them: false, they_blocked_me: false };
+    return (messagesResponse as { block_status?: { i_blocked_them?: boolean; they_blocked_me?: boolean } }).block_status || { i_blocked_them: false, they_blocked_me: false };
+  }, [messagesResponse]);
+  
   // Update user online status and last seen from API response
+  // Only update when userInfo actually changes
   const updatedUser = useMemo(() => {
     if (userInfo) {
-      return {
-        ...user,
-        isOnline: userInfo.is_online || false,
-        lastSeen: userInfo.last_seen,
-      };
+      const isOnline = userInfo.is_online || false;
+      const lastSeen = userInfo.last_seen;
+      
+      // Only create new object if values actually changed
+      if (user.isOnline !== isOnline || user.lastSeen !== lastSeen) {
+        return {
+          ...user,
+          isOnline,
+          lastSeen,
+        };
+      }
     }
     return user;
-  }, [user, userInfo]);
+  }, [user, userInfo?.is_online, userInfo?.last_seen]);
   
+  // Memoize the onMessage callback to prevent WebSocket reconnection
+  // Use refs to avoid recreating the callback
+  const userIdRef = useRef(userId);
+  const currentUserIdRef = useRef(currentUserId);
+  
+  useEffect(() => {
+    userIdRef.current = userId;
+    currentUserIdRef.current = currentUserId;
+  }, [userId, currentUserId]);
+  
+  const handleWebSocketMessage = useCallback((data: {
+    type: string;
+    room?: number | string;
+    message?: {
+      id: number | string;
+      room?: number | string;
+      sender?: {
+        id: number | string;
+        username?: string;
+        display_name?: string;
+        avatar?: string;
+        is_online?: boolean;
+      };
+      content?: string;
+      created_at?: string;
+      is_read?: boolean;
+      sender_id?: number | string;
+      receiver_id?: number | string;
+    };
+    [key: string]: unknown;
+  }) => {
+    // Invalidate messages to refetch when new message arrives via WebSocket
+    if (data.type === 'message' && data.message) {
+      // Check if message is for this conversation
+      // Extract sender_id and receiver_id from message (could be in sender object or directly)
+      const senderId = data.message.sender_id || data.message.sender?.id;
+      const receiverId = data.message.receiver_id;
+      const currentUserIdValue = currentUserIdRef.current;
+      const userIdValue = userIdRef.current;
+      
+      if (
+        (senderId && receiverId && 
+         (String(senderId) === String(userIdValue) && String(receiverId) === String(currentUserIdValue)) ||
+         (String(receiverId) === String(userIdValue) && String(senderId) === String(currentUserIdValue)))
+      ) {
+        store.dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: userIdValue }]));
+        store.dispatch(chatApi.util.invalidateTags(["Conversations"]));
+      }
+    }
+  }, []); // Empty deps - using refs instead
+
   // Enable WebSocket for real-time messages
   useChatWebSocket({ 
     enabled: !!userId && typeof userId !== 'undefined',
-    onMessage: (data) => {
-      // Invalidate messages to refetch when new message arrives via WebSocket
-      if (data.type === 'message' && data.message) {
-        // Check if message is for this conversation
-        const message = data.message as { sender_id?: number | string; receiver_id?: number | string };
-        if (
-          (String(message.sender_id) === String(userId) && String(message.receiver_id) === String(currentUserId)) ||
-          (String(message.receiver_id) === String(userId) && String(message.sender_id) === String(currentUserId))
-        ) {
-          store.dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: userId }]));
-          store.dispatch(chatApi.util.invalidateTags(["Conversations"]));
-        }
-      }
-    }
+    onMessage: handleWebSocketMessage,
   });
 
+  // Memoize messages with stable references
   const messages = useMemo(() => {
     if (!messagesResponse) return [];
     const messagesData = 
@@ -130,19 +205,37 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
         isRead: msg.is_read !== false,
       };
     });
-  }, [messagesResponse, currentUserId]);
+  }, [
+    messagesResponse?.data, 
+    messagesResponse?.results?.data, 
+    messagesResponse?.messages,
+    currentUserId
+  ]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
+  // Only scroll when messages length changes, not on every render
+  const messagesLengthRef = useRef(messages.length);
+  
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (messages.length !== messagesLengthRef.current) {
+      messagesLengthRef.current = messages.length;
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  }, [messages.length, scrollToBottom]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !userId || isSending) return;
+    
+    // Prevent sending if blocked
+    if (blockStatus.i_blocked_them || blockStatus.they_blocked_me) {
+      toast.error(blockStatus.i_blocked_them ? 'You have blocked this user. Unblock to send messages.' : 'This user has blocked you. You cannot send messages.');
+      return;
+    }
     
     const messageContent = newMessage.trim();
     setNewMessage('');
@@ -157,16 +250,68 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
       // The backend will broadcast via WebSocket automatically
       // Scroll to bottom after sending
       setTimeout(() => scrollToBottom(), 100);
-    } catch (error) {
-      console.error('Failed to send message:', error);
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      const errorMessage = err?.data?.error || err?.data?.message || 'Failed to send message';
+      toast.error(errorMessage);
       setNewMessage(messageContent); // Restore message on error
     }
   };
 
+  const handleBlockUser = async () => {
+    if (!userId || isBlocking || isUnblocking) return;
+    
+    try {
+      if (isBlocked) {
+        await unblockUser({ user_id: userId }).unwrap();
+        toast.success(`You have unblocked ${user.name}`);
+        setShowMenu(false);
+        // Refetch conversation to update block status immediately
+        await refetchConversation();
+        // Also invalidate to ensure all related queries update
+        store.dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: userId }]));
+        store.dispatch(chatApi.util.invalidateTags(["Conversations"]));
+        store.dispatch(chatApi.util.invalidateTags(["BlockedUsers"]));
+      } else {
+        await blockUser({ user_id: userId }).unwrap();
+        toast.success(`You have blocked ${user.name}`);
+        setShowMenu(false);
+        // Refetch conversation to update block status immediately
+        await refetchConversation();
+        // Also invalidate to ensure all related queries update
+        store.dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: userId }]));
+        store.dispatch(chatApi.util.invalidateTags(["Conversations"]));
+        store.dispatch(chatApi.util.invalidateTags(["BlockedUsers"]));
+        // Optionally go back to list after blocking
+        setTimeout(() => onBack(), 1000);
+      }
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || 'Failed to block/unblock user');
+    }
+  };
+
+  const handleReportUser = () => {
+    setShowMenu(false);
+    setShowReportModal(true);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showMenu && !target.closest('.user-menu-container')) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-gray-700 bg-[#06133f] rounded-t-3xl">
+      <div className="flex items-center gap-3 p-4 border-b border-gray-700 bg-[#06133f] rounded-t-3xl relative">
         <button 
           onClick={onBack}
           className="p-1 hover:bg-gray-500 rounded-full transition-colors text-white"
@@ -197,6 +342,37 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
             {updatedUser.isOnline ? 'Online' : (updatedUser.lastSeen ? `Last seen ${formatLastSeen(updatedUser.lastSeen)}` : 'Offline')}
           </p>
         </div>
+
+        {/* Menu Button */}
+        <div className="user-menu-container relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-1.5 hover:bg-gray-700 rounded-full transition-colors text-white"
+          >
+            <AiOutlineMore size={18} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-[#06133f] border border-gray-700 rounded-lg shadow-xl z-50">
+              <button
+                onClick={handleBlockUser}
+                disabled={isBlocking || isUnblocking}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed first:rounded-t-lg"
+              >
+                <MdBlock size={18} />
+                {isBlocked ? 'Unblock User' : 'Block User'}
+              </button>
+              <button
+                onClick={handleReportUser}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-gray-800 transition-colors last:rounded-b-lg"
+              >
+                <MdReport size={18} />
+                Report User
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -226,35 +402,62 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
         )}
       </div>
 
-      {/* Message Input */}
+      {/* Message Input or Blocked Message */}
       <div className="p-4 border-t border-gray-700 bg-[#06133f] rounded-b-3xl">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage(e);
-              }
-            }}
-            rows={1}
-            placeholder={`Message ${user.name}...`}
-            className="flex-1 px-3 py-3 bg-gray-800 border border-gray-700 rounded-full focus:outline-none focus:ring-1 focus:ring-gray-700 focus:border-transparent text-sm text-white resize-none custom-scroll"
-          />
-          <button 
-            type="submit"
-            disabled={!newMessage.trim() || isSending}
-            className="p-2 bg-[#0059ff] text-white rounded-full hover:bg-[#0059ffcd] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {isSending ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <PiPaperPlaneRightFill size={16} />
-            )}
-          </button>
-        </form>
+        {blockStatus.i_blocked_them ? (
+          <div className="flex items-center justify-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+            <div className="text-center flex">
+              <p className="text-xs text-gray-400 text-nowrap">You have blocked {user.name} ,   </p>
+              <button
+                onClick={handleBlockUser}
+                disabled={isBlocking || isUnblocking}
+                className="text-xs cursor-pointer text-green-600 hover:text-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isBlocking || isUnblocking ? 'Unblocking...' : 'Unblock'}
+              </button>
+            </div>
+          </div>
+        ) : blockStatus.they_blocked_me ? (
+          <div className="flex items-center justify-center p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+            <p className="text-xs text-gray-400">This person has blocked you. Can&apos;t send message anymore.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+            <textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }
+              }}
+              rows={1}
+              placeholder={`Message ${user.name}...`}
+              className="flex-1 px-3 py-3 bg-gray-800 border border-gray-700 rounded-full focus:outline-none focus:ring-1 focus:ring-gray-700 focus:border-transparent text-sm text-white resize-none custom-scroll"
+            />
+            <button 
+              type="submit"
+              disabled={!newMessage.trim() || isSending}
+              className="p-2 bg-[#0059ff] text-white rounded-full hover:bg-[#0059ffcd] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isSending ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <PiPaperPlaneRightFill size={16} />
+              )}
+            </button>
+          </form>
+        )}
       </div>
+
+      {/* Report Modal */}
+      <ReportUserModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        userId={userId}
+        username={user.username || user.name}
+      />
     </div>
   );
 };

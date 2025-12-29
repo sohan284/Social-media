@@ -99,6 +99,8 @@ export interface ConversationItem {
   last_message?: ChatMessage;
   unread_count?: number;
   last_message_time?: string;
+  i_blocked_them?: boolean;
+  they_blocked_me?: boolean;
 }
 
 export interface GetConversationsListResponse {
@@ -117,6 +119,49 @@ export interface SearchChatUsersResponse {
   };
   users?: ChatUser[];
   [key: string]: unknown;
+}
+
+export interface BlockedUser {
+  id: number | string;
+  blocked_user?: ChatUser;
+  blocked_user_id?: number | string;
+  created_at?: string;
+}
+
+export interface BlockUserResponse {
+  success?: boolean;
+  message?: string;
+  data?: BlockedUser;
+  error?: string;
+}
+
+export interface BlockedUsersListResponse {
+  success?: boolean;
+  data?: BlockedUser[];
+}
+
+export interface UserReport {
+  id: number | string;
+  reporter?: ChatUser;
+  reported_user?: ChatUser;
+  reported_user_id?: number | string;
+  reason?: 'spam' | 'harassment' | 'inappropriate_content' | 'fake_account' | 'other';
+  description?: string;
+  status?: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  created_at?: string;
+}
+
+export interface ReportUserRequest {
+  reported_user: number | string;
+  reason: 'spam' | 'harassment' | 'inappropriate_content' | 'fake_account' | 'other';
+  description?: string;
+}
+
+export interface ReportUserResponse {
+  success?: boolean;
+  message?: string;
+  data?: UserReport;
+  error?: string | Record<string, unknown>;
 }
 
 export const chatApi = baseApi.injectEndpoints({
@@ -267,6 +312,50 @@ export const chatApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["ChatRooms"],
     }),
+    // Block and Report endpoints
+    blockUser: builder.mutation<BlockUserResponse, { user_id: number | string }>({
+      query: (data) => ({
+        url: "/api/chat/block/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { user_id }) => [
+        "ChatUsers",
+        "Conversations",
+        "ChatRooms",
+        "BlockedUsers",
+        { type: "Messages", id: user_id }, // Invalidate conversation to update block status
+      ],
+    }),
+    unblockUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { user_id: number | string }>({
+      query: (data) => ({
+        url: "/api/chat/unblock/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { user_id }) => [
+        "ChatUsers",
+        "Conversations",
+        "ChatRooms",
+        "BlockedUsers",
+        { type: "Messages", id: user_id }, // Invalidate conversation to update block status
+      ],
+    }),
+    getBlockedUsers: builder.query<BlockedUsersListResponse, void>({
+      query: () => ({
+        url: "/api/chat/blocked-users/",
+        method: "GET",
+      }),
+      providesTags: ["BlockedUsers"],
+    }),
+    reportUser: builder.mutation<ReportUserResponse, ReportUserRequest>({
+      query: (data) => ({
+        url: "/api/chat/report/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["UserReports"],
+    }),
   }),
 });
 
@@ -285,4 +374,8 @@ export const {
   useMakeRoomAdminMutation,
   useRemoveRoomMemberMutation,
   useAddRoomMembersMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+  useGetBlockedUsersQuery,
+  useReportUserMutation,
 } = chatApi;
