@@ -43,12 +43,24 @@ const Communities = () => {
 
   const posts = useMemo(() => {
     if (!postsResponse) return [];
-    return (
-      postsResponse.data ??
-      postsResponse.results?.data ??
-      postsResponse.posts ??
-      []
-    );
+    
+    // Handle different response structures
+    if (Array.isArray(postsResponse.data)) {
+      return postsResponse.data;
+    }
+    if (Array.isArray(postsResponse.posts)) {
+      return postsResponse.posts;
+    }
+    if (postsResponse.results) {
+      if (Array.isArray(postsResponse.results)) {
+        return postsResponse.results;
+      }
+      if (postsResponse.results.data && Array.isArray(postsResponse.results.data)) {
+        return postsResponse.results.data;
+      }
+    }
+    
+    return [];
   }, [postsResponse]);
 
   const filteredCommunities = useMemo(() => {

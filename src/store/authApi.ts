@@ -129,6 +129,40 @@ export interface GetUsersResponse {
   [key: string]: unknown;
 }
 
+export interface SendPasswordResetOtpRequest {
+  email: string;
+}
+
+export interface SendPasswordResetOtpResponse {
+  message?: string;
+  success?: boolean;
+  error?: string;
+}
+
+export interface VerifyPasswordResetOtpRequest {
+  email: string;
+  code: string;
+}
+
+export interface VerifyPasswordResetOtpResponse {
+  message?: string;
+  success?: boolean;
+  error?: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface ResetPasswordResponse {
+  message?: string;
+  success?: boolean;
+  error?: string;
+}
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     sendOtp: builder.mutation<SendOtpResponse, SendOtpRequest>({
@@ -254,6 +288,46 @@ export const authApi = baseApi.injectEndpoints({
       }),
       providesTags: ["UserProfile"],
     }),
+    sendPasswordResetOtp: builder.mutation<SendPasswordResetOtpResponse, SendPasswordResetOtpRequest>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("email", data.email);
+        
+        return {
+          url: "/auth/password-reset/send-otp/",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
+    verifyPasswordResetOtp: builder.mutation<VerifyPasswordResetOtpResponse, VerifyPasswordResetOtpRequest>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("email", data.email);
+        formData.append("code", data.code);
+        
+        return {
+          url: "/auth/password-reset/verify-otp/",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
+    resetPassword: builder.mutation<ResetPasswordResponse, ResetPasswordRequest>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("email", data.email);
+        formData.append("code", data.code);
+        formData.append("new_password", data.new_password);
+        formData.append("confirm_password", data.confirm_password);
+        
+        return {
+          url: "/auth/password-reset/reset/",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
   }),
 });
 
@@ -265,6 +339,9 @@ export const {
   useUpdateUserProfileMutation,
   useGetCategoriesQuery,
   useGetUsersQuery,
+  useSendPasswordResetOtpMutation,
+  useVerifyPasswordResetOtpMutation,
+  useResetPasswordMutation,
 } = authApi;
 
 export const useGetCurrentUserProfileQuery = (

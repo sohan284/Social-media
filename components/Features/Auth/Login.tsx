@@ -3,10 +3,14 @@ import React, { useState } from "react";
 import bg from "../../../public/main-bg.jpg";
 import { useForm } from "react-hook-form";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
 import Link from "next/link";
-import { useLoginMutation } from "@/store/authApi";
+import { 
+  useLoginMutation,
+  useSendPasswordResetOtpMutation,
+  useVerifyPasswordResetOtpMutation,
+  useResetPasswordMutation
+} from "@/store/authApi";
 import { useRouter } from "next/navigation";
 import { getRoleFromToken, storeAuthTokens } from "@/lib/auth";
 import { toast } from "sonner";
@@ -25,19 +29,28 @@ type ResetStep1Form = {
 };
 
 type ResetStep2Form = {
+  otp: string;
+};
+
+type ResetStep3Form = {
   newPassword: string;
   confirmPassword: string;
 };
 
 const Login = () => {
   const router = useRouter();
-  const [currentMode, setCurrentMode] = useState<'login' | 'reset-step1' | 'reset-step2'>('login');
+  const [currentMode, setCurrentMode] = useState<'login' | 'reset-step1' | 'reset-step2' | 'reset-step3'>('login');
   const [resetEmail, setResetEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
   const [login, { isLoading: isLoggingIn, error: loginError }] = useLoginMutation();
+  const [sendPasswordResetOtp, { isLoading: isSendingOtp }] = useSendPasswordResetOtpMutation();
+  const [verifyPasswordResetOtp, { isLoading: isVerifyingOtp }] = useVerifyPasswordResetOtpMutation();
+  const [resetPassword, { isLoading: isResettingPassword }] = useResetPasswordMutation();
 
   const loginForm = useForm<LoginForm>();
   const resetStep1Form = useForm<ResetStep1Form>();
   const resetStep2Form = useForm<ResetStep2Form>();
+  const resetStep3Form = useForm<ResetStep3Form>();
 
   const onLoginSubmit = async (data: LoginForm) => {
     try {
@@ -97,33 +110,103 @@ const Login = () => {
     }
   };
 
-  const onResetStep1Submit = (data: ResetStep1Form) => {
-    console.log("Reset request for:", data.email);
-    setResetEmail(data.email);
-    setCurrentMode('reset-step2');
-    resetStep1Form.reset();
+  const onResetStep1Submit = async (data: ResetStep1Form) => {
+    try {
+      const response = await sendPasswordResetOtp({
+        email: data.email,
+      }).unwrap();
+
+      if (response.success) {
+        setResetEmail(data.email);
+        setCurrentMode('reset-step2');
+        resetStep1Form.reset();
+        toast.success('OTP sent', {
+          description: 'Please check your email for the verification code.',
+        });
+      }
+    } catch (error: unknown) {
+      console.error("Failed to send OTP:", error);
+      toast.error('Failed to send OTP', {
+        description: (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred',
+      });
+    }
   };
 
-  const onResetStep2Submit = (data: ResetStep2Form) => {
+  const onResetStep2Submit = async (data: ResetStep2Form) => {
+    try {
+      const response = await verifyPasswordResetOtp({
+        email: resetEmail,
+        code: data.otp,
+      }).unwrap();
+
+      if (response.success) {
+        setResetOtp(data.otp);
+        setCurrentMode('reset-step3');
+        resetStep2Form.reset();
+        toast.success('OTP verified', {
+          description: 'You can now reset your password.',
+        });
+      }
+    } catch (error: unknown) {
+      console.error("Failed to verify OTP:", error);
+      toast.error('Invalid OTP', {
+        description: (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'Please check your OTP and try again',
+      });
+    }
+  };
+
+  const onResetStep3Submit = async (data: ResetStep3Form) => {
     if (data.newPassword !== data.confirmPassword) {
-      resetStep2Form.setError("confirmPassword", {
+      resetStep3Form.setError("confirmPassword", {
         type: "manual",
         message: "Passwords do not match",
       });
       return;
     }
-    console.log("Password reset for:", resetEmail, "New password:", data.newPassword);
-    resetStep2Form.reset();
-    setCurrentMode('login');
+
+    try {
+      const response = await resetPassword({
+        email: resetEmail,
+        code: resetOtp,
+        new_password: data.newPassword,
+        confirm_password: data.confirmPassword,
+      }).unwrap();
+
+      if (response.success) {
+        toast.success('Password reset successful', {
+          description: 'You can now login with your new password.',
+        });
+        resetStep3Form.reset();
+        setResetEmail("");
+        setResetOtp("");
+        setCurrentMode('login');
+      }
+    } catch (error: unknown) {
+      console.error("Failed to reset password:", error);
+      toast.error('Failed to reset password', {
+        description: (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred',
+      });
+    }
   };
 
   const goBack = () => {
-    if (currentMode === 'reset-step2') {
+    if (currentMode === 'reset-step3') {
+      setCurrentMode('reset-step2');
+      resetStep3Form.reset();
+    } else if (currentMode === 'reset-step2') {
       setCurrentMode('reset-step1');
       resetStep2Form.reset();
+      setResetOtp("");
     } else if (currentMode === 'reset-step1') {
       setCurrentMode('login');
       resetStep1Form.reset();
+      setResetEmail("");
     }
   };
 
@@ -259,22 +342,26 @@ const Login = () => {
             </>
           )}
 
-          {/* Password Reset Step 1 */}
+          {/* Password Reset Step 1 - Email Input */}
           {currentMode === 'reset-step1' && (
             <>
               <h2 className="text-[2rem] font-semibold mb-2">Reset your Password</h2>
               <p className="text-sm mb-6">
-                Enter your email address or user name and we&apos;ll send you a link to reset your password.
+                Enter your email address and we&apos;ll send you a verification code to reset your password.
               </p>
 
               <form onSubmit={resetStep1Form.handleSubmit(onResetStep1Submit)} className="space-y-4">
                 <div>
                   <input
                     {...resetStep1Form.register("email", {
-                      required: "Email or Username is required",
+                      required: "Email is required",
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: "Invalid email address"
+                      }
                     })}
-                    type="text"
-                    placeholder="Email or user name"
+                    type="email"
+                    placeholder="Email address"
                     className="w-full rounded-full border border-gray-300 bg-transparent px-4 py-3 text-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                   {resetStep1Form.formState.errors.email && (
@@ -286,9 +373,10 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition"
+                  disabled={isSendingOtp}
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continue
+                  {isSendingOtp ? "Sending..." : "Send OTP"}
                 </button>
               </form>
 
@@ -300,44 +388,105 @@ const Login = () => {
             </>
           )}
 
-          {/* Password Reset Step 2 */}
+          {/* Password Reset Step 2 - OTP Verification */}
           {currentMode === 'reset-step2' && (
             <>
-              <h2 className="text-[2rem] font-semibold mb-2">Reset your Password</h2>
+              <h2 className="text-[2rem] font-semibold mb-2">Verify OTP</h2>
+              <p className="text-sm mb-6">
+                Enter the verification code sent to <span className="text-blue-300">{resetEmail}</span>
+              </p>
 
               <form onSubmit={resetStep2Form.handleSubmit(onResetStep2Submit)} className="space-y-4">
                 <div>
                   <input
-                    {...resetStep2Form.register("newPassword", {
+                    {...resetStep2Form.register("otp", {
+                      required: "OTP is required",
+                      pattern: {
+                        value: /^\d{6}$/,
+                        message: "OTP must be 6 digits"
+                      }
+                    })}
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
+                    maxLength={6}
+                    className="w-full rounded-full border border-gray-300 bg-transparent px-4 py-3 text-lg placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center tracking-widest"
+                  />
+                  {resetStep2Form.formState.errors.otp && (
+                    <p className="text-red-400 text-xs mt-1">
+                      {resetStep2Form.formState.errors.otp.message}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await sendPasswordResetOtp({ email: resetEmail }).unwrap();
+                      toast.success('OTP resent', {
+                        description: 'Please check your email for the new verification code.',
+                      });
+                    } catch {
+                      toast.error('Failed to resend OTP');
+                    }
+                  }}
+                  className="w-full text-sm text-blue-300 hover:underline"
+                >
+                  Resend OTP
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp}
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVerifyingOtp ? "Verifying..." : "Verify OTP"}
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* Password Reset Step 3 - New Password */}
+          {currentMode === 'reset-step3' && (
+            <>
+              <h2 className="text-[2rem] font-semibold mb-2">Reset your Password</h2>
+              <p className="text-sm mb-6">
+                Enter your new password below.
+              </p>
+
+              <form onSubmit={resetStep3Form.handleSubmit(onResetStep3Submit)} className="space-y-4">
+                <div>
+                  <input
+                    {...resetStep3Form.register("newPassword", {
                       required: "New password is required",
                       minLength: {
-                        value: 6,
-                        message: "Password must be at least 6 characters",
+                        value: 8,
+                        message: "Password must be at least 8 characters",
                       },
                     })}
                     type="password"
                     placeholder="New Password"
                     className="w-full rounded-full border border-gray-300 bg-transparent px-4 py-3 text-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
-                  {resetStep2Form.formState.errors.newPassword && (
+                  {resetStep3Form.formState.errors.newPassword && (
                     <p className="text-red-400 text-xs mt-1">
-                      {resetStep2Form.formState.errors.newPassword.message}
+                      {resetStep3Form.formState.errors.newPassword.message}
                     </p>
                   )}
                 </div>
 
                 <div>
                   <input
-                    {...resetStep2Form.register("confirmPassword", {
+                    {...resetStep3Form.register("confirmPassword", {
                       required: "Please confirm your password",
                     })}
                     type="password"
                     placeholder="Confirm Password"
                     className="w-full rounded-full border border-gray-300 bg-transparent px-4 py-3 text-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
-                  {resetStep2Form.formState.errors.confirmPassword && (
+                  {resetStep3Form.formState.errors.confirmPassword && (
                     <p className="text-red-400 text-xs mt-1">
-                      {resetStep2Form.formState.errors.confirmPassword.message}
+                      {resetStep3Form.formState.errors.confirmPassword.message}
                     </p>
                   )}
                 </div>
@@ -348,9 +497,10 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition"
+                  disabled={isResettingPassword}
+                  className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continue
+                  {isResettingPassword ? "Resetting..." : "Reset Password"}
                 </button>
               </form>
             </>

@@ -1,6 +1,6 @@
  "use client";
 import Image from "next/image";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -17,9 +17,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
-import { clearStoredTokens, getUsernameFromToken, getStoredAccessToken } from "@/lib/auth";
+import { clearStoredTokens, getUsernameFromToken, getStoredAccessToken, getRoleFromToken } from "@/lib/auth";
 import { store } from "@/store/store";
 import { baseApi } from "@/store/baseApi";
+import { toast } from "sonner";
 
 const menu = [
   { name: "Home", icon: Home, path: "/dashboard" },
@@ -38,15 +39,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
-  // Fetch current user profile
+  // Fetch current user profile - MUST be called before any conditional returns
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
   
   // Get username from token or profile
   const username = profile?.display_name || profile?.username || getUsernameFromToken(getStoredAccessToken()) || "User";
-
-  // Sync active state with current pathname
+  
+  // Check admin authentication
+  const token = getStoredAccessToken();
+  const role = useMemo(() => getRoleFromToken(token), [token]);
+  
+  // Sync active state with current pathname - MUST be called before any conditional returns
   useEffect(() => {
     const currentMenuItem = menu.find((item) => {
       // Handle exact match for home
@@ -62,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [pathname]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside - MUST be called before any conditional returns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -78,20 +84,91 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
+  
+  // Authentication check - MUST be called before any conditional returns
+  useEffect(() => {
+    setIsCheckingAuth(false);
+    
+    // Check if user is authenticated
+    if (!token) {
+      router.replace("/dashboard/auth");
+      return;
+    }
+    
+    // Check if token is expired
+    try {
+      const [, payload] = token.split(".");
+      if (payload) {
+        const data = JSON.parse(
+          atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+        );
+        if (typeof data.exp === "number" && data.exp * 1000 <= Date.now()) {
+          clearStoredTokens();
+          router.replace("/dashboard/auth");
+          return;
+        }
+      }
+    } catch {
+      clearStoredTokens();
+      router.replace("/dashboard/auth");
+      return;
+    }
+    
+    // Check if user is admin
+    if (role !== "admin") {
+      router.replace("/dashboard/auth");
+      return;
+    }
+  }, [token, role, router]);
+  
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1F2149] text-white">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if not admin (will redirect)
+  if (role !== "admin") {
+    return null;
+  }
 
   // Handle logout
   const handleLogout = () => {
-    clearStoredTokens();
-    store.dispatch(baseApi.util.resetApiState());
-    // Clear user data from storage
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("user");
-      window.sessionStorage.removeItem("user");
-      window.localStorage.removeItem("role");
-      window.sessionStorage.removeItem("role");
+    try {
+      // Clear tokens
+      clearStoredTokens();
+      
+      // Clear RTK Query cache
+      store.dispatch(baseApi.util.resetApiState());
+      
+      // Clear user data from storage
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("user");
+        window.sessionStorage.removeItem("user");
+        window.localStorage.removeItem("role");
+        window.sessionStorage.removeItem("role");
+      }
+      
+      // Close dropdown if open
+      setIsDropdownOpen(false);
+      
+      // Show success message
+      toast.success("Logged out successfully");
+      
+      // Redirect to admin login page
+      router.push("/dashboard/auth");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Error during logout");
+      // Still redirect even if there's an error
+      router.push("/dashboard/auth");
     }
-    setIsDropdownOpen(false);
-    router.push("/auth/login");
   };
 
   // Handle home navigation
@@ -165,7 +242,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </nav>
 
             {/* LOGOUT */}
-            <button className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4 w-full"
+            >
               <LogOut className="w-4 h-4 mr-2" /> Logout
             </button>
           </aside>
@@ -185,7 +265,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* LOGOUT → STAYS AT BOTTOM */}
-        <button className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4 w-full"
+        >
           <LogOut className="w-4 h-4 mr-2" /> Logout
         </button>
       </aside>

@@ -19,6 +19,10 @@ interface ProductDetailsModalProps {
     condition?: string;
     location?: string;
     description?: string;
+    link?: string;
+    category_name?: string;
+    subcategory_name?: string;
+    sub_category_name?: string;
   }) | null;
 }
 
@@ -154,6 +158,31 @@ export default function ProductDetailsModal({
             <div className="p-4 rounded-lg bg-white/5 border border-white/10">
               <h3 className="text-sm font-medium text-white/60 mb-2">Description</h3>
               <p className="text-white/80 leading-relaxed">{product.description}</p>
+            </div>
+          )}
+
+          {/* Product Link */}
+          {product.link && (
+            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+              <h3 className="text-sm font-medium text-white/60 mb-2">Product Link</h3>
+              <a
+                href={product.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline break-all"
+              >
+                {product.link}
+              </a>
+              <div className="mt-3">
+                <a
+                  href={product.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Buy Now
+                </a>
+              </div>
             </div>
           )}
 

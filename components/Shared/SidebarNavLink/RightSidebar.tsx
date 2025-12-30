@@ -96,7 +96,7 @@ const RightSidebar = () => {
                 ) : communities.length === 0 ? (
                   <p className="text-white/60 text-sm text-center py-4">No communities available</p>
                 ) : (
-                  communities.map((community: CommunityItem) => {
+                  communities.slice(0, 5).map((community: CommunityItem) => {
                     const iconUrl = community.icon || community.profile_image
                       ? `${(community.icon || community.profile_image)?.startsWith("/") ? (community.icon || community.profile_image)?.slice(1) : (community.icon || community.profile_image)}`
                       : null;
@@ -163,7 +163,7 @@ const RightSidebar = () => {
                 ) : categories.length === 0 ? (
                   <p className="text-white/60 text-sm text-center py-4">No categories available</p>
                 ) : (
-                  categories.map((category) => {
+                  categories.slice(0, 5).map((category) => {
                     const subcategoryCount = category.subcategories?.length || 0;
                     return (
                       <Link

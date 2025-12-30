@@ -957,7 +957,11 @@ const Post = ({ post, profile }: PostProps) => {
         <div className="flex items-center gap-[7px]">
           {post?.avatar || profile?.avatar ? (
             <Image
-              src={`${getApiBaseUrl()}${post?.avatar as string || "/profile.jpg"}`}
+              src={typeof post?.avatar === 'string' && post.avatar.startsWith('http') 
+                ? post.avatar 
+                : typeof post?.avatar === 'string' 
+                  ? `${getApiBaseUrl()}${post.avatar.startsWith('/') ? post.avatar.slice(1) : post.avatar}`
+                  : profile?.avatar || '/profile.jpg'}
               alt={post?.author?.name || post?.user_name || "Author Avatar"}
               width={22}
               height={22}

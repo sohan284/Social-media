@@ -19,9 +19,9 @@ interface ProductFormData {
   price: string;
   condition: string;
   sub_category: number;
-  color?: string;
   description?: string;
   location?: string;
+  link?: string;
   image: File | null;
 }
 
@@ -37,9 +37,9 @@ export default function SalePage() {
       price: "",
       condition: "",
       sub_category: 0,
-      color: "",
       description: "",
       location: "",
+      link: "",
       image: null,
     },
   });
@@ -79,9 +79,9 @@ export default function SalePage() {
         condition: data.condition,
         status: "published",
         sub_category: selectedSubcategoryId,
-        color: data.color,
         description: data.description,
         location: data.location,
+        link: data.link,
       }).unwrap();
       
       toast.success("Product created successfully!");
@@ -115,9 +115,9 @@ export default function SalePage() {
         condition: data.condition,
         status: "draft",
         sub_category: selectedSubcategoryId,
-        color: data.color,
         description: data.description,
         location: data.location,
+        link: data.link,
       }).unwrap();
       
       toast.success("Draft saved successfully!");
@@ -286,11 +286,6 @@ export default function SalePage() {
               </SelectItem>
             </SelectContent>
           </Select>
-          <input
-            {...register("color")}
-            placeholder="Color"
-            className={inputClass}
-          />
           <textarea
             {...register("description")}
             placeholder="Description"
@@ -300,6 +295,12 @@ export default function SalePage() {
           <input
             {...register("location")}
             placeholder="Location"
+            className={inputClass}
+          />
+          <input
+            {...register("link")}
+            type="url"
+            placeholder="Product Link (URL to buy the product)"
             className={inputClass}
           />
 
@@ -373,12 +374,6 @@ export default function SalePage() {
           {watchFields.condition && (
             <p className="text-sm text-gray-300">
               <span className="font-medium">Condition:</span> {watchFields.condition}
-            </p>
-          )}
-          
-          {watchFields.color && (
-            <p className="text-sm text-gray-300">
-              <span className="font-medium">Color:</span> {watchFields.color}
             </p>
           )}
           

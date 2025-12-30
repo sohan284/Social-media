@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Post from "../Post/Post";
-import { useGetNewsFeedQuery } from "@/store/postApi";
+import { useGetNewsFeedQuery, PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { FiEdit3, FiImage, FiLink } from "react-icons/fi";
 import { useSearch } from "@/contexts/SearchContext";
@@ -25,24 +25,36 @@ const Home = () => {
   const profile = profileResponse?.data;
   const { searchQuery } = useSearchSafe();
 
-  const allPosts = useMemo(() => {
+  const allPosts = useMemo((): PostItem[] => {
     if (!postsResponse) return [];
-    return (
-      postsResponse.data ??
-      postsResponse.results?.data ??
-      postsResponse.posts ??
-      []
-    );
+    
+    // Handle different response structures
+    if (Array.isArray(postsResponse.data)) {
+      return postsResponse.data;
+    }
+    if (Array.isArray(postsResponse.posts)) {
+      return postsResponse.posts;
+    }
+    if (postsResponse.results) {
+      if (Array.isArray(postsResponse.results)) {
+        return postsResponse.results;
+      }
+      if (postsResponse.results.data && Array.isArray(postsResponse.results.data)) {
+        return postsResponse.results.data;
+      }
+    }
+    
+    return [];
   }, [postsResponse]);
 
   // Filter posts based on search query
-  const posts = useMemo(() => {
+  const posts = useMemo((): PostItem[] => {
     if (!searchQuery.trim()) {
       return allPosts;
     }
 
     const query = searchQuery.toLowerCase().trim();
-    return allPosts.filter((post) => {
+    return allPosts.filter((post: PostItem) => {
       const title = (post.title || "").toLowerCase();
       const content = (post.content || "").toLowerCase();
       return title.includes(query) || content.includes(query);
@@ -104,7 +116,7 @@ const Home = () => {
       {/* <Story /> */}
       
       {/* Create Post Section */}
-      <div className="mt-6 mb-6 sticky top-14 z-10">
+      <div className="my-2 top-14 z-10">
         <div 
           onClick={handleCreatePostClick}
           className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-white/20 transition-all duration-300"
@@ -136,8 +148,8 @@ const Home = () => {
           </div>
           
           {/* Action Icons */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-            <div className="flex items-center gap-6">
+          <div className="flex items-center  justify-between mt-4 pt-4 border-t border-white/10">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={(e) => {
@@ -170,7 +182,7 @@ const Home = () => {
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-300 font-medium"
             >
               <FiEdit3 size={18} />
-              <span>Create Post</span>
+              <span className="text-nowrap text-xs md:text-md">Create Post</span>
             </button>
           </div>
         </div>

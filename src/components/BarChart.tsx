@@ -110,39 +110,60 @@ export const options: ChartOptions<'bar'> = {
   },
 };
 
-const labels = ['January', 'February', 'March', 'April', 'May'];
+interface BarChartProps {
+  approved?: number;
+  rejected?: number;
+}
 
-export const data = {
-  labels,
-  datasets: [
-    {
-      label: 'Total Posts',
-      data: [70, 70, 70, 70, 70],
-      backgroundColor: '#517EE0',
-      borderRadius: 0,
-      barThickness: 25,
-    },
-    {
-      label: 'Approved Posts',
-      data: [50, 50, 50, 50, 50],
-      backgroundColor: '#387135',
-      borderRadius: 0,
-      barThickness: 25,
-    },
-    {
-      label: 'Rejected Posts',
-      data: [30, 30, 30, 30, 30],
-      backgroundColor: '#B53939',
-      borderRadius: 0,
-      barThickness: 25,
-    },
-  ],
-};
+export function BarChart({ approved = 0, rejected = 0 }: BarChartProps) {
+  const total = approved + rejected;
+  
+  const chartData = {
+    labels: ['Approved', 'Rejected'],
+    datasets: [
+      {
+        label: 'Posts',
+        data: [approved, rejected],
+        backgroundColor: ['#387135', '#B53939'],
+        borderRadius: 0,
+        barThickness: 25,
+      },
+    ],
+  };
 
-export function BarChart() {
+  const chartOptions: ChartOptions<'bar'> = {
+    ...options,
+    scales: {
+      ...options.scales,
+      y: {
+        ...options.scales?.y,
+        max: total > 0 ? Math.ceil(total * 1.1) : 100,
+      },
+    },
+    plugins: {
+      ...options.plugins,
+      datalabels: {
+        ...options.plugins?.datalabels,
+        formatter: (value) => {
+          return total > 0 ? value : '0';
+        },
+      },
+      tooltip: {
+        ...options.plugins?.tooltip,
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed.y || 0;
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+            return `${context.dataset.label}: ${value} (${percentage}%)`;
+          }
+        }
+      },
+    },
+  };
+
   return (
     <div className="w-full h-full min-h-[300px]">
-      <Bar options={options} data={data} />
+      <Bar options={chartOptions} data={chartData} />
     </div>
   );
 }

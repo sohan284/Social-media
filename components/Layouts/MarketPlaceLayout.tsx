@@ -24,7 +24,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         backgroundImage: `url(${bg.src})`,
         scrollbarGutter: "stable both-edges",
       }}
-      className="bg-cover bg-center bg-no-repeat p-10 flex flex-col md:flex-row text-white"
+      className="bg-cover bg-center h-screen bg-no-repeat p-3 lg:p-10 flex flex-col md:flex-row text-white"
     >
       {/* Unified container with backdrop blur */}
       <div className="w-full flex flex-col md:flex-row gap-0 backdrop-blur-xl bg-black/40 rounded-lg overflow-hidden h-[calc(100vh-80px)]">
@@ -42,7 +42,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         )}
 
         {/* Main area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
         {/* Header */}
         <header className="flex flex-col gap-3 p-3 md:p-4 border-b border-white/10 sticky top-0 z-20">
           <div className="flex items-center justify-between gap-3">
@@ -98,7 +98,7 @@ export default function MarketPlaceLayout({ children }: { children: React.ReactN
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-2 md:p-8 custom-scroll-marketplace">
+        <main className="flex-1 overflow-y-auto p-2 md:p-8 custom-scroll-marketplace min-h-0">
           {children}
         </main>
       </div>

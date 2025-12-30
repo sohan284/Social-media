@@ -3,9 +3,12 @@
 import React, { useState, useMemo } from 'react';
 import { AiOutlineClose, AiOutlineSearch, AiOutlinePlus } from 'react-icons/ai';
 import ConversationView from './ConversationView';
+import RoomConversationView from './RoomConversationView';
 import MessageList from './MessageList';
 import MessageUserList from './MessageUserList';
-import { useGetChatRoomsQuery, useCreateChatRoomMutation } from '@/store/chatApi';
+import CreateRoomModal from './CreateRoomModal';
+import ManageRoomModal from './ManageRoomModal';
+import { useGetChatRoomsQuery, useDeleteChatRoomMutation } from '@/store/chatApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { toast } from 'sonner';
 
@@ -20,44 +23,30 @@ interface User {
   avatar: string;
   username: string;
   isOnline: boolean;
+  lastSeen?: string;
   timestamp?: string;
+  roomId?: number | string;
+  isGroup?: boolean;
 }
 
 const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"users" | "rooms">("users");
-  const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [roomName, setRoomName] = useState('');
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false);
+  const [showManageRoomModal, setShowManageRoomModal] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | string | null>(null);
   const { data: roomsResponse } = useGetChatRoomsQuery(undefined, { skip: !isOpen });
-  const [createRoom, { isLoading: isCreatingRoom }] = useCreateChatRoomMutation();
+  const [deleteRoom] = useDeleteChatRoomMutation();
   
   // Initialize WebSocket connection when popup is open
   useChatWebSocket({ enabled: isOpen });
 
   const unreadCount = useMemo(() => {
     if (!roomsResponse) return 0;
-    const rooms = roomsResponse.data ?? roomsResponse.results?.data ?? roomsResponse.rooms ?? [];
+    const rooms = roomsResponse.data ?? roomsResponse.results ?? roomsResponse.rooms ?? [];
     return rooms.reduce((total: number, room: { unread_count?: number }) => total + (room.unread_count || 0), 0);
   }, [roomsResponse]);
-
-  const handleCreateRoom = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!roomName.trim() || isCreatingRoom) return;
-
-    try {
-      await createRoom({ name: roomName.trim() }).unwrap();
-      toast.success('Room created successfully!');
-      setRoomName('');
-      setShowCreateRoom(false);
-    } catch (error: unknown) {
-      const errorMessage =
-        (error as { data?: { error?: string; message?: string } })?.data?.error ||
-        (error as { data?: { error?: string; message?: string } })?.data?.message ||
-        'Failed to create room';
-      toast.error('Failed to create room', { description: errorMessage });
-    }
-  };
 
   const handleUserSelect = (user: User) => {
     setSelectedUser(user);
@@ -67,12 +56,46 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
     setSelectedUser(null);
   };
 
+  const handleManageRoom = (roomId: number | string) => {
+    setSelectedRoomId(roomId);
+    setShowManageRoomModal(true);
+  };
+
+  const handleDeleteRoom = async (roomId: number | string) => {
+    if (!confirm('Are you sure you want to delete this room? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deleteRoom(roomId).unwrap();
+      toast.success('Room deleted successfully');
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        'Failed to delete room';
+      toast.error('Failed to delete room', { description: errorMessage });
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-[#06133f] rounded-lg shadow-2xl flex flex-col animate-in slide-in-from-bottom-2 duration-300">
       {selectedUser ? (
-        <ConversationView user={selectedUser} onBack={handleBackToList} />
+        selectedUser.isGroup ? (
+          <RoomConversationView 
+            room={{
+              id: selectedUser.id,
+              name: selectedUser.name,
+              roomId: selectedUser.roomId,
+              isGroup: true,
+            }} 
+            onBack={handleBackToList} 
+          />
+        ) : (
+          <ConversationView user={selectedUser} onBack={handleBackToList} />
+        )
       ) : (
         <>
           {/* Header */}
@@ -85,57 +108,25 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-white">
-              <button 
-                onClick={() => setShowCreateRoom(!showCreateRoom)}
-                className="p-1.5 hover:bg-gray-500 rounded-full transition-colors"
-                title="Create Room"
-              >
-                <AiOutlinePlus size={14} />
-              </button>
-              <button 
-                onClick={onClose}
-                className="p-1.5 hover:bg-gray-500 rounded-full transition-colors"
-                title="Close"
-              >
-                <AiOutlineClose size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Create Room Input */}
-          {showCreateRoom && (
-            <div className="p-3 border-b border-gray-700 bg-[#06133f]">
-              <form onSubmit={handleCreateRoom} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                  placeholder="Enter room name..."
-                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-600 focus:border-transparent text-sm"
-                  autoFocus
-                  disabled={isCreatingRoom}
-                />
-                <button
-                  type="submit"
-                  disabled={!roomName.trim() || isCreatingRoom}
-                  className="px-4 text-xs py-2 bg-[#0059ff] text-white rounded-md hover:bg-[#0059ffcd] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {isCreatingRoom ? 'Creating...' : 'Create'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateRoom(false);
-                    setRoomName('');
-                  }}
-                  className="px-2 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
-                >
-                  <AiOutlineClose size={14} />
-                </button>
-              </form>
-            </div>
-          )}
+                  <div className="flex items-center gap-1 text-white">
+                    {activeTab === "rooms" && (
+                      <button 
+                        onClick={() => setShowCreateRoomModal(true)}
+                        className="p-1.5 hover:bg-gray-500 rounded-full transition-colors"
+                        title="Create Room"
+                      >
+                        <AiOutlinePlus size={14} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={onClose}
+                      className="p-1.5 hover:bg-gray-500 rounded-full transition-colors"
+                      title="Close"
+                    >
+                      <AiOutlineClose size={14} />
+                    </button>
+                  </div>
+                </div>
 
           {/* Tabs */}
           <div className="px-3 pt-2 border-b border-gray-800 bg-[#06133f]">
@@ -185,10 +176,37 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
             {activeTab === "users" ? (
               <MessageUserList searchQuery={searchQuery} onUserSelect={handleUserSelect} />
             ) : (
-              <MessageList searchQuery={searchQuery} onUserSelect={handleUserSelect} />
+              <MessageList 
+                searchQuery={searchQuery} 
+                onUserSelect={handleUserSelect}
+                onManageRoom={handleManageRoom}
+                onDeleteRoom={handleDeleteRoom}
+              />
             )}
           </div>
         </>
+      )}
+      
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        isOpen={showCreateRoomModal}
+        onClose={() => setShowCreateRoomModal(false)}
+        onRoomCreated={() => {
+          setShowCreateRoomModal(false);
+          setActiveTab("rooms");
+        }}
+      />
+
+      {/* Manage Room Modal */}
+      {selectedRoomId && (
+        <ManageRoomModal
+          isOpen={showManageRoomModal}
+          roomId={selectedRoomId}
+          onClose={() => {
+            setShowManageRoomModal(false);
+            setSelectedRoomId(null);
+          }}
+        />
       )}
     </div>
   );

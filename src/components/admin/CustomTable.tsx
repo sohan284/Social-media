@@ -30,6 +30,7 @@ interface CustomTableProps<T> {
   rowClassName?: string | ((row: T, index: number) => string);
   cellClassName?: string;
   onRowClick?: (row: T, index: number) => void;
+  disablePagination?: boolean;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -47,6 +48,7 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   rowClassName = "",
   cellClassName = "",
   onRowClick,
+  disablePagination = false,
 }: CustomTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -62,12 +64,15 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
     }
   }, [currentPage, totalPages]);
 
-  // Get paginated data
+  // Get paginated data - if pagination is disabled, show all data
   const paginatedData = useMemo(() => {
+    if (disablePagination) {
+      return data;
+    }
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     return data.slice(startIndex, endIndex);
-  }, [data, currentPage]);
+  }, [data, currentPage, disablePagination]);
 
   const getRowKey = (row: T, index: number): string | number => {
     if (typeof row === "object" && row !== null) {
@@ -254,8 +259,8 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
         </Table>
       </div>
 
-      {/* Pagination Controls - Always show if there's data */}
-      {data.length > 0 && (
+      {/* Pagination Controls - Always show if there's data and pagination is enabled */}
+      {!disablePagination && data.length > 0 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-white/5">
           <div className="text-sm text-white/60">
             Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, data.length)} of {data.length} entries

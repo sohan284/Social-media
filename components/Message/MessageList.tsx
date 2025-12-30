@@ -18,16 +18,20 @@ interface User {
 interface MessageListProps {
   searchQuery: string;
   onUserSelect: (user: User) => void;
+  onManageRoom?: (roomId: number | string) => void;
+  onDeleteRoom?: (roomId: number | string) => void;
 }
 
-const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
-  const { data: roomsResponse, isLoading, isError } = useGetChatRoomsQuery();
+const MessageList = ({ searchQuery, onUserSelect, onManageRoom, onDeleteRoom }: MessageListProps) => {
+  const { data: roomsResponse, isLoading, isError } = useGetChatRoomsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const rooms = useMemo(() => {
     if (!roomsResponse) return [];
     return (
       roomsResponse.data ??
-      roomsResponse.results?.data ??
+      roomsResponse.results ??
       roomsResponse.rooms ??
       []
     );
@@ -50,57 +54,73 @@ const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
     return date.toLocaleDateString();
   };
 
-  const getOtherParticipant = (room: ChatRoom) => {
-    // Get the participant that is not the current user
-    // This assumes participants array contains users
-    if (room.participants && Array.isArray(room.participants) && room.participants.length > 0) {
-      // Return the first participant (or you might need logic to exclude current user)
-      return room.participants[0];
+  const getRoomDisplayInfo = (room: ChatRoom) => {
+    // For group rooms, show room name and participants
+    if (room.is_group) {
+      const participants = room.participants || [];
+      const participantCount = Array.isArray(participants) ? participants.length : 0;
+      return {
+        name: room.name || `Group Chat (${participantCount} members)`,
+        avatar: null,
+        isGroup: true,
+      };
     }
-    // Fallback to room data
-    const roomData = room as ChatRoom & { user?: ChatUser; participant?: ChatUser; username?: string; avatar?: string };
+    
+    // For one-on-one rooms, show the other participant
+    const participants = room.participants || [];
+    const otherParticipant = room.other_participant || (Array.isArray(participants) ? participants[0] : null);
+    
+    if (otherParticipant) {
+      const apiBase = getApiBaseUrl();
+      return {
+        name: (otherParticipant as ChatUser).display_name || (otherParticipant as ChatUser).username || 'Unknown',
+        avatar: (otherParticipant as ChatUser).avatar 
+          ? ((otherParticipant as ChatUser).avatar?.startsWith('http') 
+              ? (otherParticipant as ChatUser).avatar 
+              : `${apiBase}${(otherParticipant as ChatUser).avatar?.startsWith('/') ? (otherParticipant as ChatUser).avatar?.slice(1) : (otherParticipant as ChatUser).avatar}`)
+          : '/profile.jpg',
+        isGroup: false,
+      };
+    }
+    
     return {
-      id: roomData.user?.id || roomData.participant?.id || room.id,
-      username: roomData.user?.username || roomData.participant?.username || roomData.username || 'Unknown',
-      display_name: roomData.user?.display_name || roomData.participant?.display_name || room.name || 'Unknown User',
-      avatar: roomData.user?.avatar || roomData.participant?.avatar || roomData.avatar || '/profile.jpg',
-      is_online: roomData.user?.is_online || roomData.participant?.is_online || false,
+      name: 'Unknown User',
+      avatar: '/profile.jpg',
+      isGroup: false,
     };
   };
 
   const transformedRooms = useMemo(() => {
-    return rooms.map((room: ChatRoom) => {
-      const participant = getOtherParticipant(room);
-      const lastMessage = (room.last_message as { content?: string; created_at?: string } | undefined) || {};
-      const apiBase = getApiBaseUrl();
-      
-      return {
-        id: String(room.id),
-        roomId: room.id,
-        sender: {
-          name: participant.display_name || participant.username || 'Unknown',
-          avatar: participant.avatar 
-            ? (participant.avatar.startsWith('http') 
-                ? participant.avatar 
-                : `${apiBase}${participant.avatar.startsWith('/') ? participant.avatar.slice(1) : participant.avatar}`)
-            : '/profile.jpg',
-          username: participant.username || 'unknown',
-        },
-        lastMessage: lastMessage.content || 'No messages yet',
-        timestamp: formatTimestamp(lastMessage.created_at || room.updated_at || room.created_at),
-        unreadCount: room.unread_count || 0,
-        isOnline: participant.is_online || false,
-      };
-    });
+    return rooms
+      .filter((room: ChatRoom) => room.is_group) // Only show group rooms
+      .map((room: ChatRoom) => {
+        const displayInfo = getRoomDisplayInfo(room);
+        const lastMessage = (room.last_message as { content?: string; created_at?: string } | undefined) || {};
+        
+        return {
+          id: String(room.id),
+          roomId: room.id,
+          sender: {
+            name: displayInfo.name,
+            avatar: displayInfo.avatar || '/profile.jpg',
+            username: displayInfo.name.toLowerCase().replace(/\s+/g, '_'),
+          },
+          lastMessage: lastMessage.content || 'No messages yet',
+          timestamp: formatTimestamp(lastMessage.created_at || room.updated_at || room.created_at),
+          unreadCount: room.unread_count || 0,
+          isOnline: false, // Groups don't have online status
+          isGroup: true,
+          isAdmin: room.is_admin || false,
+        };
+      });
   }, [rooms]);
 
-  const filteredMessages = useMemo(() => {
+  const filteredRooms = useMemo(() => {
     if (!searchQuery.trim()) return transformedRooms;
     const query = searchQuery.toLowerCase();
-    return transformedRooms.filter((message) =>
-      message.sender.name.toLowerCase().includes(query) ||
-      message.sender.username.toLowerCase().includes(query) ||
-      message.lastMessage.toLowerCase().includes(query)
+    return transformedRooms.filter((room) =>
+      room.sender.name.toLowerCase().includes(query) ||
+      room.lastMessage.toLowerCase().includes(query)
     );
   }, [transformedRooms, searchQuery]);
 
@@ -109,7 +129,7 @@ const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-          <p className="text-sm text-gray-500">Loading conversations...</p>
+          <p className="text-sm text-gray-500">Loading rooms...</p>
         </div>
       </div>
     );
@@ -119,8 +139,20 @@ const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
     return (
       <div className="flex-1 flex items-center justify-center text-gray-500">
         <div className="text-center mt-5">
-          <p className="text-sm">Failed to load conversations</p>
+          <p className="text-sm">Failed to load rooms</p>
           <p className="text-xs mt-1">Please try again later</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (filteredRooms.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-500">
+        <div className="text-center">
+          <p className="text-sm w-60 mx-auto mt-5">
+            {searchQuery ? 'No rooms found' : 'No group rooms yet. Create one to get started!'}
+          </p>
         </div>
       </div>
     );
@@ -128,31 +160,17 @@ const MessageList = ({ searchQuery, onUserSelect }: MessageListProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      {filteredMessages.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-gray-500">
-          <div className="text-center">
-            <p className="text-sm">
-              {searchQuery ? 'No conversations found' : 'No conversations yet'}
-            </p>
-            {searchQuery && (
-              <p className="text-xs mt-1">Try a different search term</p>
-            )}
-            {!searchQuery && (
-              <p className="text-xs mt-1">Start a new conversation to get started</p>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="overflow-y-auto custom-scroll overflow-hidden">
-          {filteredMessages.map((message) => (
-            <MessageItem 
-              key={message.id} 
-              message={message} 
-              onUserSelect={onUserSelect}
-            />
-          ))}
-        </div>
-      )}
+      <div className="  relative">
+        {filteredRooms.map((room) => (
+          <MessageItem 
+            key={room.id} 
+            message={room} 
+            onUserSelect={onUserSelect}
+            onManageRoom={onManageRoom}
+            onDeleteRoom={onDeleteRoom}
+          />
+        ))}
+      </div>
     </div>
   );
 };
