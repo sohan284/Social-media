@@ -1,22 +1,39 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useGetRejectedPostsQuery, PostItem } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { getApiBaseUrl } from "@/lib/utils";
 import Image from "next/image";
 import { Edit, Trash2 } from "lucide-react";
+import PostDetailsModal from "@/components/admin/PostDetailsModal";
 
 export default function RejectedPostsTable() {
   const { data, isLoading, isError } = useGetRejectedPostsQuery();
+  const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
-  const allPosts = useMemo(() => {
+  const allPosts = useMemo((): PostItem[] => {
     if (!data) return [];
-    return (
-      data.data ??
-      data.results?.data ??
-      data.posts ??
-      []
-    );
+    
+    // Handle different response structures
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    // Handle object with data property
+    if (typeof data === 'object' && data !== null) {
+      if (Array.isArray((data as { data?: PostItem[] }).data)) {
+        return (data as { data: PostItem[] }).data;
+      }
+      if (Array.isArray((data as { results?: { data?: PostItem[] } }).results?.data)) {
+        return (data as { results: { data: PostItem[] } }).results.data;
+      }
+      if (Array.isArray((data as { posts?: PostItem[] }).posts)) {
+        return (data as { posts: PostItem[] }).posts;
+      }
+    }
+    
+    return [];
   }, [data]);
 
   // Filter only rejected posts
@@ -48,6 +65,11 @@ export default function RejectedPostsTable() {
     const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
     const cleanPath = image.startsWith("/") ? image.slice(1) : image;
     return `${cleanBase}/${cleanPath}`;
+  };
+
+  const handleRowClick = (post: PostItem) => {
+    setSelectedPost(post);
+    setDetailsModalOpen(true);
   };
 
   type PostRow = PostItem;
@@ -156,7 +178,7 @@ export default function RejectedPostsTable() {
   }
 
   return (
-    <div>
+    <>
       <CustomTable
         title="Rejected Posts"
         columns={columns}
@@ -164,8 +186,19 @@ export default function RejectedPostsTable() {
         emptyMessage="No rejected posts found."
         isError={isError}
         errorMessage="Failed to load rejected posts. Please try again later."
+        onRowClick={handleRowClick}
       />
-    </div>
+
+      {/* Post Details Modal */}
+      <PostDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false);
+          setSelectedPost(null);
+        }}
+        post={selectedPost}
+      />
+    </>
   );
 }
 

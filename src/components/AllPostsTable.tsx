@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import PostDetailsModal from "@/components/admin/PostDetailsModal";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -24,6 +25,8 @@ export default function AllPostsTable() {
     id: number | string;
     title: string;
   } | null>(null);
+  const [selectedPost, setSelectedPost] = useState<PostItem | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
   const posts = useMemo((): PostItem[] => {
     if (!data) return [];
@@ -127,6 +130,11 @@ export default function AllPostsTable() {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     }
+  };
+
+  const handleRowClick = (post: PostItem) => {
+    setSelectedPost(post);
+    setDetailsModalOpen(true);
   };
 
   // Generate page numbers to display
@@ -293,6 +301,7 @@ export default function AllPostsTable() {
           isError={isError}
           errorMessage="Failed to load posts. Please try again later."
           disablePagination={true}
+          onRowClick={handleRowClick}
         />
 
         {/* Server-side Pagination Controls */}
@@ -377,6 +386,16 @@ export default function AllPostsTable() {
           setDeleteDialogOpen(false);
           setPostToDelete(null);
         }}
+      />
+
+      {/* Post Details Modal */}
+      <PostDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false);
+          setSelectedPost(null);
+        }}
+        post={selectedPost}
       />
     </>
   );
