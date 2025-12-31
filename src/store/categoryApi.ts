@@ -52,6 +52,7 @@ export interface UpdateSubcategoryRequest {
 }
 
 export const categoryApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getCategories: builder.query<CategoriesResponse, void>({
       query: () => ({

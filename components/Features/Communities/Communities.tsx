@@ -6,11 +6,15 @@ import {
   useGetPopularCommunitiesQuery, 
   useJoinCommunityMutation, 
   useLeaveCommunityMutation,
+  useCancelJoinRequestMutation,
+  useGetInvitationsQuery,
+  useAcceptInvitationMutation,
+  useRejectInvitationMutation,
   CommunityItem
 } from '@/store/communityApi';
 import { useGetCommunityPostsQuery } from '@/store/postApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
-import { FiUsers, FiSearch, FiFilter, FiUserPlus, FiUserMinus, FiFileText, FiArrowLeft } from 'react-icons/fi';
+import { FiUsers, FiSearch, FiFilter, FiUserPlus, FiUserMinus, FiFileText, FiArrowLeft, FiCheck, FiX } from 'react-icons/fi';
 import FriendsIcon from '../../Icons/FriendsIcon';
 import { toast } from 'sonner';
 import Post from '../Main/Post/Post';
@@ -29,6 +33,10 @@ const Communities = () => {
   });
   const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
   const [leaveCommunity, { isLoading: isLeaving }] = useLeaveCommunityMutation();
+  const [cancelJoinRequest, { isLoading: isCanceling }] = useCancelJoinRequestMutation();
+  const { data: invitationsResponse } = useGetInvitationsQuery();
+  const [acceptInvitation, { isLoading: isAccepting }] = useAcceptInvitationMutation();
+  const [rejectInvitation, { isLoading: isRejecting }] = useRejectInvitationMutation();
 
   const allCommunities = useMemo(() => {
     if (!communitiesResponse) return [];
@@ -36,10 +44,41 @@ const Communities = () => {
     return Array.isArray(data) ? data : [];
   }, [communitiesResponse]);
 
-  // Filter to only show public communities
+  // Get pending invitations
+  const pendingInvitations = useMemo(() => {
+    if (!invitationsResponse) return [];
+    const data = invitationsResponse.data ?? invitationsResponse.results ?? [];
+    return Array.isArray(data) ? data.filter((inv: { status?: string }) => inv.status === 'pending') : [];
+  }, [invitationsResponse]);
+
+  // Create a map of community name to invitation ID
+  const invitationMap = useMemo(() => {
+    const map: Record<string, { id: number | string; community_name?: string }> = {};
+    pendingInvitations.forEach((inv: { community_name?: string; community?: string | number; id?: number | string }) => {
+      const commName = inv.community_name || String(inv.community);
+      if (commName && inv.id) {
+        map[commName] = { id: inv.id, community_name: commName };
+      }
+    });
+    return map;
+  }, [pendingInvitations]);
+
+  // Show all communities user can view (public, restricted, private communities user is member of, or has pending invitation)
   const communities = useMemo(() => {
-    return allCommunities.filter((c: CommunityItem) => c.visibility === 'public');
-  }, [allCommunities]);
+    return allCommunities.filter((c: CommunityItem) => {
+      // Show public and restricted communities (everyone can view)
+      if (c.visibility === 'public' || c.visibility === 'restricted') {
+        return true;
+      }
+      // Show private communities if user is a member OR has pending invitation
+      if (c.visibility === 'private') {
+        const hasInvitation = (c as { user_has_pending_invitation?: boolean }).user_has_pending_invitation || 
+                              invitationMap[c.name || ''] !== undefined;
+        return c.is_member === true || hasInvitation;
+      }
+      return false;
+    });
+  }, [allCommunities, invitationMap]);
 
   const posts = useMemo(() => {
     if (!postsResponse) return [];
@@ -105,7 +144,14 @@ const Communities = () => {
     try {
       await joinCommunity(communityName).unwrap();
       refetch();
-      toast.success('Successfully joined community!');
+      
+      // Check if it's a join request or direct join
+      const community = allCommunities.find((c: CommunityItem) => c.name === communityName);
+      if (community?.visibility === 'public') {
+        toast.success('Successfully joined community!');
+      } else {
+        toast.success('Join request sent! Waiting for approval.');
+      }
     } catch (error: unknown) {
       console.error('Failed to join community:', error);
       const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
@@ -132,6 +178,51 @@ const Communities = () => {
     }
   };
 
+  const handleCancelRequest = async (communityName: string) => {
+    try {
+      await cancelJoinRequest(communityName).unwrap();
+      refetch();
+      toast.success('Join request cancelled successfully!');
+    } catch (error: unknown) {
+      const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred';
+      toast.error('Failed to cancel join request', {
+        description: errorMessage,
+      });
+    }
+  };
+
+  const handleAcceptInvitation = async (invitationId: number | string) => {
+    try {
+      await acceptInvitation(invitationId).unwrap();
+      refetch();
+      toast.success('Invitation accepted! You are now a member.');
+    } catch (error: unknown) {
+      const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred';
+      toast.error('Failed to accept invitation', {
+        description: errorMessage,
+      });
+    }
+  };
+
+  const handleRejectInvitation = async (invitationId: number | string) => {
+    try {
+      await rejectInvitation(invitationId).unwrap();
+      refetch();
+      toast.success('Invitation declined');
+    } catch (error: unknown) {
+      const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'An error occurred';
+      toast.error('Failed to reject invitation', {
+        description: errorMessage,
+      });
+    }
+  };
+
   const renderPosts = () => {
     if (!selectedCommunity) {
       return (
@@ -142,6 +233,45 @@ const Communities = () => {
             <p className="text-white/40 text-sm mt-2">
               Choose a community from the list below to see its posts
             </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Check if user is a member
+    const community = communities.find((c: CommunityItem) => c.name === selectedCommunity);
+    const isMember = community?.is_member === true;
+    const hasPendingRequest = (community as { user_has_pending_request?: boolean })?.user_has_pending_request;
+
+    if (!isMember) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center bg-white/5 rounded-lg border border-white/10 p-8 max-w-md">
+            <FiFileText className="w-16 h-16 text-white/40 mx-auto mb-4" />
+            <p className="text-white text-lg font-semibold mb-2">Join to View Posts</p>
+            <p className="text-white/60 text-sm mb-6">
+              You must be a member of this community to view posts.
+            </p>
+            {hasPendingRequest ? (
+              <div className="space-y-3">
+                <p className="text-orange-400 text-sm">Your join request is pending approval.</p>
+                <button
+                  onClick={() => handleCancelRequest(selectedCommunity)}
+                  disabled={isCanceling}
+                  className="px-6 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {isCanceling ? 'Canceling...' : 'Cancel Request'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => handleJoin(selectedCommunity)}
+                disabled={isJoining}
+                className="px-6 py-2.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg transition-colors disabled:opacity-50 font-bold"
+              >
+                {isJoining ? 'Joining...' : (community?.visibility === 'public' ? 'Join Community' : 'Request to Join')}
+              </button>
+            )}
           </div>
         </div>
       );
@@ -234,61 +364,105 @@ const Communities = () => {
 
   const renderCommunitiesGrid = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredCommunities.map((community: CommunityItem) => (
-        <CommunityCard
-          key={community.id}
-          community={community}
-          variant="grid"
-          onCardClick={() => setSelectedCommunity(community.name || '')}
-          showCreatedBy={true}
-          formatDate={formatDate}
-          actions={
-            community.name ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedCommunity(community.name!);
-                  }}
-                  className="flex-1 py-2.5 rounded-lg font-medium transition-all bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                >
-                  View Posts
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (community.is_member) {
-                      handleLeave(community.name!);
-                    } else {
-                      handleJoin(community.name!);
-                    }
-                  }}
-                  disabled={isJoining || isLeaving}
-                  className={`flex-1 py-2.5 rounded-lg font-medium transition-all ${
-                    community.is_member
-                      ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                      : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                  } ${(isJoining || isLeaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <div className="flex items-center cursor-pointer justify-center gap-2">
-                    {community.is_member ? (
-                      <>
-                        <FiUserMinus className="w-4 h-4 text-red-500" />
-                        <span className="text-red-500">Leave</span>
-                      </>
-                    ) : (
-                      <>
-                        <FiUserPlus className="w-4 h-4 text-green-500" />
-                        <span className="text-green-500">Join</span>
-                      </>
-                    )}
-                  </div>
-                </button>
-              </div>
-            ) : undefined
-          }
-        />
-      ))}
+      {filteredCommunities.map((community: CommunityItem) => {
+        const isMember = community.is_member === true;
+        const hasPendingRequest = (community as { user_has_pending_request?: boolean }).user_has_pending_request;
+        const hasPendingInvitation = (community as { user_has_pending_invitation?: boolean }).user_has_pending_invitation || 
+                                     invitationMap[community.name || ''] !== undefined;
+        const invitationId = invitationMap[community.name || '']?.id;
+        
+        return (
+          <CommunityCard
+            key={community.id}
+            community={community}
+            variant="grid"
+            onCardClick={isMember ? () => setSelectedCommunity(community.name || '') : undefined}
+            showCreatedBy={true}
+            formatDate={formatDate}
+            actions={
+              community.name ? (
+                <div className="flex gap-2">
+                  {isMember ? (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCommunity(community.name!);
+                        }}
+                        className="flex-1 py-2.5 rounded-lg font-medium transition-all bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      >
+                        View Posts
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeave(community.name!);
+                        }}
+                        disabled={isLeaving}
+                        className={`flex-1 py-2.5 rounded-lg font-bold transition-all bg-red-500/20 hover:bg-red-500/30 text-red-500 border border-red-500/30 flex items-center justify-center gap-2 ${isLeaving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <FiUserMinus className="w-4 h-4" />
+                        <span>Leave</span>
+                      </button>
+                    </>
+                  ) : community.visibility === 'private' && hasPendingInvitation && invitationId ? (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAcceptInvitation(invitationId);
+                        }}
+                        disabled={isAccepting || isRejecting}
+                        className={`flex-1 py-2.5 rounded-lg font-bold transition-all bg-green-500/20 hover:bg-green-500/30 text-green-500 border border-green-500/30 flex items-center justify-center gap-2 ${(isAccepting || isRejecting) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <FiCheck className="w-4 h-4" />
+                        <span>{isAccepting ? 'Accepting...' : 'Accept'}</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRejectInvitation(invitationId);
+                        }}
+                        disabled={isAccepting || isRejecting}
+                        className={`flex-1 py-2.5 rounded-lg font-bold transition-all bg-red-500/20 hover:bg-red-500/30 text-red-500 border border-red-500/30 flex items-center justify-center gap-2 ${(isAccepting || isRejecting) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <FiX className="w-4 h-4" />
+                        <span>{isRejecting ? 'Rejecting...' : 'Reject'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (hasPendingRequest) {
+                          handleCancelRequest(community.name!);
+                        } else {
+                          handleJoin(community.name!);
+                        }
+                      }}
+                      disabled={isJoining || isCanceling}
+                      className={`flex-1 py-2.5 rounded-lg font-bold transition-all ${
+                        hasPendingRequest
+                          ? 'bg-orange-500/20 hover:bg-orange-500/30 text-orange-500 border border-orange-500/30'
+                          : 'bg-green-500/20 hover:bg-green-500/30 text-green-500 border border-green-500/30'
+                      } ${(isJoining || isCanceling) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} flex items-center justify-center gap-2`}
+                    >
+                      {hasPendingRequest ? (
+                        <span>{isCanceling ? 'Canceling...' : 'Pending'}</span>
+                      ) : (
+                        <>
+                          <FiUserPlus className="w-4 h-4" />
+                          <span>{community.visibility === 'public' ? 'Join' : 'Request to Join'}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              ) : undefined
+            }
+          />
+        );
+      })}
     </div>
   );
 
@@ -314,7 +488,38 @@ const Communities = () => {
               <div className="space-y-6">
                 {(() => {
                   const community = communities.find((c: CommunityItem) => c.name === selectedCommunity);
-                  return community?.id ? (
+                  if (!community?.id) return null;
+                  
+                  // Show CreatePost only if user can post
+                  // Public: everyone can post
+                  // Restricted/Private: only approved members can post
+                  const canPost = community.can_post === true || 
+                                 (community.visibility === 'public' && community.is_member !== false);
+                  
+                  if (!canPost) {
+                    return (
+                      <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 text-center">
+                        <p className="text-yellow-300 text-sm">
+                          {community.visibility === 'restricted' 
+                            ? 'You can view posts but need to be an approved member to post in this restricted community.'
+                            : 'You must be an approved member to post in this private community.'}
+                        </p>
+                        {!community.is_member && (
+                          <button
+                            onClick={() => handleJoin(community.name!)}
+                            disabled={isJoining || (community as { user_has_pending_request?: boolean }).user_has_pending_request}
+                            className="mt-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {(community as { user_has_pending_request?: boolean }).user_has_pending_request 
+                              ? 'Request Pending' 
+                              : 'Request to Join'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+                  
+                  return (
                     <CreatePost 
                       communityId={community.id} 
                       isProfile={true}
@@ -322,7 +527,7 @@ const Communities = () => {
                         refetchPosts();
                       }}
                     />
-                  ) : null;
+                  );
                 })()}
                 {renderPosts()}
               </div>
@@ -406,14 +611,22 @@ const Communities = () => {
                                 handleJoin(community.name!);
                               }
                             }}
-                            disabled={isJoining || isLeaving}
+                            disabled={isJoining || isLeaving || (community as { user_has_pending_request?: boolean }).user_has_pending_request}
                             className={`w-full py-2.5 rounded-lg font-medium transition-all ${
                               community.is_member
                                 ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                                : (community as { user_has_pending_request?: boolean }).user_has_pending_request
+                                ? 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30'
                                 : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white'
                             } ${(isJoining || isLeaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            {community.is_member ? 'Leave Community' : 'Join Community'}
+                            {community.is_member 
+                              ? 'Leave Community' 
+                              : (community as { user_has_pending_request?: boolean }).user_has_pending_request
+                              ? 'Request Pending'
+                              : community.visibility === 'public' 
+                              ? 'Join Community' 
+                              : 'Request to Join'}
                           </button>
                         )}
                       </div>
@@ -453,7 +666,7 @@ const Communities = () => {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h3 className='text-white text-sm font-semibold truncate'>{community.title || community.name}</h3>
+                            <h3 className='text-white text-sm font-semibold truncate max-w-[150px]'>{community.title || community.name}</h3>
                             <p className='text-gray-400 text-xs'>{formatMembers(community.members_count || 0)} Members</p>
                           </div>
                         </div>
@@ -466,9 +679,20 @@ const Communities = () => {
                               handleJoin(community.name!);
                             }
                           }}
-                          className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm'
+                          disabled={isJoining || isLeaving || (community as { user_has_pending_request?: boolean }).user_has_pending_request}
+                          className={`text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm ${
+                            (isJoining || isLeaving) ? 'opacity-50 cursor-not-allowed' : ''
+                          } ${
+                            (community as { user_has_pending_request?: boolean }).user_has_pending_request 
+                              ? 'text-yellow-400 hover:text-yellow-300' 
+                              : ''
+                          }`}
                         >
-                          {community.is_member ? 'Joined' : 'Join'}
+                          {community.is_member 
+                            ? 'Leave' 
+                            : (community as { user_has_pending_request?: boolean }).user_has_pending_request
+                            ? 'Pending'
+                            : 'Join'}
                         </button>
                       </div>
                     );

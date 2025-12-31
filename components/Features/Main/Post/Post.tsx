@@ -1021,6 +1021,13 @@ const Post = ({ post, profile }: PostProps) => {
 
       <div>
         <div className="mb-5">
+          {/* Post Title - Bold */}
+          {post?.title && (
+            <h2 className="text-xl font-bold text-white mb-3 break-words">
+              {post.title}
+            </h2>
+          )}
+          {/* Post Content */}
           <p dangerouslySetInnerHTML={{ __html: truncatedContent }} className="text-base text-white whitespace-pre-line">
           </p>
           {shouldTruncate && (
@@ -1031,10 +1038,50 @@ const Post = ({ post, profile }: PostProps) => {
               {isContentExpanded ? "See less" : "See more"}
             </button>
           )}
+          {/* Post Link - Clickable */}
+          {(post as { link?: string }).link && (
+            <div className="mt-4">
+              <a
+                href={(post as { link?: string }).link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 hover:underline transition-colors break-all"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
+                </svg>
+                <span className="break-all">{(post as { link?: string }).link}</span>
+              </a>
+            </div>
+          )}
         </div>
         {allMediaUrls.length > 0 && (
           <div className="mb-5">
             {renderImageGallery()}
+          </div>
+        )}
+        {/* Post Tags - Hashtags */}
+        {post?.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
+          <div className="mb-5 flex flex-wrap gap-2">
+            {post.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors cursor-pointer"
+              >
+                #{tag}
+              </span>
+            ))}
           </div>
         )}
       </div>

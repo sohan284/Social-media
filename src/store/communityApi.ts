@@ -50,6 +50,9 @@ export interface CommunityItem {
   user_role?: string;
   can_post?: boolean;
   can_manage?: boolean;
+  can_view?: boolean;
+  user_has_pending_request?: boolean;
+  user_has_pending_invitation?: boolean;
   [key: string]: unknown;
 }
 
@@ -78,6 +81,80 @@ export interface JoinLeaveCommunityResponse {
   success?: boolean;
   message?: string;
   [key: string]: unknown;
+}
+
+export interface JoinRequestItem {
+  id: number | string;
+  user: number | string;
+  username?: string;
+  user_avatar?: string;
+  user_display_name?: string;
+  community: number | string;
+  community_name?: string;
+  community_title?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  message?: string;
+  created_at?: string;
+  reviewed_by?: number | string | null;
+  reviewed_by_username?: string | null;
+  reviewed_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface JoinRequestsResponse {
+  data?: JoinRequestItem[];
+  results?: JoinRequestItem[];
+  [key: string]: unknown;
+}
+
+export interface CommunityMemberItem {
+  id: number | string;
+  user: number | string;
+  username?: string;
+  user_avatar?: string;
+  user_display_name?: string;
+  community: number | string;
+  community_name?: string;
+  role?: 'member' | 'moderator' | 'admin';
+  is_approved?: boolean;
+  joined_at?: string;
+  [key: string]: unknown;
+}
+
+export interface CommunityMembersResponse {
+  data?: CommunityMemberItem[];
+  results?: {
+    data?: CommunityMemberItem[];
+  };
+  [key: string]: unknown;
+}
+
+export interface CommunityInvitationItem {
+  id: number | string;
+  community: number | string;
+  community_name?: string;
+  community_title?: string;
+  inviter: number | string;
+  inviter_username?: string;
+  invitee: number | string;
+  invitee_username?: string;
+  status?: 'pending' | 'accepted' | 'declined' | 'expired';
+  message?: string;
+  created_at?: string;
+  responded_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface CommunityInvitationsResponse {
+  data?: CommunityInvitationItem[];
+  results?: CommunityInvitationItem[];
+  [key: string]: unknown;
+}
+
+export interface InviteUserRequest {
+  community: string;
+  user_id: number | string;
+  message?: string;
 }
 
 export const communityApi = baseApi.injectEndpoints({
@@ -202,6 +279,87 @@ export const communityApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Communities"],
     }),
+    cancelJoinRequest: builder.mutation<JoinLeaveCommunityResponse, string>({
+      query: (communityName) => ({
+        url: `/api/join-requests/cancel/`,
+        method: "POST",
+        body: { community: communityName },
+      }),
+      invalidatesTags: ["Communities", "JoinRequests"],
+    }),
+    getJoinRequests: builder.query<JoinRequestsResponse, string>({
+      query: (communityName) => ({
+        url: `/api/join-requests/?community=${encodeURIComponent(communityName)}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, communityName) => [
+        { type: "JoinRequests", id: communityName },
+      ],
+    }),
+    approveJoinRequest: builder.mutation<JoinLeaveCommunityResponse, number | string>({
+      query: (requestId) => ({
+        url: `/api/join-requests/${requestId}/approve/`,
+        method: "POST",
+      }),
+      invalidatesTags: () => [
+        "Communities",
+        "JoinRequests",
+      ],
+    }),
+    rejectJoinRequest: builder.mutation<JoinLeaveCommunityResponse, number | string>({
+      query: (requestId) => ({
+        url: `/api/join-requests/${requestId}/reject/`,
+        method: "POST",
+      }),
+      invalidatesTags: () => [
+        "Communities",
+        "JoinRequests",
+      ],
+    }),
+    getCommunityMembers: builder.query<CommunityMembersResponse, string>({
+      query: (communityName) => ({
+        url: `/api/communities/${encodeURIComponent(communityName)}/members/`,
+        method: "GET",
+      }),
+      providesTags: (result, error, communityName) => [
+        { type: "CommunityMembers", id: communityName },
+      ],
+    }),
+    getInvitations: builder.query<CommunityInvitationsResponse, void>({
+      query: () => ({
+        url: "/api/invitations/",
+        method: "GET",
+      }),
+      providesTags: ["Invitations"],
+    }),
+    inviteUserToCommunity: builder.mutation<JoinLeaveCommunityResponse, InviteUserRequest>({
+      query: (data) => ({
+        url: "/api/communities/invite/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Communities", "Invitations"],
+    }),
+    acceptInvitation: builder.mutation<JoinLeaveCommunityResponse, number | string>({
+      query: (invitationId) => ({
+        url: `/api/invitations/${invitationId}/accept/`,
+        method: "POST",
+      }),
+      invalidatesTags: () => [
+        "Communities",
+        "Invitations",
+      ],
+    }),
+    rejectInvitation: builder.mutation<JoinLeaveCommunityResponse, number | string>({
+      query: (invitationId) => ({
+        url: `/api/invitations/${invitationId}/reject/`,
+        method: "POST",
+      }),
+      invalidatesTags: () => [
+        "Communities",
+        "Invitations",
+      ],
+    }),
   }),
 });
 
@@ -213,5 +371,14 @@ export const {
   useJoinCommunityMutation,
   useLeaveCommunityMutation,
   useDeleteCommunityMutation,
+  useCancelJoinRequestMutation,
+  useGetJoinRequestsQuery,
+  useApproveJoinRequestMutation,
+  useRejectJoinRequestMutation,
+  useGetCommunityMembersQuery,
+  useGetInvitationsQuery,
+  useInviteUserToCommunityMutation,
+  useAcceptInvitationMutation,
+  useRejectInvitationMutation,
 } = communityApi;
 

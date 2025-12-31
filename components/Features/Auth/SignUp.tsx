@@ -228,13 +228,6 @@ const SignUp = () => {
         >
           <FaApple className="text-xl" /> Continue With Apple
         </button> */}
-
-        <div className="flex items-center my-4">
-          <div className="flex-grow border-t border-gray-400"></div>
-          <span className="px-2 text-gray-200 text-sm">Or</span>
-          <div className="flex-grow border-t border-gray-400"></div>
-        </div>
-
         <form onSubmit={(e) => {
           e.preventDefault();
           const formData = new FormData(e.currentTarget);
@@ -280,9 +273,9 @@ const SignUp = () => {
         >
           <IoArrowBack className="text-xl" />
         </button>
-        <button className="text-white hover:text-gray-300 text-sm">
+        {/* <button className="text-white hover:text-gray-300 text-sm">
           Skip
-        </button>
+        </button> */}
       </div>
 
       <h2 className="text-[2rem] font-semibold mb-2">Verify your email</h2>
