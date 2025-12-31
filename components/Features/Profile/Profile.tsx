@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import ProfileHeader from "./_components/ProfileHeader";
 import Post from "../Main/Post/Post";
 import ProfileSidebar from "./_components/ProfileSidebar";
-import { useGetMyPostsQuery } from "@/store/postApi";
+import { useGetMyPostsQuery, type PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import CreatePost from "../CreatePost/CreatePost";
 import { useRouter } from "next/navigation";
@@ -15,14 +15,28 @@ const Profile = () => {
   const { data: postsResponse, isLoading, isError } = useGetMyPostsQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
-  const posts = useMemo(() => {
+  const posts = useMemo((): PostItem[] => {
     if (!postsResponse) return [];
-    return (
-      postsResponse.data ??
-      postsResponse.results?.data ??
-      postsResponse.posts ??
-      []
-    );
+    
+    // Handle different response structures
+    if (Array.isArray(postsResponse)) {
+      return postsResponse;
+    }
+    
+    // Handle object with data property
+    if (typeof postsResponse === 'object' && postsResponse !== null) {
+      if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
+        return (postsResponse as { data: PostItem[] }).data;
+      }
+      if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
+        return (postsResponse as { results: { data: PostItem[] } }).results.data;
+      }
+      if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
+        return (postsResponse as { posts: PostItem[] }).posts;
+      }
+    }
+    
+    return [];
   }, [postsResponse]);
 
   const openModal = () => {

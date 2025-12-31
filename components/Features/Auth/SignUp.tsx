@@ -213,13 +213,13 @@ const SignUp = () => {
       </p>
 
       <div className="space-y-4">
-        <button
+        {/* <button
           type="button"
           onClick={() => handleSocialLogin("google")}
           className="w-full cursor-pointer flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
         >
           <FcGoogle className="text-xl" /> Continue With Google
-        </button>
+        </button> */}
 
         {/* <button
           type="button"
