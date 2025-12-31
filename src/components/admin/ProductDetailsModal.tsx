@@ -73,7 +73,7 @@ export default function ProductDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#06133f] border border-white/10">
+      <DialogContent className="max-w-4xl max-h-[80vh] bg-[#06133f] border border-white/10  overflow-y-auto custom-scroll">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold text-white mb-4">
             Product Details

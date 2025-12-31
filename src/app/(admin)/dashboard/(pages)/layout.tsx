@@ -195,8 +195,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className={`flex items-center w-full px-4 py-3 rounded-xl cursor-pointer text-left text-sm font-medium transition
             ${
               isActive
-                ? "bg-[#2A2A46] text-white"
-                : "bg-white border border-gray-300"
+                ? "bg-[#6B83FA] text-white"
+                : "bg-transparent text-white"
             }`}
           >
             <Icon className="w-4 h-4 mr-3" />
@@ -222,12 +222,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onClick={() => setIsSidebarOpen(false)}
         >
           <aside
-            className="absolute left-0 top-0 h-full w-72 bg-white text-gray-900 rounded-r-xl p-6 shadow-2xl flex flex-col"
+            className="absolute left-0 top-0 h-full w-72 bg-black/30 backdrop-blur-sm text-gray-900 rounded-r-xl p-6 shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* LOGO */}
             <div className="flex items-center justify-between mb-6">
-              <Image src="/admin-logo.png" alt="Logo" width={40} height={40} />
+              <Image src="/logo.png" alt="Logo" width={240} height={40} />
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-200 transition"
@@ -244,7 +244,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* LOGOUT */}
             <button 
               onClick={handleLogout}
-              className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4 w-full"
+              className="flex cursor-pointer items-center text-sm text-red-600 hover:text-red-500 transition mt-4 w-full"
             >
               <LogOut className="w-4 h-4 mr-2" /> Logout
             </button>
@@ -253,10 +253,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex w-72 bg-white text-gray-900 rounded-xl p-6 shadow-xl flex-col h-full">
+      <aside className="hidden lg:flex w-72 bg-black/30 backdrop-blur-sm text-gray-900 rounded-xl p-6 shadow-xl flex-col h-full">
         {/* LOGO */}
         <div className="flex items-center justify-center mb-6">
-          <Image src="/admin-logo.png" alt="Logo" width={40} height={40} />
+          <Image src="/logo.png" alt="Logo" width={240} height={40} />
         </div>
 
         {/* MENU */}
@@ -267,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* LOGOUT → STAYS AT BOTTOM */}
         <button 
           onClick={handleLogout}
-          className="flex items-center text-sm text-gray-700 hover:text-black transition mt-4 w-full"
+          className="flex cursor-pointer items-center text-sm text-red-600 hover:text-red-500 transition mt-4 w-full"
         >
           <LogOut className="w-4 h-4 mr-2" /> Logout
         </button>
@@ -308,7 +308,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-700 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
+                    className="w-full px-4 cursor-pointer py-2 text-left text-red-600 hover:bg-red-500 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>

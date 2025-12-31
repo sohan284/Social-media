@@ -215,8 +215,8 @@ export default function EditProductModal({
   if (!isOpen || !product) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-[#06133f] rounded-2xl shadow-2xl w-full max-w-5xl border border-white/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-10 ">
+      <div className="bg-[#06133f] rounded-2xl shadow-2xl w-full max-w-5xl border border-white/10 h-[80vh] overflow-y-auto custom-scroll">
         {/* HEADER */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <h2 className="text-xl font-semibold text-white">Edit Product</h2>

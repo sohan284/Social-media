@@ -322,7 +322,11 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
         <div className="relative flex-shrink-0">
           {updatedUser.avatar && updatedUser.avatar !== "/profile.jpg" && !updatedUser.avatar.includes("profile.jpg") ? (
             <Image
-              src={`${apiBase}${updatedUser.avatar?.startsWith('/') ? updatedUser.avatar?.slice(1) : updatedUser.avatar}`}
+              src={
+                updatedUser.avatar.startsWith('http') 
+                  ? updatedUser.avatar 
+                  : `${apiBase}${updatedUser.avatar?.startsWith('/') ? updatedUser.avatar?.slice(1) : updatedUser.avatar}`
+              }
               alt={updatedUser.name}
               width={32}
               height={32}

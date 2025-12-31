@@ -460,7 +460,11 @@ const Post = ({ post, profile }: PostProps) => {
           <div className="flex gap-2">
             {authorAvatar ? (
               <Image
-                src={`${getApiBaseUrl()}${authorAvatar}`}
+                src={
+                  authorAvatar.startsWith('http') 
+                    ? authorAvatar 
+                    : `${getApiBaseUrl()}${authorAvatar.startsWith('/') ? authorAvatar.slice(1) : authorAvatar}`
+                }
                 alt={authorName}
                 width={32}
                 height={32}

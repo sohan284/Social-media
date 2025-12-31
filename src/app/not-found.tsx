@@ -18,7 +18,7 @@ export default function NotFoundPage() {
         <div className="bg-[#022735]/80 backdrop-blur-md text-white rounded-3xl p-8 md:p-12 shadow-2xl ring-1 ring-white/10">
           <div className="flex items-center justify-center mb-6">
             <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-              <Image src="/logo.svg" alt="Raddit" width={36} height={36} />
+              <Image src="/logo.png" alt="Raddit" width={36} height={36} />
             </span>
           </div>
 
