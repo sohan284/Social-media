@@ -293,11 +293,11 @@ const Login = () => {
                   </label> */}
                 </div>
 
-                <div className="flex items-center my-4">
+                {/* <div className="flex items-center my-4">
                   <div className="flex-grow border-t border-gray-400"></div>
                   <span className="px-2 text-gray-200 text-sm">Or</span>
                   <div className="flex-grow border-t border-gray-400"></div>
-                </div>
+                </div> */}
 
                 {/* <button
                   type="button"
