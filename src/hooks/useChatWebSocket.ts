@@ -96,11 +96,20 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
           const data: WebSocketMessage = JSON.parse(event.data);
           
           // Handle different message types - backend sends 'data' field for room messages
-          const message = data.message || data.data || data;
+          const message = (data.message || data.data || data) as {
+            id?: number | string;
+            room_id?: number | string;
+            room?: number | string;
+            content?: string;
+            created_at?: string;
+            is_read?: boolean;
+            sender?: ChatUser;
+            [key: string]: unknown;
+          };
           const messageType = data.type;
           
           // For room messages, check room_id in the message object
-          const roomId = message.room_id || message.room || data.room || (message as { room_id?: number | string }).room_id;
+          const roomId = message.room_id || message.room || data.room;
 
           if (messageType === 'message' && roomId && message.id) {
             console.log('WebSocket room message received:', { roomId, messageId: message.id, content: message.content });

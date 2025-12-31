@@ -299,12 +299,12 @@ const Login = () => {
                   <div className="flex-grow border-t border-gray-400"></div>
                 </div>
 
-                <button
+                {/* <button
                   type="button"
                   className="w-full flex items-center justify-center gap-2 bg-gray-100 text-black py-3 rounded-full font-medium hover:bg-gray-200 transition"
                 >
                   <FcGoogle className="text-xl" /> Continue With Google
-                </button>
+                </button> */}
 
                 {/* <button
                   type="button"
