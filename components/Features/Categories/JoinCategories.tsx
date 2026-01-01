@@ -166,16 +166,16 @@ const JoinCategories = () => {
         </div>
 
         {/* Categories List */}
-        <div className="space-y-4">
+        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCategories.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 col-span-full">
               <p className="text-white/60 text-lg">No categories found</p>
             </div>
           ) : (
             filteredCategories.map((category) => (
               <div
                 key={category.id}
-                className="bg-white/5 rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-all"
+                className="bg-white/5 h-full rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <button

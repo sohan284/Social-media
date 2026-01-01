@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useGetFollowingQuery, useGetFollowersQuery, useFollowUserMutation, useUnfollowUserMutation, FollowItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { IoPersonOutline } from "react-icons/io5";
 import { toast } from "sonner";
+import Image from "next/image";
+import { getApiBaseUrl } from "@/lib/utils";
+
 
 const Friends = () => {
   const [activeTab, setActiveTab] = useState<"following" | "followers">("following");
@@ -77,10 +80,12 @@ const Friends = () => {
     }
 
     return (
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {users.map((item) => {
           const userId = isFollowingTab ? item.following : item.follower;
           const userName = isFollowingTab ? item.following_name : item.follower_name;
+          const userAvatar = isFollowingTab ? item.following_avatar : item.follower_avatar;
+          const userAbout = isFollowingTab ? item.following_about : item.follower_about;
 
           // Check if current user is following this user (for followers tab)
           // In following tab, they're already following, so always true
@@ -97,43 +102,65 @@ const Friends = () => {
           return (
             <div
               key={item.id}
-              className="flex items-center gap-4 p-4 bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-xl hover:border-white/20 transition-all duration-300"
+              className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-xl hover:border-white/20 transition-all duration-300 p-6 flex flex-col"
             >
-              {/* Avatar */}
-              <div className="h-12 w-12 rounded-full overflow-hidden border border-white/30 flex-shrink-0">
-                <div className="h-full w-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center">
-                  <IoPersonOutline className="text-white" size={24} />
+              {/* Top Row: Avatar + Name on left, Button on right */}
+              <div className="flex items-center justify-between gap-3 mb-3">
+                {/* Left side: Avatar and Name */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {/* Avatar */}
+                  <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-white/30 flex-shrink-0">
+                    {userAvatar ? (
+                      <Image
+                        src={userAvatar.startsWith("http") ? userAvatar : `${getApiBaseUrl()}${userAvatar.startsWith("/") ? userAvatar.slice(1) : userAvatar}`}
+                        alt={userName || "User"}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center">
+                        <IoPersonOutline className="text-white" size={24} />
+                      </div>
+                    )}
+                  </div>
+                  {/* Name */}
+                  <h3 className="text-white font-bold text-lg truncate">
+                    {userName || "Unknown User"}
+                  </h3>
                 </div>
-              </div>
-
-              {/* Name */}
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{userName || "Unknown User"}</p>
-              </div>
-
-              {/* Follow/Unfollow Button */}
-              {userId && String(userId) !== String(currentUser?.id) && (
-                <button
-                  onClick={() => {
-                    if (isFollowing) {
-                      // Unfollow: use the follow relation ID
-                      if (followRelation?.id) {
-                        handleUnfollow(followRelation.id);
+                
+                {/* Right side: Follow Button */}
+                {userId && String(userId) !== String(currentUser?.id) && (
+                  <button
+                    onClick={() => {
+                      if (isFollowing) {
+                        // Unfollow: use the follow relation ID
+                        if (followRelation?.id) {
+                          handleUnfollow(followRelation.id);
+                        }
+                      } else {
+                        // Follow: use the user ID
+                        handleFollow(userId);
                       }
-                    } else {
-                      // Follow: use the user ID
-                      handleFollow(userId);
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    isFollowing
-                      ? "bg-gray-600 hover:bg-gray-700 text-white"
-                      : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                  }`}
-                >
-                  {isFollowing ? "Unfollow" : "Follow"}
-                </button>
-              )}
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
+                      isFollowing
+                        ? "bg-gray-600 hover:bg-gray-700 text-white"
+                        : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                    }`}
+                  >
+                    {isFollowing ? "Unfollow" : "Follow"}
+                  </button>
+                )}
+              </div>
+
+              {/* About/Description - below, starting from left */}
+              <div className="flex-1">
+                <p className="text-white/70 text-sm line-clamp-2">
+                  {userAbout || "No description available."}
+                </p>
+              </div>
             </div>
           );
         })}

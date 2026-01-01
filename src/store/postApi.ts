@@ -119,6 +119,10 @@ export interface FollowItem {
   follower?: number | string;
   following_name?: string;
   follower_name?: string;
+  follower_avatar?: string | null;
+  follower_about?: string | null;
+  following_avatar?: string | null;
+  following_about?: string | null;
   user?: number | string;
   created_at?: string;
   [key: string]: unknown;
