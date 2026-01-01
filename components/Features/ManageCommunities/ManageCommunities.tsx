@@ -1,20 +1,37 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { useGetMyCommunitiesQuery, useDeleteCommunityMutation, CommunityItem } from "@/store/communityApi";
+import { useGetMyCommunitiesQuery, useDeleteCommunityMutation, useJoinCommunityMutation, useLeaveCommunityMutation, CommunityItem } from "@/store/communityApi";
+import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { FaUsers } from "react-icons/fa";
-import { FiTrash2 } from "react-icons/fi";
+import { FiTrash2, FiUserPlus, FiUsers as FiUsersIcon, FiUserMinus } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import CommunityCard from "../../Shared/CommunityCard/CommunityCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import JoinRequestsModal from "./JoinRequestsModal";
+import CommunityMembersModal from "./CommunityMembersModal";
+import InviteMemberModal from "./InviteMemberModal";
 
 const ManageCommunities = () => {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [communityToDelete, setCommunityToDelete] = useState<CommunityItem | null>(null);
+  const [joinRequestsModalOpen, setJoinRequestsModalOpen] = useState(false);
+  const [selectedCommunityForRequests, setSelectedCommunityForRequests] = useState<CommunityItem | null>(null);
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<CommunityItem | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [selectedCommunityForInvite, setSelectedCommunityForInvite] = useState<CommunityItem | null>(null);
   const { data: communitiesResponse, isLoading, isError } = useGetMyCommunitiesQuery();
+  const { data: currentUserResponse } = useGetCurrentUserProfileQuery();
   const [deleteCommunity, { isLoading: isDeleting }] = useDeleteCommunityMutation();
+  const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
+  const [leaveCommunity, { isLoading: isLeaving }] = useLeaveCommunityMutation();
+  
+  const currentUserId = useMemo(() => {
+    return currentUserResponse?.data?.id || currentUserResponse?.id;
+  }, [currentUserResponse]);
 
   const communities = useMemo(() => {
     if (!communitiesResponse) return [];
@@ -147,7 +164,77 @@ const ManageCommunities = () => {
   const handleCardClick = (community: CommunityItem) => {
     const communityName = community.name || community.id?.toString() || "";
     if (communityName) {
-      router.push(`/main/communities?community=${encodeURIComponent(communityName)}`);
+      router.push(`/main/communities/${encodeURIComponent(communityName)}`);
+    }
+  };
+
+  const handleViewJoinRequests = (community: CommunityItem) => {
+    setSelectedCommunityForRequests(community);
+    setJoinRequestsModalOpen(true);
+  };
+
+  const handleCloseJoinRequestsModal = () => {
+    setJoinRequestsModalOpen(false);
+    setSelectedCommunityForRequests(null);
+  };
+
+  const handleViewMembers = (community: CommunityItem) => {
+    setSelectedCommunityForMembers(community);
+    setMembersModalOpen(true);
+  };
+
+  const handleCloseMembersModal = () => {
+    setMembersModalOpen(false);
+    setSelectedCommunityForMembers(null);
+  };
+
+  const handleInviteMember = (community: CommunityItem) => {
+    setSelectedCommunityForInvite(community);
+    setInviteModalOpen(true);
+  };
+
+  const handleCloseInviteModal = () => {
+    setInviteModalOpen(false);
+    setSelectedCommunityForInvite(null);
+  };
+
+  const handleJoin = async (communityName: string) => {
+    try {
+      await joinCommunity(communityName).unwrap();
+      toast.success('Successfully joined community!');
+    } catch (error: unknown) {
+      console.error('Failed to join community:', error);
+      const errorMessage = 
+        (error && typeof error === 'object' && 'data' in error && 
+         error.data && typeof error.data === 'object' && 
+         ('message' in error.data || 'detail' in error.data))
+          ? (error.data as { message?: string; detail?: string }).message || 
+            (error.data as { message?: string; detail?: string }).detail
+          : "Failed to join community. Please try again.";
+      
+      toast.error('Failed to join community', {
+        description: errorMessage || "Failed to join community. Please try again.",
+      });
+    }
+  };
+
+  const handleLeave = async (communityName: string) => {
+    try {
+      await leaveCommunity(communityName).unwrap();
+      toast.success('Successfully left community!');
+    } catch (error: unknown) {
+      console.error('Failed to leave community:', error);
+      const errorMessage = 
+        (error && typeof error === 'object' && 'data' in error && 
+         error.data && typeof error.data === 'object' && 
+         ('message' in error.data || 'detail' in error.data))
+          ? (error.data as { message?: string; detail?: string }).message || 
+            (error.data as { message?: string; detail?: string }).detail
+          : "Failed to leave community. Please try again.";
+      
+      toast.error('Failed to leave community', {
+        description: errorMessage || "Failed to leave community. Please try again.",
+      });
     }
   };
 
@@ -163,28 +250,112 @@ const ManageCommunities = () => {
             formatDate={formatDate}
             onCardClick={() => handleCardClick(community)}
             actions={
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const communityName = community.name || community.id?.toString() || "";
-                    router.push(`/main/edit-community/${encodeURIComponent(communityName)}`);
-                  }}
-                  className="flex-1 py-2.5 cursor-pointer rounded-lg font-medium transition-all bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteClick(community);
-                  }}
-                  disabled={isDeleting}
-                  className={`py-2.5 px-4 cursor-pointer rounded-lg font-medium transition-all bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <FiTrash2 className="w-4 h-4" />
-                </button>
-              </div>
+              (() => {
+                const isCreator = community.created_by === currentUserId || community.can_manage === true;
+                const isMember = community.is_member === true;
+                const communityName = community.name || community.id?.toString() || "";
+                
+                // Creator buttons
+                if (isCreator) {
+                  const isPrivate = community.visibility === 'private';
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewMembers(community);
+                          }}
+                          className="flex-1 py-2.5 cursor-pointer rounded-lg font-medium transition-all bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 flex items-center justify-center gap-2"
+                        >
+                          <FiUsersIcon className="w-4 h-4" />
+                          <span>Members</span>
+                        </button>
+                       {!isPrivate && <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewJoinRequests(community);
+                          }}
+                          className="flex-1 py-2.5 cursor-pointer rounded-lg font-medium transition-all bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 flex items-center justify-center gap-2"
+                        >
+                          <FiUserPlus className="w-4 h-4" />
+                          <span>Requests</span>
+                        </button>}
+                        {isPrivate && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInviteMember(community);
+                          }}
+                          className=" p-2.5 cursor-pointer rounded-lg font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 flex items-center justify-center gap-2"
+                        >
+                          <FiUserPlus className="w-4 h-4" />
+                          <span>Invite Member</span>
+                        </button>
+                      )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                   
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/main/edit-community/${encodeURIComponent(communityName)}`);
+                          }}
+                          className="flex-1 py-2.5 cursor-pointer rounded-lg font-medium transition-all bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(community);
+                          }}
+                          disabled={isDeleting}
+                          className={`py-2.5 px-4 cursor-pointer rounded-lg font-medium transition-all bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Normal user buttons - Join/Leave
+                return (
+                  <div className="flex gap-2">
+                    {isMember ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (communityName) {
+                            handleLeave(communityName);
+                          }
+                        }}
+                        disabled={isLeaving}
+                        className={`flex-1 py-2.5 cursor-pointer rounded-lg font-bold transition-all bg-red-500/20 hover:bg-red-500/30 text-red-500 border border-red-500/30 flex items-center justify-center gap-2 ${isLeaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <FiUserMinus className="w-4 h-4" />
+                        <span>Leave</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (communityName) {
+                            handleJoin(communityName);
+                          }
+                        }}
+                        disabled={isJoining}
+                        className={`flex-1 py-2.5 cursor-pointer rounded-lg font-bold transition-all bg-green-500/20 hover:bg-green-500/30 text-green-500 border border-green-500/30 flex items-center justify-center gap-2 ${isJoining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <FiUserPlus className="w-4 h-4" />
+                        <span>Join</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })()
             }
           />
         ))}
@@ -194,7 +365,7 @@ const ManageCommunities = () => {
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-      <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
+      <div className="page-container">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">Manage Communities</h1>
           <p className="text-white/60 text-sm">
@@ -218,6 +389,33 @@ const ManageCommunities = () => {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />
+
+      {selectedCommunityForRequests && (
+        <JoinRequestsModal
+          isOpen={joinRequestsModalOpen}
+          onClose={handleCloseJoinRequestsModal}
+          communityName={selectedCommunityForRequests.name || selectedCommunityForRequests.id?.toString() || ""}
+          communityTitle={selectedCommunityForRequests.title || selectedCommunityForRequests.name}
+        />
+      )}
+
+      {selectedCommunityForMembers && (
+        <CommunityMembersModal
+          isOpen={membersModalOpen}
+          onClose={handleCloseMembersModal}
+          communityName={selectedCommunityForMembers.name || selectedCommunityForMembers.id?.toString() || ""}
+          communityTitle={selectedCommunityForMembers.title || selectedCommunityForMembers.name}
+        />
+      )}
+
+      {selectedCommunityForInvite && (
+        <InviteMemberModal
+          isOpen={inviteModalOpen}
+          onClose={handleCloseInviteModal}
+          communityName={selectedCommunityForInvite.name || selectedCommunityForInvite.id?.toString() || ""}
+          communityTitle={selectedCommunityForInvite.title || selectedCommunityForInvite.name}
+        />
+      )}
     </div>
   );
 };

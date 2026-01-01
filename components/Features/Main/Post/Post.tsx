@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import React, { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { FaRegComment } from "react-icons/fa";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 import { VscThumbsup } from "react-icons/vsc";
@@ -11,11 +12,12 @@ import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem } from "@/store/postApi";
 import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowingQuery, useDeletePostMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import CustomDialog from "@/components/ui/CustomDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiFlag } from "react-icons/fi";
 import EditPost from "../../EditPost/EditPost";
 import CreatePost from "../../CreatePost/CreatePost";
+import ReportPostModal from "./ReportPostModal";
 
 interface Profile {
   id: string | number;
@@ -32,6 +34,7 @@ interface PostProps {
 }
 
 const Post = ({ post, profile }: PostProps) => {
+  const router = useRouter();
   const [showComments, setShowComments] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -47,6 +50,7 @@ const Post = ({ post, profile }: PostProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<number | string | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   
   const [likePost, { isLoading: isLiking }] = useLikePostMutation();
   const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
@@ -1001,6 +1005,15 @@ const Post = ({ post, profile }: PostProps) => {
               </button>
             </>
           )}
+          {!isCurrentUserPost && (
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="text-red-400/60 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-red-500/10"
+              title="Report post"
+            >
+              <FiFlag size={18} />
+            </button>
+          )}
           {isOtherUserPost && (
             <button 
               onClick={handleFollowClick}
@@ -1021,6 +1034,20 @@ const Post = ({ post, profile }: PostProps) => {
 
       <div>
         <div className="mb-5">
+          {/* Post Title - Bold */}
+          {post?.title && (
+            <h2 
+              className="text-xl font-bold text-white mb-3 break-words cursor-pointer hover:text-blue-400 transition-colors"
+              onClick={() => {
+                if (post.id) {
+                  router.push(`/main/post/${post.id}`);
+                }
+              }}
+            >
+              {post.title}
+            </h2>
+          )}
+          {/* Post Content */}
           <p dangerouslySetInnerHTML={{ __html: truncatedContent }} className="text-base text-white whitespace-pre-line">
           </p>
           {shouldTruncate && (
@@ -1031,10 +1058,50 @@ const Post = ({ post, profile }: PostProps) => {
               {isContentExpanded ? "See less" : "See more"}
             </button>
           )}
+          {/* Post Link - Clickable */}
+          {(post as { link?: string }).link && (
+            <div className="mt-4">
+              <a
+                href={(post as { link?: string }).link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 hover:underline transition-colors break-all"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
+                </svg>
+                <span className="break-all">{(post as { link?: string }).link}</span>
+              </a>
+            </div>
+          )}
         </div>
         {allMediaUrls.length > 0 && (
           <div className="mb-5">
             {renderImageGallery()}
+          </div>
+        )}
+        {/* Post Tags - Hashtags */}
+        {post?.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
+          <div className="mb-5 flex flex-wrap gap-2">
+            {post.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors cursor-pointer"
+              >
+                #{tag}
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -1141,9 +1208,14 @@ const Post = ({ post, profile }: PostProps) => {
       )}
 
       {/* Image Preview Modal */}
-      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-        <DialogContent className="max-w-6xl w-full p-0 bg-black/80 border-none">
-          <div className="relative w-full h-[90vh] flex items-center justify-center">
+      <CustomDialog
+        open={isImageModalOpen}
+        onOpenChange={setIsImageModalOpen}
+        maxWidth="full"
+        maxHeight="90vh"
+        contentClassName="p-0 bg-black/80 border-none"
+      >
+        <div className="relative w-full h-[90vh] flex items-center justify-center">
             {/* Close Button */}
             {/* <button
               onClick={() => setIsImageModalOpen(false)}
@@ -1203,8 +1275,7 @@ const Post = ({ post, profile }: PostProps) => {
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+      </CustomDialog>
       {/* Delete Comment Confirm Dialog */}
       <ConfirmDialog
         open={commentToDelete !== null}
@@ -1238,20 +1309,32 @@ const Post = ({ post, profile }: PostProps) => {
       />
 
       {/* Share Post Modal */}
-      <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <CreatePost 
-            sharedPostData={{
-              content: post?.content || "",
-              title: post?.title || "",
-              mediaUrls: allMediaUrls || [],
-            }}
-            onSuccess={() => {
-              setIsShareModalOpen(false);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <CustomDialog
+        open={isShareModalOpen}
+        onOpenChange={setIsShareModalOpen}
+        maxWidth="4xl"
+        maxHeight="90vh"
+        contentClassName="overflow-y-auto"
+      >
+        <CreatePost 
+          sharedPostData={{
+            content: post?.content || "",
+            title: post?.title || "",
+            mediaUrls: allMediaUrls || [],
+          }}
+          onSuccess={() => {
+            setIsShareModalOpen(false);
+          }}
+        />
+      </CustomDialog>
+
+      {/* Report Post Modal */}
+      <ReportPostModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        postId={post?.id || 0}
+        postTitle={post?.title}
+      />
     </div>
   );
 };

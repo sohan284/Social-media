@@ -135,7 +135,7 @@ const ManageCategories = () => {
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-      <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
+      <div className="page-container">
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-4 mb-6">
@@ -166,9 +166,9 @@ const ManageCategories = () => {
         </div>
 
         {/* Categories List */}
-        <div className="space-y-4">
+        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCategories.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 col-span-full">
               <p className="text-white/60 text-lg mb-2">
                 {joinedCategories.length === 0 
                   ? "You haven't joined any categories yet" 
@@ -176,7 +176,7 @@ const ManageCategories = () => {
               </p>
               {joinedCategories.length === 0 && (
                 <p className="text-white/40 text-sm">
-                  Go to "Join Categories" to add interests to your profile
+                  Go to Join Categories to add interests to your profile
                 </p>
               )}
             </div>
@@ -184,7 +184,7 @@ const ManageCategories = () => {
             filteredCategories.map((category) => (
               <div
                 key={category.id}
-                className="bg-white/5 rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-all"
+                className="bg-white/5 h-full rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-all"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <button

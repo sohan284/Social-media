@@ -8,6 +8,9 @@ export interface NotificationItem {
   post?: number | string;
   post_title?: string;
   comment?: number | string;
+  community?: number | string;
+  community_name?: string;
+  community_title?: string;
   created_at?: string;
   is_read?: boolean;
   [key: string]: unknown;

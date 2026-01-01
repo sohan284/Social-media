@@ -35,9 +35,9 @@ const menuItems = [
 ];
 const menuItemsTwo = [
   {
-    icon: <BsExclamationCircle size={24} className="scale-y-[-1]" />,
-    label: "Contact Us",
-    href: "/main/contact-us",
+    icon: <FriendsIcon />,
+    label: "Communities",
+    href: "/main/communities",
   },
   {
     icon: <RiMenuSearchLine size={24} />,
@@ -45,25 +45,25 @@ const menuItemsTwo = [
     href: "/main/topics",
   },
   {
-    icon: <FriendsIcon />,
-    label: "Communities",
-    href: "/main/communities",
+    icon: <BsExclamationCircle size={24} className="scale-y-[-1]" />,
+    label: "Contact Us",
+    href: "/main/contact-us",
   },
   {
     icon: <FaRegQuestionCircle size={24} />,
     label: "Help",
     href: "/main/help",
   },
-  {
-    icon: <SubscriptionIcon />,
-    label: "Subscription",
-    href: "/main/subscription",
-  },
-  {
-    icon: <DatabaseIcon />,
-    label: "Storage",
-    href: "/main/storage",
-  },
+  // {
+  //   icon: <SubscriptionIcon />,
+  //   label: "Subscription",
+  //   href: "/main/subscription",
+  // },
+  // {
+  //   icon: <DatabaseIcon />,
+  //   label: "Storage",
+  //   href: "/main/storage",
+  // },
 ];
 
 const SidebarNavLink = () => {

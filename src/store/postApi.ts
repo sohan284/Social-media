@@ -119,6 +119,10 @@ export interface FollowItem {
   follower?: number | string;
   following_name?: string;
   follower_name?: string;
+  follower_avatar?: string | null;
+  follower_about?: string | null;
+  following_avatar?: string | null;
+  following_about?: string | null;
   user?: number | string;
   created_at?: string;
   [key: string]: unknown;
@@ -163,6 +167,7 @@ export const postApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
+      invalidatesTags: ["Communities"],
     }),
     updatePost: builder.mutation<CreatePostResponse, { postId: number | string; data: UpdatePostRequest }>({
       query: ({ postId, data }) => {
@@ -227,10 +232,13 @@ export const postApi = baseApi.injectEndpoints({
 
         try {
           await queryFulfilled;
+          // Invalidate Communities cache if post status might have changed
+          dispatch(postApi.util.invalidateTags(["Communities"]));
         } catch {
           patchResults.forEach((patch) => patch.undo());
         }
       },
+      invalidatesTags: ["Communities"],
     }),
     deletePost: builder.mutation<void, { postId: number | string }>({
       query: ({ postId }) => ({
@@ -269,6 +277,8 @@ export const postApi = baseApi.injectEndpoints({
           await queryFulfilled;
           // Invalidate queries to refetch and ensure data is up to date
           dispatch(postApi.util.invalidateTags([{ type: 'UserProfile' }]));
+          // Invalidate Communities cache to update posts_count
+          dispatch(postApi.util.invalidateTags(["Communities"]));
           // Also directly refetch queries to ensure instant update
           dispatch(postApi.endpoints.getMyPosts.initiate(undefined, { forceRefetch: true }));
           dispatch(postApi.endpoints.getAllPosts.initiate(undefined, { forceRefetch: true }));
@@ -307,7 +317,7 @@ export const postApi = baseApi.injectEndpoints({
     }),
     getRejectedPosts: builder.query<GetPostsResponse, void>({
       query: () => ({
-        url: "/api/posts/",
+        url: "/api/posts/?status=rejected",
         method: "GET",
       }),
       providesTags: ["UserProfile"],
@@ -317,6 +327,20 @@ export const postApi = baseApi.injectEndpoints({
         url: `/api/posts/community_posts/?community=${communityName}`,
         method: "GET",
       }),
+    }),
+    getPostById: builder.query<{ success?: boolean; message?: string; data?: PostItem }, number | string>({
+      query: (postId) => ({
+        url: `/api/posts/${postId}/`,
+        method: "GET",
+      }),
+      providesTags: (result, error, postId) => [{ type: 'UserProfile', id: postId }],
+    }),
+    approvePost: builder.mutation<{ success?: boolean; message?: string; data?: PostItem }, { postId: number | string }>({
+      query: ({ postId }) => ({
+        url: `/api/posts/${postId}/approve/`,
+        method: "POST",
+      }),
+      invalidatesTags: () => [{ type: 'UserProfile' }],
     }),
     likePost: builder.mutation<
       { success: boolean; likes_count: number; is_liked: boolean; id?: number | string; like_id?: number | string; data?: { id?: number | string; like_id?: number | string } },
@@ -504,8 +528,100 @@ export const postApi = baseApi.injectEndpoints({
       }),
       providesTags: () => [{ type: 'Followers' }],
     }),
+    reportPost: builder.mutation<{ success?: boolean; message?: string; data?: unknown }, { postId: number | string; reason: string; description?: string }>({
+      query: ({ postId, reason, description }) => ({
+        url: `/api/post-reports/`,
+        method: "POST",
+        body: { post: postId, reason, description },
+      }),
+    }),
+    getPostReports: builder.query<{ data?: PostReportItem[]; results?: { data?: PostReportItem[] } }, void>({
+      query: () => ({
+        url: `/api/post-reports/`,
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'PostReports' }],
+    }),
+    reviewReport: builder.mutation<{ success?: boolean; message?: string; data?: PostReportItem }, { reportId: number | string; status: 'reviewed' | 'resolved' | 'dismissed' }>({
+      query: ({ reportId, status }) => ({
+        url: `/api/post-reports/${reportId}/review/`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: () => [{ type: 'PostReports' }, { type: 'UnifiedReports' }],
+    }),
+    getUnifiedReports: builder.query<{ 
+      data?: UnifiedReportItem[]; 
+      results?: UnifiedReportItem[] | { data?: UnifiedReportItem[] };
+      count?: number; 
+      success?: boolean; 
+      message?: string 
+    }, void>({
+      query: () => ({
+        url: `/api/reports/all/`,
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'UnifiedReports' }],
+    }),
+    reviewUnifiedReport: builder.mutation<{ success?: boolean; message?: string; data?: unknown }, { reportId: number | string; reportType: 'post' | 'user'; status: 'reviewed' | 'resolved' | 'dismissed' }>({
+      query: ({ reportId, reportType, status }) => {
+        if (reportType === 'post') {
+          return {
+            url: `/api/post-reports/${reportId}/review/`,
+            method: "PATCH",
+            body: { status },
+          };
+        } else {
+          return {
+            url: `/api/chat/reports/${reportId}/update/`,
+            method: "PATCH",
+            body: { status },
+          };
+        }
+      },
+      invalidatesTags: () => [{ type: 'PostReports' }, { type: 'UserReports' }, { type: 'UnifiedReports' }],
+    }),
   }),
 });
+
+export interface PostReportItem {
+  id?: number | string;
+  reporter?: number | string | {
+    id?: number | string;
+    username?: string;
+    display_name?: string;
+    avatar?: string;
+  };
+  reporter_name?: string;
+  reporter_id?: number | string;
+  post?: number | string;
+  post_id?: number | string;
+  post_title?: string;
+  post_author?: string;
+  reason?: string;
+  description?: string;
+  status?: string;
+  reviewed_by?: number | string;
+  reviewed_by_name?: string;
+  reviewed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface UnifiedReportItem extends PostReportItem {
+  report_type?: 'post' | 'user';
+  type_label?: string;
+  // User report specific fields
+  reported_user?: {
+    id?: number | string;
+    username?: string;
+    display_name?: string;
+    avatar?: string;
+  };
+  reported_user_id?: number | string;
+  admin_notes?: string;
+}
 
 export const { 
   useCreatePostMutation,
@@ -525,4 +641,11 @@ export const {
   useUnfollowUserMutation,
   useGetFollowingQuery,
   useGetFollowersQuery,
+  useReportPostMutation,
+  useGetPostReportsQuery,
+  useReviewReportMutation,
+  useGetUnifiedReportsQuery,
+  useReviewUnifiedReportMutation,
+  useGetPostByIdQuery,
+  useApprovePostMutation,
 } = postApi;

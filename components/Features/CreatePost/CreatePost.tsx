@@ -11,12 +11,7 @@ import {
   FiType,
 } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CustomDialog from "@/components/ui/CustomDialog";
 import {
   type CreatePostRequest,
   useCreatePostMutation,
@@ -280,7 +275,7 @@ const CreatePost = ({
                         setActiveTab(tab.id);
                         setValue("postType", tab.id);
                       }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer ${
                         activeTab === tab.id
                           ? "bg-white/20 text-white border border-white/30"
                           : "bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10"
@@ -339,7 +334,7 @@ const CreatePost = ({
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-1 hover:text-red-400 transition-colors"
+                      className="ml-1 hover:text-red-400 transition-colors cursor-pointer"
                     >
                       <IoMdClose size={14} />
                     </button>
@@ -418,7 +413,7 @@ const CreatePost = ({
                           type="button"
                           key={media.id}
                           onClick={() => setIsMediaModalOpen(true)}
-                          className="relative w-full h-28 rounded-lg overflow-hidden border border-white/10 group"
+                          className="relative w-full h-28 rounded-lg overflow-hidden border border-white/10 group cursor-pointer"
                         >
                           {isImage ? (
                             <Image
@@ -467,7 +462,7 @@ const CreatePost = ({
                               e.stopPropagation();
                               handleRemoveMedia(media.id);
                             }}
-                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-20"
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-20 cursor-pointer"
                           >
                             <IoMdClose size={14} />
                           </button>
@@ -518,7 +513,7 @@ const CreatePost = ({
                 type="button"
                 onClick={handlePublish}
                 disabled={isSubmitting || isCreating || !titleValue?.trim()}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium cursor-pointer"
               >
                 <FiSend size={18} />
                 {isSubmitting || isCreating
@@ -538,13 +533,12 @@ const CreatePost = ({
           </div>
         )}
       </div>
-      <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>
-              Uploaded media ({mediaPreviews.length})
-            </DialogTitle>
-          </DialogHeader>
+      <CustomDialog
+        open={isMediaModalOpen}
+        onOpenChange={setIsMediaModalOpen}
+        title={`Uploaded media (${mediaPreviews.length})`}
+        maxWidth="4xl"
+      >
           {mediaPreviews.length === 0 ? (
             <p className="text-gray-400 text-sm">
               No media selected yet. Upload images or videos to preview them here.
@@ -591,7 +585,7 @@ const CreatePost = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveMedia(media.id)}
-                      className="absolute top-2 right-2 rounded-full bg-black/70 p-2 text-white hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 rounded-full bg-black/70 p-2 text-white hover:bg-red-600 transition-colors cursor-pointer"
                     >
                       <IoMdClose size={16} />
                       <span className="sr-only">Remove media</span>
@@ -606,8 +600,7 @@ const CreatePost = ({
               })}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </CustomDialog>
     </div>
   );
 };

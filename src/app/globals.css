@@ -183,3 +183,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Page container - reusable container for main content pages */
+.page-container {
+  @apply bg-[#06133FBF] min-h-[87vh] max-w-[1220px] mx-auto backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10;
+}

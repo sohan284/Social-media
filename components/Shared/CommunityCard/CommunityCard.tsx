@@ -71,12 +71,12 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
     : null;
 
   const cardClasses = variant === 'grid'
-    ? "bg-white/5 rounded-xl border border-white/10 overflow-hidden hover:bg-white/10 transition-all duration-300 hover:border-white/30 cursor-pointer"
-    : "bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg overflow-hidden hover:border-white/30 transition-all duration-300";
+    ? `bg-white/5 rounded-xl border border-white/10 overflow-hidden transition-all duration-300 ${onCardClick ? 'hover:bg-white/10 hover:border-white/30 cursor-pointer' : 'cursor-default'}`
+    : `bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg overflow-hidden transition-all duration-300 ${onCardClick ? 'hover:border-white/30 cursor-pointer' : 'cursor-default'}`;
 
   if (variant === 'list') {
     return (
-      <div className={cardClasses} onClick={onCardClick}>
+      <div className={cardClasses} onClick={onCardClick || undefined}>
         {/* Banner */}
         {bannerUrl ? (
           <div className="relative w-full h-32">
@@ -139,8 +139,8 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
                 <div className="flex items-center gap-2">
                   <FiUsers size={14} />
                   <span>
-                    {community.members_count || 0} member
-                    {(community.members_count || 0) !== 1 ? "s" : ""}
+                    {Math.max(community.members_count || 0)} member
+                    {Math.max(community.members_count || 0) !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -172,10 +172,10 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
 
   // Grid variant
   return (
-    <div className={cardClasses} onClick={onCardClick}>
+    <div className={`${cardClasses} flex flex-col h-full`} onClick={onCardClick || undefined}>
       {/* Banner */}
       {bannerUrl ? (
-        <div className="relative w-full h-32">
+        <div className="relative w-full h-32 flex-shrink-0">
           <Image
             src={bannerUrl}
             alt={`${community.name || community.title} banner`}
@@ -185,10 +185,10 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
           />
         </div>
       ) : (
-        <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600" />
+        <div className="w-full h-32 flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" />
       )}
 
-      <div className="p-6">
+      <div className="p-6 flex flex-col flex-1">
         {/* Community Icon and Info */}
         <div className="flex items-start gap-4 mb-4">
           {iconUrl ? (
@@ -228,7 +228,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
         <div className="flex items-center gap-4 mb-4 text-sm">
           <div className="flex items-center gap-1 text-white/60">
             <FiUsers className="w-4 h-4" />
-            <span>{community.members_count || 0} members</span>
+            <span>{Math.max(community.members_count || 0)} members</span>
           </div>
           <div className="flex items-center gap-1 text-white/60">
             <FiMessageCircle className="w-4 h-4" />
@@ -243,9 +243,9 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
           </p>
         )}
 
-        {/* Actions */}
+        {/* Actions - Pushed to bottom */}
         {actions && (
-          <div className="mt-4">
+          <div className="mt-auto pt-4 border-t border-white/10">
             {actions}
           </div>
         )}

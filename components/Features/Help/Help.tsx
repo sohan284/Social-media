@@ -91,7 +91,7 @@ const Help = () => {
 
     return (
         <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-            <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
+            <div className="page-container">
                 {/* Header Section */}
                 <div className="text-center mb-12">
                     <div className="flex items-center justify-center gap-4 mb-6">
@@ -199,7 +199,7 @@ const Help = () => {
                 <div className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-2xl border border-blue-500/30 p-6 md:p-8 text-center">
                     <h3 className="text-2xl font-bold text-white mb-3">Still Need Help?</h3>
                     <p className="text-white/80 mb-6 max-w-2xl mx-auto">
-                        Can't find what you're looking for? Our support team is here to help you 24/7. Reach out to us and we'll get back to you as soon as possible.
+                        Can&apos;t find what you&apos;re looking for? Our support team is here to help you 24/7. Reach out to us and we&apos;ll get back to you as soon as possible.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-lg">

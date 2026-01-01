@@ -22,7 +22,7 @@ export default function ContactUs() {
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-      <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
+      <div className="page-container">
         {/* Header Section */}
         <div className='text-center mb-12'>
           <h4 className="text-2xl font-semibold text-purple-400">Contact US</h4>

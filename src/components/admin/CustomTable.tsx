@@ -12,7 +12,7 @@ import {
 import { ChevronLeft, ChevronRight, AlertCircle, Inbox } from "lucide-react";
 
 export interface Column<T> {
-  header: string;
+  header: string | ((row: T) => string);
   accessor: (row: T, index: number) => React.ReactNode;
   className?: string;
 }
@@ -31,6 +31,8 @@ interface CustomTableProps<T> {
   cellClassName?: string;
   onRowClick?: (row: T, index: number) => void;
   disablePagination?: boolean;
+  maxHeight?: string;
+  enableScroll?: boolean;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -49,6 +51,8 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   cellClassName = "",
   onRowClick,
   disablePagination = false,
+  maxHeight = "80vh",
+  enableScroll = false,
 }: CustomTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -150,24 +154,36 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   };
 
   return (
-    <div className={`w-[88vw] lg:w-full rounded-2xl  border bg-black/30 backdrop-blur-sm  border-white/20  flex flex-col ${className}`}>
+    <div 
+      className={`w-[88vw] lg:w-full rounded-2xl border bg-black/30 backdrop-blur-sm border-white/20 flex flex-col ${className}`}
+      style={enableScroll ? { maxHeight } : {}}
+    >
       {title && (
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-white/10 flex-shrink-0">
           <h2 className="text-2xl font-semibold text-center text-white">{title}</h2>
         </div>
       )}
-      <div className="relative w-full">
-        <Table className="min-w-max">
-          <TableHeader>
-            <TableRow className={`bg-white/10 text-left ${headerClassName}`}>
-              {columns.map((column, index) => (
-                <TableHead key={index} className={`px-4 text-white py-3 ${column.className || ""}`}>
-                  {column.header}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div 
+        className={`relative w-full ${enableScroll ? 'overflow-hidden flex flex-col' : ''}`}
+        style={enableScroll ? { maxHeight: `calc(${maxHeight} - ${title ? '120px' : '0px'})` } : {}}
+      >
+        <div className={enableScroll ? 'overflow-y-auto flex-1' : ''}>
+          <Table className="min-w-max">
+            <TableHeader className={enableScroll ? 'sticky top-0 z-10 bg-black/30 backdrop-blur-sm' : ''}>
+              <TableRow className={`bg-white/10 text-left ${headerClassName}`}>
+                {columns.map((column, index) => {
+                  const headerContent = typeof column.header === 'function' 
+                    ? column.header(data[0] || {} as T)
+                    : column.header;
+                  return (
+                    <TableHead key={index} className={`px-4 text-white py-3 ${column.className || ""}`}>
+                      {headerContent}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
             {isError ? (
               // Error State
               <TableRow className="hover:!bg-transparent cursor-default">
@@ -255,8 +271,9 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
                 )}
               </>
             )}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination Controls - Always show if there's data and pagination is enabled */}

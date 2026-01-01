@@ -105,7 +105,7 @@ const RightSidebar = () => {
                       <div 
                         key={community.id} 
                         className='flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity'
-                        onClick={() => router.push(`/main/communities?community=${encodeURIComponent(community.name || '')}`)}
+                        onClick={() => router.push(`/main/communities/${encodeURIComponent(community.name || '')}`)}
                       >
                         <div className='flex items-center gap-2 flex-1 min-w-0'>
                           {iconUrl ? (

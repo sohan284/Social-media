@@ -17,7 +17,7 @@ const Subscription = () => {
 
     return (
         <div className="max-w-[1200px] mx-auto p-4 md:p-6">
-            <div className="bg-[#06133FBF] backdrop-blur-[17.5px] rounded-2xl border border-white/10 shadow-xl">
+            <div className="page-container">
                 <div className="p-6 md:p-12">
                     
                     <div className="text-center mb-12">

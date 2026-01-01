@@ -141,10 +141,50 @@ const CreateCommunityForm = () => {
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-      <form
+     <div className="page-container">
+     <form
         onSubmit={handleSubmit(onSubmit)}
-        className="relative w-full bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg flex flex-col md:flex-row p-6 md:p-10 gap-8"
+        className="relative w-full flex flex-col md:flex-row gap-8"
       >
+        {/* Mobile Preview - Shows at top on mobile */}
+        <div className="md:hidden mb-6 bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
+          {coverImagePreview && (
+            <div className="mb-4 relative w-full h-24">
+              <Image
+                src={coverImagePreview}
+                alt="Community cover image"
+                fill
+                className="object-cover rounded-lg"
+                unoptimized
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-center mb-3">
+            {profileImagePreview ? (
+              <div className="relative w-12 h-12">
+                <Image
+                  src={profileImagePreview}
+                  alt="Community profile image"
+                  fill
+                  className="object-cover rounded-full border-2 border-white/20"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">
+                  {name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
+          <h3 className="font-semibold text-lg">{name}</h3>
+          <p className="text-sm text-gray-300 mt-1">{description}</p>
+          <div className="flex justify-center gap-2 mt-4 text-xs text-gray-400">
+            <span>1 member</span>•<span>1 online</span>
+          </div>
+        </div>
+
         {/* Left Section */}
         <div className="flex-1 space-y-6">
           {step === 1 && (
@@ -435,7 +475,7 @@ const CreateCommunityForm = () => {
           )}
         </div>
 
-        {/* Right Preview */}
+        {/* Desktop Preview - Shows on right side on desktop */}
         <div className="hidden md:flex flex-col justify-center w-72 h-fit bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">
           {coverImagePreview && (
             <div className="mb-4 relative w-full h-24">
@@ -474,6 +514,7 @@ const CreateCommunityForm = () => {
           </div>
         </div>
       </form>
+     </div>
     </div>
   );
 };
