@@ -139,8 +139,8 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
                 <div className="flex items-center gap-2">
                   <FiUsers size={14} />
                   <span>
-                    {community.members_count || 0} member
-                    {(community.members_count || 0) !== 1 ? "s" : ""}
+                    {Math.max(community.members_count || 0)} member
+                    {Math.max(community.members_count || 0) !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({
         <div className="flex items-center gap-4 mb-4 text-sm">
           <div className="flex items-center gap-1 text-white/60">
             <FiUsers className="w-4 h-4" />
-            <span>{community.members_count || 0} members</span>
+            <span>{Math.max(community.members_count || 0)} members</span>
           </div>
           <div className="flex items-center gap-1 text-white/60">
             <FiMessageCircle className="w-4 h-4" />

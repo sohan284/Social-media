@@ -163,6 +163,7 @@ export const postApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
+      invalidatesTags: ["Communities"],
     }),
     updatePost: builder.mutation<CreatePostResponse, { postId: number | string; data: UpdatePostRequest }>({
       query: ({ postId, data }) => {
@@ -227,10 +228,13 @@ export const postApi = baseApi.injectEndpoints({
 
         try {
           await queryFulfilled;
+          // Invalidate Communities cache if post status might have changed
+          dispatch(postApi.util.invalidateTags(["Communities"]));
         } catch {
           patchResults.forEach((patch) => patch.undo());
         }
       },
+      invalidatesTags: ["Communities"],
     }),
     deletePost: builder.mutation<void, { postId: number | string }>({
       query: ({ postId }) => ({
@@ -269,6 +273,8 @@ export const postApi = baseApi.injectEndpoints({
           await queryFulfilled;
           // Invalidate queries to refetch and ensure data is up to date
           dispatch(postApi.util.invalidateTags([{ type: 'UserProfile' }]));
+          // Invalidate Communities cache to update posts_count
+          dispatch(postApi.util.invalidateTags(["Communities"]));
           // Also directly refetch queries to ensure instant update
           dispatch(postApi.endpoints.getMyPosts.initiate(undefined, { forceRefetch: true }));
           dispatch(postApi.endpoints.getAllPosts.initiate(undefined, { forceRefetch: true }));

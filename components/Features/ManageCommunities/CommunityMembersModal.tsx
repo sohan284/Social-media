@@ -149,20 +149,22 @@ const CommunityMembersModal: React.FC<CommunityMembersModalProps> = ({
                   >
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-white/20">
-                        <Image
-                          src={
-                            !avatar
-                              ? "/sheep.jpg"
-                              : avatar.startsWith("http")
-                              ? avatar
-                              : `${apiBase}${avatar.startsWith("/") ? avatar.slice(1) : avatar}`
-                          }
-                          alt={displayName}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
+                      <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-white/20 bg-white/10 flex items-center justify-center">
+                        {avatar ? (
+                          <Image
+                            src={
+                              avatar.startsWith("http")
+                                ? avatar
+                                : `${apiBase}${avatar.startsWith("/") ? avatar.slice(1) : avatar}`
+                            }
+                            alt={displayName}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <FiUser className="w-6 h-6 text-white/60" />
+                        )}
                       </div>
 
                       {/* User Info */}

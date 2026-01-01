@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { AiOutlineClose } from "react-icons/ai";
 import { GoBell } from "react-icons/go";
 import {
@@ -18,6 +19,7 @@ const NotificationDropdown = ({
   isOpen,
   onClose,
 }: NotificationDropdownProps) => {
+  const router = useRouter();
   const { data, isLoading, isError } = useGetNotificationsQuery();
   const [markAsRead] = useMarkNotificationAsReadMutation();
 
@@ -36,10 +38,12 @@ const NotificationDropdown = ({
       }
     }
 
-    // Navigate to post if available
-    // if (notification.post) {
-    //   router.push(`/main/post/${notification.post}`);
-    // }
+    // Navigate based on notification type
+    if (notification.notification_type === "community_invite" && notification.community_name) {
+      router.push(`/main/communities/${encodeURIComponent(notification.community_name)}`);
+    } else if (notification.post) {
+      router.push(`/main/post/${notification.post}`);
+    }
 
     onClose();
   };
@@ -59,10 +63,18 @@ const NotificationDropdown = ({
       return `${senderName} commented on your post`;
     }
     
+    if (notification.notification_type === "community_invite") {
+      return `${senderName} invited you to join`;
+    }
+    
     return "New notification";
   };
 
   const getNotificationSubtitle = (notification: NotificationItem) => {
+    if (notification.notification_type === "community_invite" && notification.community_title) {
+      return notification.community_title;
+    }
+    
     if (notification.notification_type === "like" && notification.post_title) {
       return notification.post_title;
     }

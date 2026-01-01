@@ -11,6 +11,7 @@ import CommunityCard from "../../Shared/CommunityCard/CommunityCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import JoinRequestsModal from "./JoinRequestsModal";
 import CommunityMembersModal from "./CommunityMembersModal";
+import InviteMemberModal from "./InviteMemberModal";
 
 const ManageCommunities = () => {
   const router = useRouter();
@@ -20,6 +21,8 @@ const ManageCommunities = () => {
   const [selectedCommunityForRequests, setSelectedCommunityForRequests] = useState<CommunityItem | null>(null);
   const [membersModalOpen, setMembersModalOpen] = useState(false);
   const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<CommunityItem | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [selectedCommunityForInvite, setSelectedCommunityForInvite] = useState<CommunityItem | null>(null);
   const { data: communitiesResponse, isLoading, isError } = useGetMyCommunitiesQuery();
   const { data: currentUserResponse } = useGetCurrentUserProfileQuery();
   const [deleteCommunity, { isLoading: isDeleting }] = useDeleteCommunityMutation();
@@ -161,7 +164,7 @@ const ManageCommunities = () => {
   const handleCardClick = (community: CommunityItem) => {
     const communityName = community.name || community.id?.toString() || "";
     if (communityName) {
-      router.push(`/main/communities?community=${encodeURIComponent(communityName)}`);
+      router.push(`/main/communities/${encodeURIComponent(communityName)}`);
     }
   };
 
@@ -183,6 +186,16 @@ const ManageCommunities = () => {
   const handleCloseMembersModal = () => {
     setMembersModalOpen(false);
     setSelectedCommunityForMembers(null);
+  };
+
+  const handleInviteMember = (community: CommunityItem) => {
+    setSelectedCommunityForInvite(community);
+    setInviteModalOpen(true);
+  };
+
+  const handleCloseInviteModal = () => {
+    setInviteModalOpen(false);
+    setSelectedCommunityForInvite(null);
   };
 
   const handleJoin = async (communityName: string) => {
@@ -244,6 +257,7 @@ const ManageCommunities = () => {
                 
                 // Creator buttons
                 if (isCreator) {
+                  const isPrivate = community.visibility === 'private';
                   return (
                     <div className="space-y-2">
                       <div className="flex gap-2">
@@ -257,7 +271,7 @@ const ManageCommunities = () => {
                           <FiUsersIcon className="w-4 h-4" />
                           <span>Members</span>
                         </button>
-                        <button
+                       {!isPrivate && <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleViewJoinRequests(community);
@@ -266,9 +280,23 @@ const ManageCommunities = () => {
                         >
                           <FiUserPlus className="w-4 h-4" />
                           <span>Requests</span>
+                        </button>}
+                        {isPrivate && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInviteMember(community);
+                          }}
+                          className=" p-2.5 cursor-pointer rounded-lg font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 flex items-center justify-center gap-2"
+                        >
+                          <FiUserPlus className="w-4 h-4" />
+                          <span>Invite Member</span>
                         </button>
+                      )}
                       </div>
+                      
                       <div className="flex gap-2">
+                   
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -337,7 +365,7 @@ const ManageCommunities = () => {
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-      <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
+      <div className="page-container">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">Manage Communities</h1>
           <p className="text-white/60 text-sm">
@@ -377,6 +405,15 @@ const ManageCommunities = () => {
           onClose={handleCloseMembersModal}
           communityName={selectedCommunityForMembers.name || selectedCommunityForMembers.id?.toString() || ""}
           communityTitle={selectedCommunityForMembers.title || selectedCommunityForMembers.name}
+        />
+      )}
+
+      {selectedCommunityForInvite && (
+        <InviteMemberModal
+          isOpen={inviteModalOpen}
+          onClose={handleCloseInviteModal}
+          communityName={selectedCommunityForInvite.name || selectedCommunityForInvite.id?.toString() || ""}
+          communityTitle={selectedCommunityForInvite.title || selectedCommunityForInvite.name}
         />
       )}
     </div>
