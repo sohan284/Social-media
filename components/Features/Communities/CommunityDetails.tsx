@@ -263,8 +263,9 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
 
   if (!community) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
+      <div className="page-container">
+        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center flex flex-col items-center justify-center h-full w-full bg-white/5 rounded-lg border border-white/10 p-8 max-w-md">
           <p className="text-white/60 text-lg mb-4">Community not found</p>
           <button
             onClick={() => router.push('/main/communities')}
@@ -272,6 +273,7 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
           >
             Back to Communities
           </button>
+        </div>
         </div>
       </div>
     );

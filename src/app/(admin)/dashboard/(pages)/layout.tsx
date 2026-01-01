@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Package,
   Menu,
+  Flag,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -26,6 +27,7 @@ const menu = [
   { name: "Home", icon: Home, path: "/dashboard" },
   { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
   { name: "Rejected Posts", icon: FileText, path: "/dashboard/rejected-posts" },
+  { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "User Management", icon: Users, path: "/dashboard/user-management" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },

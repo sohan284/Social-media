@@ -344,7 +344,7 @@ const Categories = () => {
                 >
                   <option value="">Select a category</option>
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
+                    <option className="cursor-pointer" key={cat.id} value={cat.name}>
                       {cat.name}
                     </option>
                   ))}

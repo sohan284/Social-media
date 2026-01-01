@@ -2,12 +2,7 @@
 import Image from "next/image";
 import { MarketplaceItem } from "@/store/marketplaceApi";
 import { getApiBaseUrl } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CustomDialog from "@/components/ui/CustomDialog";
 
 interface ProductDetailsModalProps {
   isOpen: boolean;
@@ -72,15 +67,15 @@ export default function ProductDetailsModal({
   const status = (product.status || "N/A") as string;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] bg-[#06133f] border border-white/10  overflow-y-auto custom-scroll">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold text-white mb-4">
-            Product Details
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6">
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      title="Product Details"
+      maxWidth="4xl"
+      maxHeight="80vh"
+      contentClassName="overflow-y-auto custom-scroll"
+    >
+      <div className="space-y-6">
           {/* Product Image */}
           <div className="relative w-full h-96 rounded-xl overflow-hidden border border-white/10">
             <Image
@@ -204,8 +199,7 @@ export default function ProductDetailsModal({
             )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </CustomDialog>
   );
 }
 

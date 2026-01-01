@@ -2,12 +2,7 @@
 import Image from "next/image";
 import { PostItem } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CustomDialog from "@/components/ui/CustomDialog";
 
 interface PostDetailsModalProps {
   isOpen: boolean;
@@ -101,15 +96,15 @@ export default function PostDetailsModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] bg-[#06133f] border border-white/10 overflow-y-auto custom-scroll">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold text-white mb-4">
-            Post Details
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6">
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      title="Post Details"
+      maxWidth="4xl"
+      maxHeight="85vh"
+      contentClassName="overflow-y-auto custom-scroll"
+    >
+      <div className="space-y-6">
           {/* Post Media/Image - Dynamic Grid */}
           {mediaFiles.length > 0 && (
             <div className="p-4 rounded-lg bg-white/5 border border-white/10">
@@ -303,8 +298,7 @@ export default function PostDetailsModal({
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </CustomDialog>
   );
 }
 

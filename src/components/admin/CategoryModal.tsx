@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
 import { Category, Subcategory } from "@/store/categoryApi";
 import { MarketplaceCategory, MarketplaceSubcategory } from "@/store/marketplaceApi";
 import {
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import CustomDialog from "@/components/ui/CustomDialog";
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -87,28 +87,20 @@ export default function CategoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white/80 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-white/20">
-        {/* HEADER */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {editingCategory || editingSubcategory
-              ? `Edit ${type === "category" ? "Category" : "Subcategory"}`
-              : `Create ${type === "category" ? "Category" : "Subcategory"}`}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
-          >
-            <X className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && handleClose()}
+      title={
+        editingCategory || editingSubcategory
+          ? `Edit ${type === "category" ? "Category" : "Subcategory"}`
+          : `Create ${type === "category" ? "Category" : "Subcategory"}`
+      }
+      maxWidth="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {type === "subcategory" && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 Category
               </label>
               <Select
@@ -117,10 +109,10 @@ export default function CategoryModal({
                 disabled={!!editingSubcategory}
                 required
               >
-                <SelectTrigger className="w-full h-12 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#6B83FA] text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors">
+                <SelectTrigger className="w-full h-12 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-[#6B83FA] text-white disabled:bg-white/5 disabled:cursor-not-allowed hover:bg-white/15 transition-colors">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectContent className="bg-[#06133FBF] text-white backdrop-blur-md border border-white/20 shadow-lg">
                   {categories.length === 0 ? (
                     <SelectItem value="" disabled>
                       No categories available
@@ -138,7 +130,7 @@ export default function CategoryModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-white mb-2">
               {type === "category" ? "Category" : "Subcategory"} Name
             </label>
             <input
@@ -146,31 +138,30 @@ export default function CategoryModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={`Enter ${type === "category" ? "category" : "subcategory"} name`}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
               required
               autoFocus
             />
           </div>
 
-          {/* BUTTONS */}
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-6 py-3 bg-[#6B83FA] hover:bg-[#5a70e8] text-white font-medium rounded-xl transition"
-            >
-              {editingCategory || editingSubcategory ? "Update" : "Create"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* BUTTONS */}
+        <div className="flex gap-4 pt-4">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-6 py-3 bg-[#6B83FA] hover:bg-[#5a70e8] text-white font-medium rounded-xl transition cursor-pointer"
+          >
+            {editingCategory || editingSubcategory ? "Update" : "Create"}
+          </button>
+        </div>
+      </form>
+    </CustomDialog>
   );
 }
 

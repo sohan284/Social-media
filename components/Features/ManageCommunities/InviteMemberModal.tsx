@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { FiX, FiSearch, FiUser, FiUserPlus } from 'react-icons/fi';
+import { FiSearch, FiUser, FiUserPlus } from 'react-icons/fi';
 import Image from 'next/image';
 import { useGetChatUsersQuery, useSearchChatUsersQuery, type ChatUser } from '@/store/chatApi';
 import { useInviteUserToCommunityMutation, useGetCommunityMembersQuery } from '@/store/communityApi';
 import { toast } from 'sonner';
 import { getApiBaseUrl } from '@/lib/utils';
+import CustomDialog from '@/components/ui/CustomDialog';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -77,28 +78,18 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#06133F] border border-white/20 rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              Invite Member
-            </h2>
-            <p className="text-white/60 text-sm mt-1">
-              {communityTitle || communityName}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <FiX className="w-5 h-5 text-white" />
-          </button>
-        </div>
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title="Invite Member"
+      description={communityTitle || communityName}
+      maxWidth="3xl"
+      maxHeight="85vh"
+      contentClassName="flex flex-col"
+    >
 
-        {/* Search */}
-        <div className="p-6 border-b border-white/10">
+      {/* Search */}
+      <div className="p-6 border-b border-white/10">
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
             <input
@@ -116,8 +107,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           )}
         </div>
 
-        {/* User List */}
-        <div className="flex-1 overflow-y-auto custom-scroll p-6">
+      {/* User List */}
+      <div className="flex-1 overflow-y-auto custom-scroll p-6">
           {users.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
@@ -174,7 +165,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                       <button
                         onClick={() => handleInvite(user.id)}
                         disabled={isInviting}
-                        className={`px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg transition-colors font-medium text-sm flex items-center gap-2 ${isInviting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 rounded-lg transition-colors font-medium text-sm flex items-center gap-2 ${isInviting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         <FiUserPlus className="w-4 h-4" />
                         Invite
@@ -187,17 +178,16 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-white/10">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-          >
-            Close
-          </button>
-        </div>
+      {/* Footer */}
+      <div className="p-6 border-t border-white/10">
+        <button
+          onClick={onClose}
+          className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors cursor-pointer"
+        >
+          Close
+        </button>
       </div>
-    </div>
+    </CustomDialog>
   );
 };
 

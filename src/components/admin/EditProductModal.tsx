@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
-import { X } from "lucide-react";
 import { 
   MarketplaceItem, 
   useUpdateProductMutation,
@@ -10,6 +9,7 @@ import {
 } from "@/store/marketplaceApi";
 import { toast } from "sonner";
 import { getApiBaseUrl } from "@/lib/utils";
+import CustomDialog from "@/components/ui/CustomDialog";
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -215,21 +215,15 @@ export default function EditProductModal({
   if (!isOpen || !product) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-10 ">
-      <div className="bg-[#06133f] rounded-2xl shadow-2xl w-full max-w-5xl border border-white/10 h-[80vh] overflow-y-auto custom-scroll">
-        {/* HEADER */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h2 className="text-xl font-semibold text-white">Edit Product</h2>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition"
-          >
-            <X className="w-5 h-5 text-gray-300" />
-          </button>
-        </div>
-
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="p-6">
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && handleClose()}
+      title="Edit Product"
+      maxWidth="4xl"
+      maxHeight="80vh"
+      contentClassName="overflow-y-auto custom-scroll"
+    >
+      <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-6">
             {/* Product Image - Full Width */}
             <div>
@@ -258,7 +252,7 @@ export default function EditProductModal({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition text-sm"
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition text-sm cursor-pointer"
                 >
                   {imagePreview ? "Change Image" : "Upload Image"}
                 </button>
@@ -396,14 +390,14 @@ export default function EditProductModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition"
+                className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition cursor-pointer disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-[#6B83FA] hover:bg-[#5a70e8] text-white font-medium rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-[#6B83FA] hover:bg-[#5a70e8] text-white font-medium rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 disabled={isLoading}
               >
                 {isLoading ? "Updating..." : "Update Product"}
@@ -411,8 +405,7 @@ export default function EditProductModal({
             </div>
           </div>
         </form>
-      </div>
-    </div>
+    </CustomDialog>
   );
 }
 

@@ -9,8 +9,9 @@ import {
   JoinRequestItem 
 } from "@/store/communityApi";
 import { toast } from "sonner";
-import { FiX, FiCheck, FiXCircle, FiClock } from "react-icons/fi";
+import { FiCheck, FiXCircle, FiClock } from "react-icons/fi";
 import { getApiBaseUrl } from "@/lib/utils";
+import CustomDialog from "@/components/ui/CustomDialog";
 
 interface JoinRequestsModalProps {
   isOpen: boolean;
@@ -103,28 +104,18 @@ const JoinRequestsModal: React.FC<JoinRequestsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#06133F] border border-white/20 rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              Join Requests
-            </h2>
-            <p className="text-white/60 text-sm mt-1">
-              {communityTitle || communityName}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <FiX className="w-5 h-5 text-white" />
-          </button>
-        </div>
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title="Join Requests"
+      description={communityTitle || communityName}
+      maxWidth="3xl"
+      maxHeight="85vh"
+      contentClassName="flex flex-col"
+    >
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scroll p-6">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto custom-scroll p-6">
           {isLoading ? (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, idx) => (
@@ -210,7 +201,7 @@ const JoinRequestsModal: React.FC<JoinRequestsModalProps> = ({
                           <button
                             onClick={() => handleApprove(request.id)}
                             disabled={isApproving || isRejecting}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           >
                             <FiCheck className="w-4 h-4" />
                             <span>Approve</span>
@@ -218,7 +209,7 @@ const JoinRequestsModal: React.FC<JoinRequestsModalProps> = ({
                           <button
                             onClick={() => handleReject(request.id)}
                             disabled={isApproving || isRejecting}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           >
                             <FiXCircle className="w-4 h-4" />
                             <span>Reject</span>
@@ -233,22 +224,21 @@ const JoinRequestsModal: React.FC<JoinRequestsModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-white/10">
-          <div className="flex items-center justify-between">
-            <p className="text-white/60 text-sm">
-              {pendingRequests.length} pending request{pendingRequests.length !== 1 ? 's' : ''}
-            </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-            >
-              Close
-            </button>
-          </div>
+      {/* Footer */}
+      <div className="p-6 border-t border-white/10">
+        <div className="flex items-center justify-between">
+          <p className="text-white/60 text-sm">
+            {pendingRequests.length} pending request{pendingRequests.length !== 1 ? 's' : ''}
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors cursor-pointer"
+          >
+            Close
+          </button>
         </div>
       </div>
-    </div>
+    </CustomDialog>
   );
 };
 

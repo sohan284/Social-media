@@ -10,12 +10,7 @@ import {
   FiType,
 } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import CustomDialog from "@/components/ui/CustomDialog";
 import {
   type UpdatePostRequest,
   useUpdatePostMutation,
@@ -258,12 +253,15 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
   ] as const;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[#06133FBF] border border-white/10">
-        <DialogHeader>
-          <DialogTitle className="text-white text-2xl">Edit Post</DialogTitle>
-        </DialogHeader>
-        <div className="p-6">
+    <CustomDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      title="Edit Post"
+      maxWidth="4xl"
+      maxHeight="90vh"
+      contentClassName="overflow-y-auto"
+    >
+      <div className="p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
             {/* Post Type Tabs */}
             <div className="flex flex-wrap gap-2 mb-6">
@@ -277,7 +275,7 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
                       setActiveTab(tab.id);
                       setValue("postType", tab.id);
                     }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer ${
                       activeTab === tab.id
                         ? "bg-white/20 text-white border border-white/30"
                         : "bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10"
@@ -327,7 +325,7 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-1 hover:text-red-400 transition-colors"
+                      className="ml-1 hover:text-red-400 transition-colors cursor-pointer"
                     >
                       <IoMdClose size={14} />
                     </button>
@@ -450,7 +448,7 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
                           <button
                             type="button"
                             onClick={() => handleRemoveMedia(media.id)}
-                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-20"
+                            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-20 cursor-pointer"
                           >
                             <IoMdClose size={14} />
                           </button>
@@ -491,14 +489,14 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
               <button
                 type="button"
                 onClick={onClose}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-all duration-300"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-all duration-300 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || isUpdating || !titleValue?.trim()}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium cursor-pointer"
               >
                 <FiSave size={18} />
                 {isSubmitting || isUpdating
@@ -508,8 +506,7 @@ const EditPost: React.FC<EditPostProps> = ({ post, isOpen, onClose, onSuccess })
             </div>
           </form>
         </div>
-      </DialogContent>
-    </Dialog>
+    </CustomDialog>
   );
 };
 

@@ -1,27 +1,31 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useGetAllPostsQuery, useDeletePostMutation, PostItem } from "@/store/postApi";
+import { useGetAllPostsQuery, useDeletePostMutation, useApprovePostMutation, PostItem } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { getApiBaseUrl } from "@/lib/utils";
 import Image from "next/image";
-import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, ChevronLeft, ChevronRight, CheckCircle, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import PostDetailsModal from "@/components/admin/PostDetailsModal";
 
-const ITEMS_PER_PAGE = 10;
-
 export default function AllPostsTable() {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = ITEMS_PER_PAGE;
+  const [pageSize, setPageSize] = useState(10);
   
   const { data, isLoading, isError, refetch } = useGetAllPostsQuery({
     page: currentPage,
     limit: pageSize,
   });
   const [deletePost] = useDeletePostMutation();
+  const [approvePost, { isLoading: isApproving }] = useApprovePostMutation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<{
+    id: number | string;
+    title: string;
+  } | null>(null);
+  const [postToApprove, setPostToApprove] = useState<{
     id: number | string;
     title: string;
   } | null>(null);
@@ -116,8 +120,39 @@ export default function AllPostsTable() {
     }
   };
 
+  const handleApproveClick = (post: PostItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!post.id) return;
+    const postTitle = post.title || "Post";
+    setPostToApprove({ id: post.id, title: postTitle });
+    setApproveDialogOpen(true);
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!postToApprove) return;
+    
+    try {
+      await approvePost({ postId: postToApprove.id }).unwrap();
+      toast.success("Post approved and reposted successfully!");
+      setApproveDialogOpen(false);
+      setPostToApprove(null);
+      refetch();
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to approve post";
+      toast.error("Failed to approve post", { description: errorMessage });
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setPageSize(newLimit);
+    setCurrentPage(1); // Reset to first page when limit changes
   };
 
   const handlePreviousPage = () => {
@@ -176,7 +211,7 @@ export default function AllPostsTable() {
   const columns: Column<PostRow>[] = [
     {
       header: "SL",
-      accessor: (row, index) => <span>{index + 1}.</span>,
+      accessor: (row, index) => <span>{(currentPage - 1) * pageSize + index + 1}.</span>,
     },
     {
       header: "Post Head",
@@ -249,26 +284,37 @@ export default function AllPostsTable() {
     },
     {
       header: "Actions",
-      accessor: (row) => (
-        <div className="flex items-center justify-center space-x-3">
-          {/* <button
-            className="p-2 cursor-pointer text-blue-400 rounded-lg bg-white/10 hover:bg-white/20 transition"
-            title="Edit post"
-          >
-            <Edit className="w-4 h-4" />
-          </button> */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteClick(row);
-            }}
-            className="p-2 cursor-pointer text-red-500 rounded-lg bg-white/10 hover:bg-white/20 transition"
-            title="Delete post"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
+      accessor: (row) => {
+        const postStatus = (row as { status?: string }).status?.toLowerCase() || "approved";
+        const isPending = postStatus === "pending";
+        const isRejected = postStatus === "rejected";
+        
+        return (
+          <div className="flex items-center justify-center space-x-3">
+            {/* Show approve button for pending or rejected posts */}
+            {(isPending || isRejected) && (
+              <button
+                onClick={(e) => handleApproveClick(row, e)}
+                disabled={isApproving}
+                className="p-2 cursor-pointer text-green-500 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Approve and Repost"
+              >
+                <CheckCircle className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteClick(row);
+              }}
+              className="p-2 cursor-pointer text-red-500 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              title="Delete post"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      },
       className: "text-center",
     },
   ];
@@ -302,13 +348,33 @@ export default function AllPostsTable() {
           errorMessage="Failed to load posts. Please try again later."
           disablePagination={true}
           onRowClick={handleRowClick}
+          maxHeight="80vh"
+          enableScroll={pageSize >= 20}
         />
 
         {/* Server-side Pagination Controls */}
         {totalCount > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-white/5">
-            <div className="text-sm text-white/60">
-              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-white/60">
+                Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+              </div>
+              {/* Limit Selector */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handleLimitChange(Number(e.target.value))}
+                    className="appearance-none bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer pr-8"
+                  >
+                    <option value={10} className="bg-[#1F2149] text-white">10</option>
+                    <option value={20} className="bg-[#1F2149] text-white">20</option>
+                    <option value={50} className="bg-[#1F2149] text-white">50</option>
+                    <option value={100} className="bg-[#1F2149] text-white">100</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
+                </div>
+              </div>
             </div>
             
             <div className="flex items-center gap-2">
@@ -385,6 +451,21 @@ export default function AllPostsTable() {
         onCancel={() => {
           setDeleteDialogOpen(false);
           setPostToDelete(null);
+        }}
+      />
+
+      {/* Approve Confirmation Dialog */}
+      <ConfirmDialog
+        open={approveDialogOpen}
+        title="Approve Post?"
+        description={`Are you sure you want to approve and repost "${postToApprove?.title}"?`}
+        confirmLabel="Approve"
+        cancelLabel="Cancel"
+        variant="default"
+        onConfirm={handleApproveConfirm}
+        onCancel={() => {
+          setApproveDialogOpen(false);
+          setPostToApprove(null);
         }}
       />
 
