@@ -12,7 +12,7 @@ import {
 import { ChevronLeft, ChevronRight, AlertCircle, Inbox } from "lucide-react";
 
 export interface Column<T> {
-  header: string;
+  header: string | ((row: T) => string);
   accessor: (row: T, index: number) => React.ReactNode;
   className?: string;
 }
@@ -171,11 +171,16 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
           <Table className="min-w-max">
             <TableHeader className={enableScroll ? 'sticky top-0 z-10 bg-black/30 backdrop-blur-sm' : ''}>
               <TableRow className={`bg-white/10 text-left ${headerClassName}`}>
-                {columns.map((column, index) => (
-                  <TableHead key={index} className={`px-4 text-white py-3 ${column.className || ""}`}>
-                    {column.header}
-                  </TableHead>
-                ))}
+                {columns.map((column, index) => {
+                  const headerContent = typeof column.header === 'function' 
+                    ? column.header(data[0] || {} as T)
+                    : column.header;
+                  return (
+                    <TableHead key={index} className={`px-4 text-white py-3 ${column.className || ""}`}>
+                      {headerContent}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>

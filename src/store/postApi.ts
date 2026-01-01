@@ -586,7 +586,12 @@ export const postApi = baseApi.injectEndpoints({
 
 export interface PostReportItem {
   id?: number | string;
-  reporter?: number | string;
+  reporter?: number | string | {
+    id?: number | string;
+    username?: string;
+    display_name?: string;
+    avatar?: string;
+  };
   reporter_name?: string;
   reporter_id?: number | string;
   post?: number | string;

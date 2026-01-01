@@ -131,7 +131,7 @@ export default function ReportedPostsTable() {
 
   const getReporterName = (report: UnifiedReportItem) => {
     if (report.report_type === 'user' && report.reporter) {
-      if (typeof report.reporter === 'object') {
+      if (typeof report.reporter === 'object' && report.reporter !== null && !Array.isArray(report.reporter)) {
         return report.reporter.username || report.reporter.display_name || "N/A";
       }
     }
@@ -172,7 +172,7 @@ export default function ReportedPostsTable() {
       ),
     },
     {
-      header: row => row.report_type === 'post' ? "Post Title" : "Reported User",
+      header: (row: ReportRow) => row.report_type === 'post' ? "Post Title" : "Reported User",
       accessor: (row) => {
         if (row.report_type === 'post') {
           return (
@@ -205,7 +205,7 @@ export default function ReportedPostsTable() {
       ),
     },
     {
-      header: row => row.report_type === 'post' ? "Post Author" : "Reported User",
+      header: (row: ReportRow) => row.report_type === 'post' ? "Post Author" : "Reported User",
       accessor: (row) => {
         if (row.report_type === 'post') {
           return (
