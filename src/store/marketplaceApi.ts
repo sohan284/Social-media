@@ -44,6 +44,7 @@ export interface MarketplaceItem {
   condition?: string;
   location?: string;
   link?: string;
+  status?: "draft" | "published" | "sold" | "unpublished";
   [key: string]: unknown;
 }
 
@@ -275,6 +276,18 @@ export const marketplaceApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ["MarketplaceItems"],
     }),
+    patchProductStatus: builder.mutation<CreateProductResponse, { id: number | string; status: "draft" | "published" }>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("status", data.status);
+        return {
+          url: `/api/marketplace/items/${data.id}/`,
+          method: "PATCH",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["MarketplaceItems"],
+    }),
   }),
 });
 
@@ -291,5 +304,6 @@ export const {
   useGetProductsQuery,
   useDeleteProductMutation,
   useUpdateProductMutation,
+  usePatchProductStatusMutation,
 } = marketplaceApi;
 

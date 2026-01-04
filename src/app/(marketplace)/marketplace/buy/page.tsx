@@ -79,11 +79,15 @@ const BuyPage = () => {
         );
     }, [itemsResponse]);
 
-    // Filter items by category and subcategory
+    // Filter items by category, subcategory, and status (only published)
     const items = useMemo(() => {
         if (!allItems.length) return [];
         
-        let filtered = allItems;
+        // First filter by status - only show published items
+        let filtered = allItems.filter((item) => {
+            const status = (item as MarketplaceItem & { status?: string }).status;
+            return status === "published";
+        });
 
         // Filter by category if selected
         if (selectedCategoryName) {

@@ -20,7 +20,7 @@ interface User {
   avatar: string;
   username: string;
   email?: string;
-  isOnline: boolean;
+  isOnline?: boolean;
   lastSeen?: string;
 }
 

@@ -262,6 +262,13 @@ export const authApi = baseApi.injectEndpoints({
       }),
       providesTags: ["UserProfile"],
     }),
+    getUserProfileById: builder.query<UserProfileResponse, number | string>({
+      query: (userId) => ({
+        url: `/auth/user-profiles/${userId}/`,
+        method: "GET",
+      }),
+      providesTags: ["UserProfile"],
+    }),
     updateUserProfile: builder.mutation<UserProfileResponse, UpdateUserProfileRequest>({
       query: (data) => {
         const hasFileUploads = Boolean(data.avatar || data.cover_photo);
@@ -322,6 +329,13 @@ export const authApi = baseApi.injectEndpoints({
     getUsers: builder.query<GetUsersResponse, void>({
       query: () => ({
         url: "/auth/admin/users/",
+        method: "GET",
+      }),
+      providesTags: ["UserProfile"],
+    }),
+    getPublicUsers: builder.query<GetUsersResponse, void>({
+      query: () => ({
+        url: "/auth/users/",
         method: "GET",
       }),
       providesTags: ["UserProfile"],
@@ -410,13 +424,19 @@ export const {
   useUpdateUserProfileMutation,
   useGetCategoriesQuery,
   useGetUsersQuery,
+  useGetPublicUsersQuery,
   useSendPasswordResetOtpMutation,
   useVerifyPasswordResetOtpMutation,
   useResetPasswordMutation,
 } = authApi;
 
-export const useGetCurrentUserProfileQuery = (
+export const   useGetCurrentUserProfileQuery = (
   arg?: void,
   options?: Parameters<typeof authApi.endpoints.getCurrentUserProfile.useQuery>[1]
 ) => authApi.endpoints.getCurrentUserProfile.useQuery(arg, options);
+
+export const useGetUserProfileByIdQuery = (
+  userId: number | string,
+  options?: Parameters<typeof authApi.endpoints.getUserProfileById.useQuery>[1]
+) => authApi.endpoints.getUserProfileById.useQuery(userId, options);
 

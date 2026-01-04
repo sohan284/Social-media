@@ -5,6 +5,7 @@ import SidebarNavLink from "../../components/Shared/SidebarNavLink/SidebarNavLin
 import bg from "../../public/main-bg.jpg";
 import Navbar from "../Shared/Navbar/Navbar";
 import { SearchProvider } from "@/contexts/SearchContext";
+import { MessageProvider } from "@/contexts/MessageContext";
 
 export default function HomeLayoutTwo({
   children,
@@ -115,10 +116,12 @@ export default function HomeLayoutTwo({
         `}
       >
         <SearchProvider>
-          <div className=" mx-auto mt-16">
-            <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
-            {children}
-          </div>
+          <MessageProvider>
+            <div className=" mx-auto mt-16">
+              <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
+              {children}
+            </div>
+          </MessageProvider>
         </SearchProvider>
       </main>
     </div>

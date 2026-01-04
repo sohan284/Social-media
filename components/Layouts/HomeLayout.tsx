@@ -7,6 +7,7 @@ import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
 import { usePathname } from "next/navigation";
 import RightSidebar from "../Shared/SidebarNavLink/RightSidebar";
 import { SearchProvider } from "@/contexts/SearchContext";
+import { MessageProvider } from "@/contexts/MessageContext";
 
 export default function HomeLayout({
   children,
@@ -21,7 +22,8 @@ export default function HomeLayout({
 
   return (
     <SearchProvider>
-      <div className="flex flex-col">
+      <MessageProvider>
+        <div className="flex flex-col">
         <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
 
       <div className="flex flex-1">
@@ -87,7 +89,8 @@ export default function HomeLayout({
           </aside>
         )}
       </div>
-    </div>
+      </div>
+      </MessageProvider>
     </SearchProvider>
   );
 }

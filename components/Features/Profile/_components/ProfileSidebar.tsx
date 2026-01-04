@@ -35,16 +35,12 @@ const ProfileSidebar = () => {
                             <p className='text-xs font-bold text-white'>{profile?.posts_count || 0}</p>
                         </div>
                         <div>
-                            <p className='text-xs text-gray-400'>Total followers</p>
-                            <p className='text-xs font-bold text-white'>{profile?.followers_count || 0}</p>
+                            <p className='text-xs text-gray-400'>Following</p>
+                            <p className='text-xs font-bold text-white'>{profile?.following_count || 0}</p>
                         </div>
                         <div>
-                            <p className='text-xs text-gray-400'>Share</p>
-                            <p className='text-xs font-bold text-white'>{profile?.shares_count || 0}</p>
-                        </div>
-                        <div>
-                            <p className='text-xs text-gray-400'>Total Contributors</p>
-                            <p className='text-xs font-bold text-white'>{profile?.contributors_count || 0}</p>
+                            <p className='text-xs text-gray-400'>Communities</p>
+                            <p className='text-xs font-bold text-white'>{profile?.communities_count || 0}</p>
                         </div>
                     </div>
                 </div>

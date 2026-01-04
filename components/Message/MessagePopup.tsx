@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AiOutlineClose, AiOutlineSearch, AiOutlinePlus } from 'react-icons/ai';
 import ConversationView from './ConversationView';
 import RoomConversationView from './RoomConversationView';
@@ -11,6 +11,7 @@ import ManageRoomModal from './ManageRoomModal';
 import { useGetChatRoomsQuery, useDeleteChatRoomMutation } from '@/store/chatApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { toast } from 'sonner';
+import { useMessage } from '@/contexts/MessageContext';
 
 interface MessagePopupProps {
   isOpen: boolean;
@@ -22,7 +23,7 @@ interface User {
   name: string;
   avatar: string;
   username: string;
-  isOnline: boolean;
+  isOnline?: boolean;
   lastSeen?: string;
   timestamp?: string;
   roomId?: number | string;
@@ -30,6 +31,7 @@ interface User {
 }
 
 const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
+  const { selectedUser: contextSelectedUser, selectUser, closeMessagePopup } = useMessage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<"users" | "rooms">("users");
@@ -42,6 +44,13 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
   // Initialize WebSocket connection when popup is open
   useChatWebSocket({ enabled: isOpen });
 
+  // Sync context selected user with local state
+  useEffect(() => {
+    if (contextSelectedUser) {
+      setSelectedUser(contextSelectedUser);
+    }
+  }, [contextSelectedUser]);
+
   const unreadCount = useMemo(() => {
     if (!roomsResponse) return 0;
     const rooms = roomsResponse.data ?? roomsResponse.results ?? roomsResponse.rooms ?? [];
@@ -50,10 +59,18 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
 
   const handleUserSelect = (user: User) => {
     setSelectedUser(user);
+    selectUser(user);
   };
 
   const handleBackToList = () => {
     setSelectedUser(null);
+    selectUser(null);
+  };
+
+  const handleClose = () => {
+    setSelectedUser(null);
+    closeMessagePopup();
+    onClose();
   };
 
   const handleManageRoom = (roomId: number | string) => {
@@ -119,7 +136,7 @@ const MessagePopup = ({ isOpen, onClose }: MessagePopupProps) => {
                       </button>
                     )}
                     <button 
-                      onClick={onClose}
+                      onClick={handleClose}
                       className="p-1.5 hover:bg-gray-500 rounded-full transition-colors"
                       title="Close"
                     >

@@ -17,6 +17,7 @@ import { IoPersonOutline } from "react-icons/io5";
 import { useGetNotificationsQuery } from "@/store/notificationApi";
 import { useGetConversationsListQuery, useGetChatRoomsQuery } from "@/store/chatApi";
 import { useSearch } from "@/contexts/SearchContext";
+import { useMessage } from "@/contexts/MessageContext";
 
 // Fallback hook for when SearchContext is not available
 const useSearchSafe = () => {
@@ -35,9 +36,9 @@ interface NavbarProps {
 const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const [activeButton, setActiveButton] = useState("login");
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
-  const [isMessagePopupOpen, setIsMessagePopupOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { searchQuery, setSearchQuery } = useSearchSafe();
+  const { isOpen: isMessagePopupOpen, openMessagePopup, closeMessagePopup } = useMessage();
 
   const router = useRouter();
   const {
@@ -162,7 +163,11 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             
             <button 
               onClick={() => {
-                setIsMessagePopupOpen(!isMessagePopupOpen);
+                if (isMessagePopupOpen) {
+                  closeMessagePopup();
+                } else {
+                  openMessagePopup();
+                }
                 setIsNotificationOpen(false);
               }}
               className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
@@ -179,7 +184,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
               <button
                 onClick={() => {
                   setIsNotificationOpen(!isNotificationOpen);
-                  setIsMessagePopupOpen(false);
+                  closeMessagePopup();
                 }}
                 className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
               >
@@ -266,7 +271,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
       {/* Message Popup */}
       <MessagePopup 
         isOpen={isMessagePopupOpen} 
-        onClose={() => setIsMessagePopupOpen(false)} 
+        onClose={closeMessagePopup} 
       />
     </nav>
   );
