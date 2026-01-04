@@ -1,7 +1,9 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { FaPhone, FaEnvelope, FaTwitter, FaFacebook, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { useSubmitContactMutation } from "@/store/authApi";
+import { toast } from "sonner";
 
 type Inputs = {
   firstName: string;
@@ -12,13 +14,39 @@ type Inputs = {
 }
 
 export default function ContactUs() {
+  const [submitContact, { isLoading: isSubmitting }] = useSubmitContactMutation();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<Inputs>()
 
-  const onSubmit = (data: Inputs) => console.log(data)
+  const onSubmit = async (data: Inputs) => {
+    try {
+      await submitContact({
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        subject: data.subject,
+        message: data.message,
+      }).unwrap();
+      
+      toast.success("Thank you for contacting us! We'll get back to you soon.");
+      setIsSubmitted(true);
+      reset();
+      
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+      }, 5000);
+    } catch (error) {
+      console.error("Failed to submit contact:", error);
+      toast.error("Failed to submit your message. Please try again.");
+    }
+  }
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
@@ -100,9 +128,14 @@ export default function ContactUs() {
             <div className="flex justify-center">
               <button
                 type="submit"
-                className="px-8 py-3 bg-purple-600 hover:bg-purple-500 rounded-full text-white font-medium transition-all hover:shadow-lg hover:shadow-purple-500/25"
+                disabled={isSubmitting || isSubmitted}
+                className={`px-8 py-3 rounded-full text-white font-medium transition-all hover:shadow-lg hover:shadow-purple-500/25 ${
+                  isSubmitting || isSubmitted
+                    ? "bg-purple-400 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-500"
+                }`}
               >
-                Send Message
+                {isSubmitting ? "Sending..." : isSubmitted ? "Message Sent!" : "Send Message"}
               </button>
             </div>
           </form>

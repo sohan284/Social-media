@@ -5,7 +5,7 @@ export default function UserManagement() {
     <div className="space-y-10">
       {/* HEADER */}
       <div>
-        <h1 className="text-4xl font-semibold">User Management</h1>
+        <h1 className="text-4xl font-semibold">All Users</h1>
       </div>
 
       {/* TABLE */}

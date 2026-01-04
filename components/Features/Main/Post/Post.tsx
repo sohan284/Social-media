@@ -963,21 +963,20 @@ const Post = ({ post, profile }: PostProps) => {
     <div className="border border-slate-600 md:p-6 p-4 w-full rounded">
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center gap-[7px]">
-          {post?.avatar || profile?.avatar ? (
+          {post?.avatar && typeof post.avatar === 'string' ? (
             <Image
-              src={typeof post?.avatar === 'string' && post.avatar.startsWith('http') 
+              src={post.avatar.startsWith('http') 
                 ? post.avatar 
-                : typeof post?.avatar === 'string' 
-                  ? `${getApiBaseUrl()}${post.avatar.startsWith('/') ? post.avatar.slice(1) : post.avatar}`
-                  : profile?.avatar || '/profile.jpg'}
-              alt={post?.author?.name || post?.user_name || "Author Avatar"}
-              width={22}
-              height={22}
+                : `${getApiBaseUrl()}${post.avatar.startsWith('/') ? post.avatar.slice(1) : post.avatar}`}
+              alt={post?.author?.name || post?.user_name || post?.username || "Author Avatar"}
+              width={32}
+              height={32}
               className="h-[30px] w-[30px] md:h-[32px] md:w-[32px] rounded-full object-cover"
+              unoptimized
             />
           ) : (
-            <div className="h-[30px] w-[30px] md:h-[32px] md:w-[32px] rounded-full bg-slate-300 flex items-center justify-center text-slate-700 text-sm font-medium">
-              {(post?.user_name || post?.username || "A").charAt(0).toUpperCase()}
+            <div className="h-[30px] w-[30px] md:h-[32px] md:w-[32px] rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
+              {(post?.user_name || post?.username || post?.author?.username || "A").charAt(0).toUpperCase()}
             </div>
           )}
           <div className="flex flex-col sm:flex-row items-center md:gap-3.5 text-sm text-white">

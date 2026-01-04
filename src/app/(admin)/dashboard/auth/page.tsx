@@ -2,35 +2,63 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLoginMutation } from "@/store/authApi";
+import { useForm } from "react-hook-form";
+import { IoArrowBack } from "react-icons/io5";
+import { 
+  useLoginMutation,
+  useSendPasswordResetOtpMutation,
+  useVerifyPasswordResetOtpMutation,
+  useResetPasswordMutation
+} from "@/store/authApi";
 import { storeAuthTokens, getRoleFromToken } from "@/lib/auth";
 import { store } from "@/store/store";
 import { baseApi } from "@/store/baseApi";
 import { toast } from "sonner";
 
+type LoginForm = {
+  email: string;
+  password: string;
+};
+
+type ResetStep1Form = {
+  email: string;
+};
+
+type ResetStep2Form = {
+  otp: string;
+};
+
+type ResetStep3Form = {
+  newPassword: string;
+  confirmPassword: string;
+};
+
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [currentMode, setCurrentMode] = useState<'login' | 'reset-step1' | 'reset-step2' | 'reset-step3'>('login');
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [login] = useLoginMutation();
+  
+  const [login, { isLoading: isLoggingIn, error: loginError }] = useLoginMutation();
+  const [sendPasswordResetOtp, { isLoading: isSendingOtp }] = useSendPasswordResetOtpMutation();
+  const [verifyPasswordResetOtp, { isLoading: isVerifyingOtp }] = useVerifyPasswordResetOtpMutation();
+  const [resetPassword, { isLoading: isResettingPassword }] = useResetPasswordMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loginForm = useForm<LoginForm>();
+  const resetStep1Form = useForm<ResetStep1Form>();
+  const resetStep2Form = useForm<ResetStep2Form>();
+  const resetStep3Form = useForm<ResetStep3Form>();
+
+  const onLoginSubmit = async (data: LoginForm) => {
     setError("");
     setIsLoading(true);
 
     try {
-      if (!username.trim() || !password.trim()) {
-        setError("Please enter both username and password");
-        setIsLoading(false);
-        return;
-      }
-
       const response = await login({
-        email_or_username: username.trim(),
-        password: password,
+        email_or_username: data.email.trim(),
+        password: data.password,
       }).unwrap();
 
       console.log("Login response:", response);
@@ -157,72 +185,343 @@ export default function AdminLoginPage() {
     }
   };
 
+  const onResetStep1Submit = async (data: ResetStep1Form) => {
+    try {
+      await sendPasswordResetOtp({ email: data.email }).unwrap();
+      setResetEmail(data.email);
+      setCurrentMode('reset-step2');
+      toast.success('OTP sent', {
+        description: 'Please check your email for the verification code.',
+      });
+    } catch (error) {
+      console.error("Failed to send OTP:", error);
+      toast.error('Failed to send OTP. Please try again.');
+    }
+  };
+
+  const onResetStep2Submit = async (data: ResetStep2Form) => {
+    try {
+      await verifyPasswordResetOtp({ email: resetEmail, code: data.otp }).unwrap();
+      setResetOtp(data.otp);
+      setCurrentMode('reset-step3');
+      toast.success('OTP verified');
+    } catch (error) {
+      console.error("Failed to verify OTP:", error);
+      toast.error('Invalid or expired OTP. Please try again.');
+    }
+  };
+
+  const onResetStep3Submit = async (data: ResetStep3Form) => {
+    if (data.newPassword !== data.confirmPassword) {
+      resetStep3Form.setError("confirmPassword", {
+        type: "manual",
+        message: "Passwords do not match"
+      });
+      return;
+    }
+
+    try {
+      await resetPassword({
+        email: resetEmail,
+        code: resetOtp,
+        new_password: data.newPassword,
+        confirm_password: data.confirmPassword,
+      }).unwrap();
+      
+      toast.success('Password reset successfully', {
+        description: 'You can now login with your new password.',
+      });
+      
+      // Reset forms and go back to login
+      setCurrentMode('login');
+      resetStep1Form.reset();
+      resetStep2Form.reset();
+      resetStep3Form.reset();
+      setResetEmail("");
+      setResetOtp("");
+    } catch (error) {
+      console.error("Failed to reset password:", error);
+      toast.error('Failed to reset password. Please try again.');
+    }
+  };
+
+  const goBack = () => {
+    if (currentMode === 'reset-step3') {
+      setCurrentMode('reset-step2');
+      resetStep3Form.reset();
+    } else if (currentMode === 'reset-step2') {
+      setCurrentMode('reset-step1');
+      resetStep2Form.reset();
+      setResetOtp("");
+    } else if (currentMode === 'reset-step1') {
+      setCurrentMode('login');
+      resetStep1Form.reset();
+      setResetEmail("");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#1F2149] text-white px-4">
-        {/* TITLE */}
-        <h1 className="text-center text-2xl mb-8">
-          Admin Login
-        </h1>
-
       <div className="bg-[#1F2149] border-[2px] border-[#919191] rounded-2xl py-8 px-4 sm:px-10 max-w-2xl w-full text-white shadow-xl">
-
-        {/* SUB TEXT */}
-        <p className="text-center text-gray-300 mb-10">
-          Please fill in your unique admin login details below
-        </p>
-
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="space-y-6 flex flex-col ">
-
-          {/* Username */}
-          <div>
-            <label className="block mb-2 text-sm">
-              Username
-            </label>
-            <input
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
-              placeholder="Enter your username"
-            />
+        {/* Back Button - only show when not in login mode */}
+        {currentMode !== 'login' && (
+          <div className="flex justify-start mb-6">
+            <button
+              onClick={goBack}
+              className="text-white hover:text-gray-300 transition"
+            >
+              <IoArrowBack className="w-6 h-6" />
+            </button>
           </div>
+        )}
 
-          {/* Password */}
-          <div>
-            <label className="block mb-2 text-sm">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
-            />
+        {/* Login Mode */}
+        {currentMode === 'login' && (
+          <>
+            <h1 className="text-center text-2xl mb-4">
+              Admin Login
+            </h1>
+            <p className="text-center text-gray-300 mb-10">
+              Please fill in your unique admin login details below
+            </p>
 
-            <div className="text-right mt-1">
-              <a href="#" className="text-red-400 text-xs hover:underline">
-                Forgot Password?
-              </a>
-            </div>
-          </div>
+            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6 flex flex-col">
+              {/* Username/Email */}
+              <div>
+                <label className="block mb-2 text-sm">
+                  Username or Email
+                </label>
+                <input
+                  {...loginForm.register("email", {
+                    required: "Username or Email is required",
+                  })}
+                  type="text"
+                  className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Enter your username or email"
+                />
+                {loginForm.formState.errors.email && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {loginForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
 
-          {/* ERROR MESSAGE */}
-          {error && (
-            <p className="text-red-400 text-center text-sm">{error}</p>
-          )}
+              {/* Password */}
+              <div>
+                <label className="block mb-2 text-sm">
+                  Password
+                </label>
+                <input
+                  {...loginForm.register("password", { required: "Password is required" })}
+                  type="password"
+                  className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Enter your password"
+                />
+                {loginForm.formState.errors.password && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {loginForm.formState.errors.password.message}
+                  </p>
+                )}
 
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="max-w-[280px] w-full self-center bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-3 rounded-full font-medium transition-all"
-          >
-            {isLoading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+                <div className="text-right mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentMode('reset-step1')}
+                    className="text-red-400 text-xs hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              </div>
+
+              {/* ERROR MESSAGE */}
+              {(error || loginError) && (
+                <p className="text-red-400 text-center text-sm">
+                  {error || "Invalid credentials. Please try again."}
+                </p>
+              )}
+
+              {/* BUTTON */}
+              <button
+                type="submit"
+                disabled={isLoading || isLoggingIn}
+                className="max-w-[280px] w-full self-center bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-3 rounded-full font-medium transition-all"
+              >
+                {isLoading || isLoggingIn ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* Password Reset Step 1 - Email Input */}
+        {currentMode === 'reset-step1' && (
+          <>
+            <h1 className="text-center text-2xl mb-4">Reset your Password</h1>
+            <p className="text-center text-gray-300 mb-10">
+              Enter your email address and we&apos;ll send you a verification code to reset your password.
+            </p>
+
+            <form onSubmit={resetStep1Form.handleSubmit(onResetStep1Submit)} className="space-y-6 flex flex-col">
+              <div>
+                <label className="block mb-2 text-sm">
+                  Email Address
+                </label>
+                <input
+                  {...resetStep1Form.register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address"
+                    }
+                  })}
+                  type="email"
+                  className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Enter your email address"
+                />
+                {resetStep1Form.formState.errors.email && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {resetStep1Form.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSendingOtp}
+                className="max-w-[280px] w-full self-center bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-3 rounded-full font-medium transition-all"
+              >
+                {isSendingOtp ? "Sending..." : "Send OTP"}
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* Password Reset Step 2 - OTP Verification */}
+        {currentMode === 'reset-step2' && (
+          <>
+            <h1 className="text-center text-2xl mb-4">Verify OTP</h1>
+            <p className="text-center text-gray-300 mb-10">
+              Enter the verification code sent to <span className="text-green-400">{resetEmail}</span>
+            </p>
+
+            <form onSubmit={resetStep2Form.handleSubmit(onResetStep2Submit)} className="space-y-6 flex flex-col">
+              <div>
+                <label className="block mb-2 text-sm">
+                  Verification Code
+                </label>
+                <input
+                  {...resetStep2Form.register("otp", {
+                    required: "OTP is required",
+                    pattern: {
+                      value: /^\d{6}$/,
+                      message: "OTP must be 6 digits"
+                    }
+                  })}
+                  type="text"
+                  maxLength={6}
+                  className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400 text-center tracking-widest text-lg"
+                  placeholder="Enter 6-digit OTP"
+                />
+                {resetStep2Form.formState.errors.otp && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {resetStep2Form.formState.errors.otp.message}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await sendPasswordResetOtp({ email: resetEmail }).unwrap();
+                    toast.success('OTP resent', {
+                      description: 'Please check your email for the new verification code.',
+                    });
+                  } catch {
+                    toast.error('Failed to resend OTP');
+                  }
+                }}
+                className="text-sm text-green-400 hover:underline text-center"
+              >
+                Resend OTP
+              </button>
+
+              <button
+                type="submit"
+                disabled={isVerifyingOtp}
+                className="max-w-[280px] w-full self-center bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-3 rounded-full font-medium transition-all"
+              >
+                {isVerifyingOtp ? "Verifying..." : "Verify OTP"}
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* Password Reset Step 3 - New Password */}
+        {currentMode === 'reset-step3' && (
+          <>
+            <h1 className="text-center text-2xl mb-4">Reset your Password</h1>
+            <p className="text-center text-gray-300 mb-10">
+              Enter your new password below.
+            </p>
+
+            <form onSubmit={resetStep3Form.handleSubmit(onResetStep3Submit)} className="space-y-6 flex flex-col">
+              <div>
+                <label className="block mb-2 text-sm">
+                  New Password
+                </label>
+                <input
+                  {...resetStep3Form.register("newPassword", {
+                    required: "New password is required",
+                    minLength: {
+                      value: 8,
+                      message: "Password must be at least 8 characters",
+                    },
+                  })}
+                  type="password"
+                  className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Enter new password"
+                />
+                {resetStep3Form.formState.errors.newPassword && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {resetStep3Form.formState.errors.newPassword.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block mb-2 text-sm">
+                  Confirm Password
+                </label>
+                <input
+                  {...resetStep3Form.register("confirmPassword", {
+                    required: "Please confirm your password",
+                  })}
+                  type="password"
+                  className="w-full px-4 py-3 rounded-full bg-transparent border border-gray-400 text-white outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder="Confirm new password"
+                />
+                {resetStep3Form.formState.errors.confirmPassword && (
+                  <p className="text-red-400 text-xs mt-1">
+                    {resetStep3Form.formState.errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+
+              <p className="text-sm text-gray-300 text-center">
+                Resetting your password will log you out on all devices
+              </p>
+
+              <button
+                type="submit"
+                disabled={isResettingPassword}
+                className="max-w-[280px] w-full self-center bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white py-3 rounded-full font-medium transition-all"
+              >
+                {isResettingPassword ? "Resetting..." : "Reset Password"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

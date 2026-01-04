@@ -15,6 +15,7 @@ import {
   Package,
   Menu,
   Flag,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -28,10 +29,11 @@ const menu = [
   { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
   { name: "Rejected Posts", icon: FileText, path: "/dashboard/rejected-posts" },
   { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
-  { name: "User Management", icon: Users, path: "/dashboard/user-management" },
+  { name: "Users", icon: Users, path: "/dashboard/user-management" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
   { name: "All Products", icon: Package, path: "/dashboard/all-products" },
+  { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -300,7 +302,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white/20 backdrop-blur-sm rounded-lg shadow-lg border border-gray-400 py-2 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-black/30 backdrop-blur-sm rounded-lg shadow-lg border border-gray-400 py-2 z-50">
                   <button
                     onClick={handleHome}
                     className="w-full px-4 py-2 text-left text-gray-100 hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
