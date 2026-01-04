@@ -35,6 +35,12 @@ export interface SetCredentialsResponse {
     access: string;
     refresh: string;
   };
+  user?: {
+    id: number;
+    email: string;
+    username: string;
+    role: string;
+  };
   // Add other response fields as needed based on your API
 }
 
@@ -161,6 +167,38 @@ export interface ResetPasswordResponse {
   message?: string;
   success?: boolean;
   error?: string;
+}
+
+export interface ContactRequest {
+  first_name: string;
+  last_name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export interface ContactResponse {
+  id?: number;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  subject?: string;
+  message?: string;
+  created_at?: string;
+  is_read?: boolean;
+  read_at?: string | null;
+  read_by?: number | null;
+  read_by_name?: string | null;
+}
+
+export interface GetContactsResponse {
+  data?: ContactResponse[];
+  results?: {
+    data?: ContactResponse[];
+  };
+  success?: boolean;
+  message?: string;
+  [key: string]: unknown;
 }
 
 export const authApi = baseApi.injectEndpoints({
@@ -328,6 +366,36 @@ export const authApi = baseApi.injectEndpoints({
         };
       },
     }),
+    submitContact: builder.mutation<{ success?: boolean; message?: string; data?: ContactResponse }, ContactRequest>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("first_name", data.first_name);
+        formData.append("last_name", data.last_name);
+        formData.append("email", data.email);
+        formData.append("subject", data.subject);
+        formData.append("message", data.message);
+        
+        return {
+          url: "/auth/contacts/",
+          method: "POST",
+          body: formData,
+        };
+      },
+    }),
+    getContacts: builder.query<GetContactsResponse, void>({
+      query: () => ({
+        url: "/auth/contacts/",
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'Contacts' }],
+    }),
+    markContactRead: builder.mutation<{ success?: boolean; message?: string; data?: ContactResponse }, { contactId: number | string }>({
+      query: ({ contactId }) => ({
+        url: `/auth/contacts/${contactId}/mark_read/`,
+        method: "PATCH",
+      }),
+      invalidatesTags: () => [{ type: 'Contacts' }],
+    }),
   }),
 });
 
@@ -336,6 +404,9 @@ export const {
   useVerifyOtpMutation,
   useSetCredentialsMutation,
   useLoginMutation,
+  useSubmitContactMutation,
+  useGetContactsQuery,
+  useMarkContactReadMutation,
   useUpdateUserProfileMutation,
   useGetCategoriesQuery,
   useGetUsersQuery,

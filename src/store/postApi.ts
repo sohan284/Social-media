@@ -136,6 +136,28 @@ export interface GetFollowersResponse {
   [key: string]: unknown;
 }
 
+export interface UserSuggestion {
+  id?: number | string;
+  username?: string;
+  avatar?: string | null;
+  about?: string | null;
+  display_name?: string;
+  followers_count?: number;
+  following_count?: number;
+  posts_count?: number;
+  is_following?: boolean;
+  follow_id?: number | string | null;
+  [key: string]: unknown;
+}
+
+export interface GetSuggestionsResponse {
+  data?: UserSuggestion[];
+  results?: {
+    data?: UserSuggestion[];
+  };
+  [key: string]: unknown;
+}
+
 export const postApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createPost: builder.mutation<CreatePostResponse, CreatePostRequest>({
@@ -528,6 +550,13 @@ export const postApi = baseApi.injectEndpoints({
       }),
       providesTags: () => [{ type: 'Followers' }],
     }),
+    getSuggestions: builder.query<GetSuggestionsResponse, void>({
+      query: () => ({
+        url: `/api/follows/suggestions/`,
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'Followers' }],
+    }),
     reportPost: builder.mutation<{ success?: boolean; message?: string; data?: unknown }, { postId: number | string; reason: string; description?: string }>({
       query: ({ postId, reason, description }) => ({
         url: `/api/post-reports/`,
@@ -641,6 +670,7 @@ export const {
   useUnfollowUserMutation,
   useGetFollowingQuery,
   useGetFollowersQuery,
+  useGetSuggestionsQuery,
   useReportPostMutation,
   useGetPostReportsQuery,
   useReviewReportMutation,

@@ -14,6 +14,9 @@ import {
   useGetCategoriesQuery,
   useUpdateUserProfileMutation,
 } from "@/store/authApi";
+import { storeAuthTokens, getRoleFromToken } from "@/lib/auth";
+import { store } from "@/store/store";
+import { baseApi } from "@/store/baseApi";
 
 // Types for form data
 type SignUpForm = {
@@ -73,16 +76,53 @@ const SignUp = () => {
         password: data.password,
       }).unwrap();
 
-      // Extract token from response
-      const token = credentialsResponse.token || credentialsResponse.tokens?.access;
-      
-      if (!token) {
+      // Extract tokens from response
+      const accessToken =
+        credentialsResponse.tokens?.access ||
+        credentialsResponse.token ||
+        (typeof credentialsResponse.token === "string" ? credentialsResponse.token : undefined);
+      const refreshToken = credentialsResponse.tokens?.refresh;
+      const persistSession = Boolean(data.keepMeLoggedIn || data.rememberMe);
+
+      if (!accessToken) {
         console.error("No token received from credentials API");
         return;
       }
 
-      // Store token in localStorage for the API call
-      localStorage.setItem("token", token);
+      // Clear RTK Query cache before storing new tokens
+      store.dispatch(baseApi.util.resetApiState());
+
+      // Store tokens properly using the auth utility
+      storeAuthTokens({
+        accessToken,
+        refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,
+        persist: persistSession,
+      });
+
+      // Get user role from token
+      const role = getRoleFromToken(accessToken) || "user";
+
+      // Store user info if available
+      if (typeof window !== "undefined") {
+        const primaryStorage = persistSession
+          ? window.localStorage
+          : window.sessionStorage;
+        const secondaryStorage = persistSession
+          ? window.sessionStorage
+          : window.localStorage;
+
+        const userData = credentialsResponse.user || {
+          id: 0,
+          email: userEmail,
+          username: data.username,
+          role: role,
+        };
+
+        primaryStorage.setItem("user", JSON.stringify(userData));
+        secondaryStorage.removeItem("user");
+        primaryStorage.setItem("role", role);
+        secondaryStorage.removeItem("role");
+      }
 
       // Move to step 4 (category selection)
       setCurrentStep(4);
@@ -195,10 +235,23 @@ const SignUp = () => {
         subcategory_ids: selectedInterests,
       }).unwrap();
 
-      // Redirect to login after successful signup
-      router.push("/auth/login");
+      // Get user role to determine redirect
+      const storedRole = typeof window !== "undefined"
+        ? (window.localStorage.getItem("role") || window.sessionStorage.getItem("role") || "user")
+        : "user";
+
+      // Redirect to home (or dashboard for admin) after successful signup
+      // User is already logged in from the credentials step
+      const redirectTarget = storedRole === "admin" ? "/dashboard" : "/";
+      router.push(redirectTarget);
     } catch (error) {
       console.error("Failed to update profile:", error);
+      // Even if profile update fails, user is logged in, so redirect to home
+      const storedRole = typeof window !== "undefined"
+        ? (window.localStorage.getItem("role") || window.sessionStorage.getItem("role") || "user")
+        : "user";
+      const redirectTarget = storedRole === "admin" ? "/dashboard" : "/";
+      router.push(redirectTarget);
     }
   };
 
