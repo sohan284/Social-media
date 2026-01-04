@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
 import { FaUpload } from "react-icons/fa";
-import { useGetMarketplaceCategoriesQuery, useCreateProductMutation } from "@/store/marketplaceApi";
+import { useGetMarketplaceCategoriesQuery, useCreateProductMutation, useGetMarketplaceItemsQuery, usePatchProductStatusMutation, MarketplaceItem } from "@/store/marketplaceApi";
+import { useGetCurrentUserProfileQuery } from "@/store/authApi";
+import { getUsernameFromToken, getStoredAccessToken } from "@/lib/auth";
 import { toast } from "sonner";
+import ProductCard from "../../../../../components/Cards/ProductCard";
+import EditProductModal from "@/components/admin/EditProductModal";
+import ProductDetailsModal from "@/components/admin/ProductDetailsModal";
 import {
   Select,
   SelectContent,
@@ -46,13 +51,61 @@ export default function SalePage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<MarketplaceItem & {
+    status?: string;
+    name?: string;
+    user_name?: string;
+    condition?: string;
+    location?: string;
+    description?: string;
+  } | null>(null);
+  const [productToView, setProductToView] = useState<MarketplaceItem & {
+    status?: string;
+    name?: string;
+    user_name?: string;
+    condition?: string;
+    location?: string;
+    description?: string;
+    link?: string;
+  } | null>(null);
   
   const { data: categoriesResponse } = useGetMarketplaceCategoriesQuery();
+  const { data: itemsResponse, refetch: refetchItems } = useGetMarketplaceItemsQuery();
+  const { data: userProfile } = useGetCurrentUserProfileQuery();
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
+  const [patchProductStatus] = usePatchProductStatusMutation();
 
   const categories = categoriesResponse?.data || categoriesResponse?.results?.data || [];
   const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId);
   const availableSubcategories = selectedCategory?.subcategories || [];
+
+  // Get current user's username
+  const currentUsername = useMemo(() => {
+    const token = getStoredAccessToken();
+    if (token) {
+      return getUsernameFromToken(token) || userProfile?.data?.username || null;
+    }
+    return userProfile?.data?.username || null;
+  }, [userProfile]);
+
+  // Get all items and filter for user's draft items
+  const draftItems = useMemo(() => {
+    if (!itemsResponse || !currentUsername) return [];
+    const allItems = (
+      itemsResponse.data ??
+      itemsResponse.results?.data ??
+      itemsResponse.items ??
+      []
+    );
+    // Filter for current user's draft items
+    return allItems.filter((item) => {
+      const status = (item as MarketplaceItem & { status?: string }).status;
+      const sellerUsername = (item.user_name as string | undefined) || (item.seller?.username as string | undefined);
+      return status === "draft" && sellerUsername === currentUsername;
+    });
+  }, [itemsResponse, currentUsername]);
 
   useEffect(() => {
     if (selectedSubcategoryId) {
@@ -89,6 +142,7 @@ export default function SalePage() {
       setImagePreviews([]);
       setSelectedCategoryId(null);
       setSelectedSubcategoryId(null);
+      refetchItems();
     } catch (error) {
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || "Failed to create product";
       toast.error(errorMessage);
@@ -121,10 +175,61 @@ export default function SalePage() {
       }).unwrap();
       
       toast.success("Draft saved successfully!");
+      reset();
+      setImagePreviews([]);
+      setSelectedCategoryId(null);
+      setSelectedSubcategoryId(null);
+      refetchItems();
     } catch (error) {
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || "Failed to save draft";
       toast.error(errorMessage);
     }
+  };
+
+  const handlePublishDraft = async (item: MarketplaceItem) => {
+    try {
+      await patchProductStatus({
+        id: item.id,
+        status: "published",
+      }).unwrap();
+      toast.success("Product published successfully!");
+      refetchItems();
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to publish product";
+      toast.error("Failed to publish product", { description: errorMessage });
+    }
+  };
+
+  const handleEditClick = (item: MarketplaceItem) => {
+    setProductToEdit(item as MarketplaceItem & {
+      status?: string;
+      name?: string;
+      user_name?: string;
+      condition?: string;
+      location?: string;
+      description?: string;
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewDetails = (item: MarketplaceItem) => {
+    setProductToView(item as MarketplaceItem & {
+      status?: string;
+      name?: string;
+      user_name?: string;
+      condition?: string;
+      location?: string;
+      description?: string;
+      link?: string;
+    });
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleProductUpdated = () => {
+    refetchItems();
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,9 +268,12 @@ export default function SalePage() {
   const previewImage = imagePreviews[0] || null;
 
   return (
-    <div className="text-white flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6 ">
-      {/* Left Side - Form */}
-      <div className="w-full lg:w-1/3 backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
+    <div className="text-white flex flex-col gap-6">
+      
+      {/* Form Section */}
+      <div className="flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6">
+        {/* Left Side - Form */}
+        <div className="w-full lg:w-1/3 backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
         <h2 className="text-2xl font-semibold mb-6 text-center">
           Item For Sale
         </h2>
@@ -281,8 +389,8 @@ export default function SalePage() {
               <SelectItem value="new" className="focus:bg-purple-500/20 focus:text-white cursor-pointer">
                 New
               </SelectItem>
-              <SelectItem value="poor" className="focus:bg-purple-500/20 focus:text-white cursor-pointer">
-                Old
+              <SelectItem value="old" className="focus:bg-purple-500/20 focus:text-white cursor-pointer">
+                Old (Used)
               </SelectItem>
             </SelectContent>
           </Select>
@@ -310,14 +418,14 @@ export default function SalePage() {
               type="button"
               onClick={handleDraft}
               disabled={isCreating}
-              className="w-32 bg-gray-400/60 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-black py-2 rounded-full font-semibold duration-300 transition-all cursor-pointer"
+              className="w-32 bg-gray-400 hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-black py-2 rounded-full font-semibold duration-300 transition-all cursor-pointer"
             >
               {isCreating ? "Saving..." : "Draft"}
             </button>
             <button
               type="submit"
               disabled={isCreating}
-              className="w-32 bg-[#007406] hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed py-2 rounded-full font-semibold duration-300 transition-all cursor-pointer"
+              className="w-32 bg-[#007406]  hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed py-2 rounded-full font-semibold duration-300 transition-all cursor-pointer"
             >
               {isCreating ? "Publishing..." : "Publish"}
             </button>
@@ -390,6 +498,66 @@ export default function SalePage() {
           )}
         </div>
       </div>
+      </div>
+      {/* Draft Items Section */}
+      {draftItems.length > 0 && (
+        <div className="w-full backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4">My Drafts</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {draftItems.map((item) => (
+              <div key={item.id} className="relative">
+                <ProductCard
+                  id={item.id}
+                  title={(item.title || (item as { name?: string }).name) as string | undefined}
+                  price={item.price}
+                  image={item.image || item.images?.[0]}
+                  description={item.description}
+                  condition={item.condition}
+                  location={item.location}
+                  link={item.link}
+                  seller={item.seller}
+                  user_name={(item as { user_name?: string }).user_name}
+                  isOwner={true}
+                  onEdit={() => handleEditClick(item)}
+                  onViewDetails={() => handleViewDetails(item)}
+                />
+                <button
+                  onClick={() => handlePublishDraft(item)}
+                  className="absolute cursor-pointer top-2 left-2 flex items-center justify-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
+                >
+                  Publish
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Edit Product Modal */}
+      <EditProductModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setProductToEdit(null);
+        }}
+        product={productToEdit}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          setProductToEdit(null);
+          handleProductUpdated();
+        }}
+      />
+
+      {/* Product Details Modal */}
+      <ProductDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setProductToView(null);
+        }}
+        product={productToView}
+      />
     </div>
   );
 }

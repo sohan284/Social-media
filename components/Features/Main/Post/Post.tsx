@@ -9,7 +9,7 @@ import { VscThumbsup } from "react-icons/vsc";
 import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { BiSend } from "react-icons/bi";
-import type { PostItem, CommentItem } from "@/store/postApi";
+import type { PostItem, CommentItem, FollowItem } from "@/store/postApi";
 import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowingQuery, useDeletePostMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import CustomDialog from "@/components/ui/CustomDialog";
@@ -79,12 +79,20 @@ const Post = ({ post, profile }: PostProps) => {
 
     // If we have following data, use it to determine follow state
     if (followingData) {
-      const followingRaw = followingData.data || followingData.results?.data || [];
-      const following = Array.isArray(followingRaw) ? followingRaw : [];
+      // Type guard: check if followingData is an array
+      let following: FollowItem[] = [];
+      if (Array.isArray(followingData)) {
+        following = followingData;
+      } else if ('data' in followingData && followingData.data) {
+        following = Array.isArray(followingData.data) ? followingData.data : [];
+      } else if ('results' in followingData && followingData.results) {
+        const results = followingData.results as { data?: FollowItem[] };
+        following = Array.isArray(results?.data) ? results.data : [];
+      }
       
       // Find if the post's user ID is in the following list
       // The following API returns items where 'following' is the user ID being followed
-      const followItem = following.find((item) => {
+      const followItem = following.find((item: FollowItem) => {
         const followingUserId = item.following;
         return followingUserId && String(followingUserId) === String(postUserId);
       });
@@ -959,10 +967,22 @@ const Post = ({ post, profile }: PostProps) => {
     );
   };
 
+  // Get username for navigation
+  const username = post?.user_name || post?.username || post?.author?.username || post?.user_id;
+  
+  const handleUserClick = () => {
+    if (username) {
+      router.push(`/main/user/${username}`);
+    }
+  };
+
   return (
     <div className="border border-slate-600 md:p-6 p-4 w-full rounded">
       <div className="flex justify-between items-center mb-5">
-        <div className="flex items-center gap-[7px]">
+        <div 
+          className="flex items-center gap-[7px] cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleUserClick}
+        >
           {post?.avatar && typeof post.avatar === 'string' ? (
             <Image
               src={post.avatar.startsWith('http') 

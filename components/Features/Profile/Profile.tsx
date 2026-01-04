@@ -8,10 +8,13 @@ import { useGetMyPostsQuery, type PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import CreatePost from "../CreatePost/CreatePost";
 import { useRouter } from "next/navigation";
+import { FiMenu, FiX } from "react-icons/fi";
 
 const Profile = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "posts">("overview");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const { data: postsResponse, isLoading, isError } = useGetMyPostsQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
@@ -41,6 +44,14 @@ const Profile = () => {
 
   const openModal = () => {
     router.push('/main/edit-profile');
+  };
+
+  const handleCloseSidebar = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsSidebarOpen(false);
+      setIsClosing(false);
+    }, 300);
   };
 
   const renderPosts = () => {
@@ -94,7 +105,19 @@ const Profile = () => {
       <div className="mx-auto flex gap-10 pt-6 lg:p-4">
         <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
           <div className="border-b border-white/10 pb-4">
-            <ProfileHeader onAvatarClick={openModal} />
+            <div className="flex items-center justify-between mb-4 lg:mb-0">
+              <div className="flex-1">
+                <ProfileHeader onAvatarClick={openModal} />
+              </div>
+              {/* Mobile Sidebar Toggle Button */}
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                aria-label="Open sidebar"
+              >
+                <FiMenu size={24} className="text-white" />
+              </button>
+            </div>
             <div className="flex items-center gap-2 mt-4 overflow-x-hidden">
               <button
                 onClick={() => setActiveTab("overview")}
@@ -129,6 +152,8 @@ const Profile = () => {
             )}
           </div>
         </div>
+        
+        {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
           className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
@@ -136,6 +161,41 @@ const Profile = () => {
           <ProfileSidebar />
         </div>
       </div>
+
+      {/* Mobile Sidebar Drawer */}
+      {isSidebarOpen && (
+        <div
+          className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${
+            isClosing ? "opacity-0" : "opacity-100"
+          }`}
+          onClick={handleCloseSidebar}
+        >
+          <div
+            className={`fixed top-0 right-0 h-full w-full max-w-sm bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
+              isClosing ? "translate-x-full" : "translate-x-0"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ scrollbarGutter: "stable both-edges" }}
+          >
+            {/* Header with Close Button */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white">Profile Info</h2>
+              <button
+                onClick={handleCloseSidebar}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                <FiX size={24} className="text-white" />
+              </button>
+            </div>
+
+            {/* Sidebar Content */}
+            <div className="overflow-y-auto h-[calc(100vh-64px)] custom-scroll p-4">
+              <ProfileSidebar />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

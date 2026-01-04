@@ -130,9 +130,12 @@ export interface FollowItem {
 
 export interface GetFollowersResponse {
   data?: FollowItem[];
-  results?: {
+  results?: FollowItem[] | {
     data?: FollowItem[];
   };
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
   [key: string]: unknown;
 }
 
@@ -152,9 +155,12 @@ export interface UserSuggestion {
 
 export interface GetSuggestionsResponse {
   data?: UserSuggestion[];
-  results?: {
+  results?: UserSuggestion[] | {
     data?: UserSuggestion[];
   };
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
   [key: string]: unknown;
 }
 
@@ -316,6 +322,13 @@ export const postApi = baseApi.injectEndpoints({
       }),
       providesTags: () => [{ type: 'UserProfile' }],
     }),
+    getUserPosts: builder.query<GetPostsResponse, number | string>({
+      query: (userId) => ({
+        url: `/api/posts/user_posts/?user_id=${userId}`,
+        method: "GET",
+      }),
+      providesTags: () => [{ type: 'UserProfile' }],
+    }),
     getNewsFeed: builder.query<GetPostsResponse, void>({
       query: () => ({
         url: "/api/posts/news_feed/",
@@ -373,7 +386,8 @@ export const postApi = baseApi.injectEndpoints({
         method: "POST",
         body: { post: postId },
       }),
-      async onQueryStarted({ postId, isLiked }, { dispatch, queryFulfilled }) {
+      invalidatesTags: () => [{ type: 'UserProfile' }],
+      async onQueryStarted({ postId, isLiked }, { dispatch, queryFulfilled, getState }) {
         // Helper function to update post in query cache
         const updatePostInCache = (draft: GetPostsResponse) => {
           const updatePost = (posts: PostItem[] | undefined) => {
@@ -396,10 +410,28 @@ export const postApi = baseApi.injectEndpoints({
           }
         };
 
+        // Get all cached getUserPosts queries and update them
+        // RTK Query stores queries in the cache with serialized keys
+        const state = getState() as { api?: { queries?: Record<string, { endpointName?: string; originalArgs?: unknown }> } };
+        const cachedUserPostsQueries: Array<number | string> = [];
+        
+        // Find all cached getUserPosts queries
+        if (state?.api?.queries) {
+          Object.values(state.api.queries).forEach((queryState) => {
+            if (queryState?.endpointName === 'getUserPosts' && queryState.originalArgs) {
+              cachedUserPostsQueries.push(queryState.originalArgs as number | string);
+            }
+          });
+        }
+
         // Optimistic updates
         const patchResults = [
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostInCache)),
           dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache)),
+          // Update all cached getUserPosts queries
+          ...cachedUserPostsQueries.map((userId) =>
+            dispatch(postApi.util.updateQueryData("getUserPosts", userId, updatePostInCache))
+          ),
         ];
 
         try {
@@ -536,26 +568,71 @@ export const postApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'Followers' }],
     }),
-    getFollowing: builder.query<GetFollowersResponse, void>({
-      query: () => ({
-        url: `/api/follows/?following=true`,
-        method: "GET",
-      }),
+    getFollowing: builder.query<GetFollowersResponse, { limit?: number; page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        searchParams.append('following', 'true');
+        if (params?.limit) {
+          searchParams.append('limit', params.limit.toString());
+        }
+        if (params?.page) {
+          searchParams.append('page', params.page.toString());
+        }
+        return {
+          url: `/api/follows/?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
       providesTags: () => [{ type: 'Followers' }],
     }),
-    getFollowers: builder.query<GetFollowersResponse, void>({
-      query: () => ({
-        url: `/api/follows/?followers=true`,
-        method: "GET",
-      }),
+    getFollowers: builder.query<GetFollowersResponse, { limit?: number; page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        searchParams.append('followers', 'true');
+        if (params?.limit) {
+          searchParams.append('limit', params.limit.toString());
+        }
+        if (params?.page) {
+          searchParams.append('page', params.page.toString());
+        }
+        return {
+          url: `/api/follows/?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
       providesTags: () => [{ type: 'Followers' }],
     }),
-    getSuggestions: builder.query<GetSuggestionsResponse, void>({
-      query: () => ({
-        url: `/api/follows/suggestions/`,
+    getSuggestions: builder.query<GetSuggestionsResponse, { limit?: number; page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.limit) {
+          searchParams.append('limit', params.limit.toString());
+        }
+        if (params?.page) {
+          searchParams.append('page', params.page.toString());
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/api/follows/suggestions/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
+      providesTags: () => [{ type: 'Followers' }],
+    }),
+    toggleFollow: builder.mutation<{ success?: boolean; message?: string; data?: { status?: string; following?: boolean } }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: "/api/follows/toggle_follow/",
+        method: "POST",
+        body: { following_id: userId },
+      }),
+      invalidatesTags: () => [{ type: 'Followers' }, { type: 'UserProfile' }],
+    }),
+    getUserProfile: builder.query<{ success?: boolean; message?: string; data?: { user_id?: number | string; username?: string; followers_count?: number; following_count?: number; posts_count?: number; is_following?: boolean } }, number | string>({
+      query: (userId) => ({
+        url: `/api/follows/user_profile/?user_id=${userId}`,
         method: "GET",
       }),
-      providesTags: () => [{ type: 'Followers' }],
+      providesTags: () => [{ type: 'UserProfile' }, { type: 'Followers' }],
     }),
     reportPost: builder.mutation<{ success?: boolean; message?: string; data?: unknown }, { postId: number | string; reason: string; description?: string }>({
       query: ({ postId, reason, description }) => ({
@@ -656,9 +733,12 @@ export const {
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
-  useGetMyPostsQuery, 
+  useGetMyPostsQuery,
+  useGetUserPostsQuery,
   useGetNewsFeedQuery,
   useGetAllPostsQuery,
+  useToggleFollowMutation,
+  useGetUserProfileQuery,
   useGetRejectedPostsQuery,
   useGetCommunityPostsQuery,
   useLikePostMutation,

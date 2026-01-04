@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useGetFollowingQuery, useGetFollowersQuery, useGetSuggestionsQuery, useFollowUserMutation, useUnfollowUserMutation, FollowItem, UserSuggestion } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { IoPersonOutline } from "react-icons/io5";
@@ -9,36 +10,115 @@ import Image from "next/image";
 import { getApiBaseUrl } from "@/lib/utils";
 
 
+const USERS_PER_PAGE = 20;
+
 const Friends = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"following" | "followers" | "suggestions">("suggestions");
+  
+  // Pagination state for each tab (using page numbers)
+  const [suggestionsPage, setSuggestionsPage] = useState(1);
+  const [followingPage, setFollowingPage] = useState(1);
+  const [followersPage, setFollowersPage] = useState(1);
+  
+  // Accumulated users for each tab
+  const [accumulatedSuggestions, setAccumulatedSuggestions] = useState<UserSuggestion[]>([]);
+  const [accumulatedFollowing, setAccumulatedFollowing] = useState<FollowItem[]>([]);
+  const [accumulatedFollowers, setAccumulatedFollowers] = useState<FollowItem[]>([]);
+  
   // Always fetch both lists to check follow status
-  const { data: followingResponse, isLoading: isLoadingFollowing } = useGetFollowingQuery();
-  const { data: followersResponse, isLoading: isLoadingFollowers } = useGetFollowersQuery();
-  const { data: suggestionsResponse, isLoading: isLoadingSuggestions } = useGetSuggestionsQuery();
+  const { data: followingResponse, isLoading: isLoadingFollowing, refetch: refetchFollowing } = useGetFollowingQuery({
+    limit: USERS_PER_PAGE,
+    page: followingPage,
+  });
+  const { data: followersResponse, isLoading: isLoadingFollowers, refetch: refetchFollowers } = useGetFollowersQuery({
+    limit: USERS_PER_PAGE,
+    page: followersPage,
+  });
+  const { data: suggestionsResponse, isLoading: isLoadingSuggestions, refetch: refetchSuggestions } = useGetSuggestionsQuery({
+    limit: USERS_PER_PAGE,
+    page: suggestionsPage,
+  });
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const [followUser] = useFollowUserMutation();
   const [unfollowUser] = useUnfollowUserMutation();
   const currentUser = profileResponse?.data;
 
-  const following = useMemo(() => {
-    if (!followingResponse) return [];
-    return followingResponse.data ?? followingResponse.results?.data ?? [];
-  }, [followingResponse]);
+  // Track if we've initialized each tab to avoid resetting on first load
+  const [initializedTabs, setInitializedTabs] = React.useState<Set<string>>(new Set());
 
-  const followers = useMemo(() => {
-    if (!followersResponse) return [];
-    return followersResponse.data ?? followersResponse.results?.data ?? [];
-  }, [followersResponse]);
+  // Update accumulated data when new data arrives
+  React.useEffect(() => {
+    if (followingResponse) {
+      const newData: FollowItem[] = Array.isArray(followingResponse) 
+        ? followingResponse 
+        : ('data' in followingResponse && followingResponse.data) 
+          ? followingResponse.data 
+          : ('results' in followingResponse && followingResponse.results && 'data' in followingResponse.results && followingResponse.results.data)
+            ? followingResponse.results.data
+            : [];
+      if (followingPage === 1 && !initializedTabs.has("following")) {
+        setAccumulatedFollowing(newData);
+        setInitializedTabs(prev => new Set([...prev, "following"]));
+      } else if (followingPage > 1) {
+        setAccumulatedFollowing(prev => [...prev, ...newData]);
+      }
+    }
+  }, [followingResponse, followingPage, initializedTabs]);
 
-  const suggestions = useMemo(() => {
-    if (!suggestionsResponse) return [];
-    return suggestionsResponse.data ?? suggestionsResponse.results?.data ?? [];
-  }, [suggestionsResponse]);
+  React.useEffect(() => {
+    if (followersResponse) {
+      const newData: FollowItem[] = Array.isArray(followersResponse) 
+        ? followersResponse 
+        : ('data' in followersResponse && followersResponse.data) 
+          ? followersResponse.data 
+          : ('results' in followersResponse && followersResponse.results && 'data' in followersResponse.results && followersResponse.results.data)
+            ? followersResponse.results.data
+            : [];
+      if (followersPage === 1 && !initializedTabs.has("followers")) {
+        setAccumulatedFollowers(newData);
+        setInitializedTabs(prev => new Set([...prev, "followers"]));
+      } else if (followersPage > 1) {
+        setAccumulatedFollowers(prev => [...prev, ...newData]);
+      }
+    }
+  }, [followersResponse, followersPage, initializedTabs]);
+
+  React.useEffect(() => {
+    if (suggestionsResponse) {
+      const newData: UserSuggestion[] = Array.isArray(suggestionsResponse) 
+        ? suggestionsResponse 
+        : ('data' in suggestionsResponse && suggestionsResponse.data) 
+          ? suggestionsResponse.data 
+          : ('results' in suggestionsResponse && suggestionsResponse.results && 'data' in suggestionsResponse.results && suggestionsResponse.results.data)
+            ? suggestionsResponse.results.data
+            : [];
+      if (suggestionsPage === 1 && !initializedTabs.has("suggestions")) {
+        setAccumulatedSuggestions(newData);
+        setInitializedTabs(prev => new Set([...prev, "suggestions"]));
+      } else if (suggestionsPage > 1) {
+        setAccumulatedSuggestions(prev => [...prev, ...newData]);
+      }
+    }
+  }, [suggestionsResponse, suggestionsPage, initializedTabs]);
+
+  const following = accumulatedFollowing;
+  const followers = accumulatedFollowers;
+  const suggestions = accumulatedSuggestions;
+  
+  // Check if there are more users to load using the 'next' field from paginated response
+  const hasMoreSuggestions = suggestionsResponse?.next !== null && suggestionsResponse?.next !== undefined;
+  const hasMoreFollowing = followingResponse?.next !== null && followingResponse?.next !== undefined;
+  const hasMoreFollowers = followersResponse?.next !== null && followersResponse?.next !== undefined;
 
   const handleFollow = async (userId: number | string) => {
     try {
       await followUser({ userId }).unwrap();
       toast.success("Followed successfully");
+      // Refetch to update lists
+      refetchFollowing();
+      refetchFollowers();
+      refetchSuggestions();
     } catch (error) {
       console.error("Failed to follow user:", error);
       toast.error("Failed to follow user");
@@ -49,11 +129,35 @@ const Friends = () => {
     try {
       await unfollowUser({ followingId: followId }).unwrap();
       toast.success("Unfollowed successfully");
+      // Refetch to update lists
+      refetchFollowing();
+      refetchFollowers();
+      refetchSuggestions();
     } catch (error) {
       console.error("Failed to unfollow user:", error);
       toast.error("Failed to unfollow user");
     }
   };
+
+  const handleShowMore = () => {
+    if (activeTab === "suggestions") {
+      setSuggestionsPage(prev => prev + 1);
+    } else if (activeTab === "following") {
+      setFollowingPage(prev => prev + 1);
+    } else if (activeTab === "followers") {
+      setFollowersPage(prev => prev + 1);
+    }
+  };
+
+  const isLoadingMore = 
+    (activeTab === "suggestions" && isLoadingSuggestions && suggestionsPage > 1) ||
+    (activeTab === "following" && isLoadingFollowing && followingPage > 1) ||
+    (activeTab === "followers" && isLoadingFollowers && followersPage > 1);
+
+  const hasMore = 
+    (activeTab === "suggestions" && hasMoreSuggestions) ||
+    (activeTab === "following" && hasMoreFollowing) ||
+    (activeTab === "followers" && hasMoreFollowers);
 
   const renderSuggestionList = (users: UserSuggestion[]) => {
     const isLoading = isLoadingSuggestions;
@@ -95,10 +199,18 @@ const Friends = () => {
           const isFollowing = user.is_following || false;
           const followId = user.follow_id;
 
+          const handleCardClick = () => {
+            const username = user.username || user.id;
+            if (username) {
+              router.push(`/main/user/${username}`);
+            }
+          };
+
           return (
             <div
               key={user.id}
-              className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-xl hover:border-white/20 transition-all duration-300 p-6 flex flex-col"
+              onClick={handleCardClick}
+              className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-xl hover:border-white/20 transition-all duration-300 p-6 flex flex-col cursor-pointer"
             >
               {/* Top Row: Avatar + Name on left, Button on right */}
               <div className="flex items-center justify-between gap-3 mb-3">
@@ -129,7 +241,8 @@ const Friends = () => {
                 {/* Right side: Follow Button */}
                 {userId && String(userId) !== String(currentUser?.id) && (
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click when clicking follow button
                       if (isFollowing && followId) {
                         // Unfollow: use the follow relation ID
                         handleUnfollow(followId);
@@ -218,10 +331,18 @@ const Friends = () => {
             ? item 
             : following.find((f) => String(f.following) === String(userId));
 
+          // Navigate to user profile using userId (route can handle both username and ID)
+          const handleCardClick = () => {
+            if (userId) {
+              router.push(`/main/user/${userId}`);
+            }
+          };
+
           return (
             <div
               key={item.id}
-              className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-xl hover:border-white/20 transition-all duration-300 p-6 flex flex-col"
+              onClick={handleCardClick}
+              className="bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-xl hover:border-white/20 transition-all duration-300 p-6 flex flex-col cursor-pointer"
             >
               {/* Top Row: Avatar + Name on left, Button on right */}
               <div className="flex items-center justify-between gap-3 mb-3">
@@ -252,7 +373,8 @@ const Friends = () => {
                 {/* Right side: Follow Button */}
                 {userId && String(userId) !== String(currentUser?.id) && (
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card click when clicking follow button
                       if (isFollowing) {
                         // Unfollow: use the follow relation ID
                         if (followRelation?.id) {
@@ -263,7 +385,7 @@ const Friends = () => {
                         handleFollow(userId);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 cursor-pointer ${
                       isFollowing
                         ? "bg-gray-600 hover:bg-gray-700 text-white"
                         : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
@@ -331,6 +453,19 @@ const Friends = () => {
           {activeTab === "suggestions" && renderSuggestionList(suggestions)}
           {activeTab === "following" && renderUserList(following, true)}
           {activeTab === "followers" && renderUserList(followers, false)}
+          
+          {/* Show More Button */}
+          {hasMore && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={handleShowMore}
+                disabled={isLoadingMore}
+                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoadingMore ? "Loading..." : "Show More"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

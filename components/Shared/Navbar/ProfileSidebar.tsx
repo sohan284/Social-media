@@ -38,11 +38,6 @@ const profileItems = [
     icon: FiEdit3,
   },
   {
-    label: "Settings",
-    href: "/profile/settings",
-    icon: FiSettings,
-  },
-  {
     label: "Privacy",
     href: "/main/privacy",
     icon: FiShield,
