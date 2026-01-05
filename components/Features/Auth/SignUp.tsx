@@ -413,7 +413,7 @@ const SignUp = () => {
               minLength: { value: 6, message: "Username must be at least 6 characters" }
             })}
             type="text"
-            placeholder={userEmail}
+            placeholder="Enter username (min. 6 characters)"
             className="w-full rounded-full border border-gray-300 bg-transparent px-4 py-3 text-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           {errors.username && (

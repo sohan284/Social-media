@@ -410,6 +410,27 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'Contacts' }],
     }),
+    blockUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/block/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
+    unblockUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/unblock/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
+    deleteUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/delete/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
   }),
 });
 
@@ -428,6 +449,9 @@ export const {
   useSendPasswordResetOtpMutation,
   useVerifyPasswordResetOtpMutation,
   useResetPasswordMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+  useDeleteUserMutation,
 } = authApi;
 
 export const   useGetCurrentUserProfileQuery = (

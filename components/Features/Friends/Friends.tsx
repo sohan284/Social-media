@@ -104,7 +104,21 @@ const Friends = () => {
 
   const following = accumulatedFollowing;
   const followers = accumulatedFollowers;
-  const suggestions = accumulatedSuggestions;
+  
+  // Filter suggestions to only show users who are NOT being followed
+  // Get list of user IDs that are being followed
+  const followingUserIds = new Set(
+    following.map(item => String(item.following))
+  );
+  
+  // Filter out users who are already being followed and the current user
+  const suggestions = React.useMemo(() => {
+    return accumulatedSuggestions.filter(user => {
+      const userId = String(user.id);
+      // Only show if not following AND not the current user
+      return !followingUserIds.has(userId) && String(user.id) !== String(currentUser?.id);
+    });
+  }, [accumulatedSuggestions, followingUserIds, currentUser?.id]);
   
   // Check if there are more users to load using the 'next' field from paginated response
   const hasMoreSuggestions = suggestionsResponse?.next !== null && suggestionsResponse?.next !== undefined;
@@ -113,13 +127,53 @@ const Friends = () => {
 
   const handleFollow = async (userId: number | string) => {
     try {
+      // Find user info from followers list to add to following list optimistically
+      const userFromFollowers = accumulatedFollowers.find(item => String(item.follower) === String(userId));
+      const userFromSuggestions = accumulatedSuggestions.find(user => user.id === userId);
+      
+      // Remove from suggestions immediately (since they're now being followed)
+      setAccumulatedSuggestions(prev => 
+        prev.filter(user => String(user.id) !== String(userId))
+      );
+      
+      // Optimistically add to following list if not already there
+      // This is important for the followers tab - when you follow someone back, they should appear as "following" immediately
+      if (userId && !accumulatedFollowing.some(f => String(f.following) === String(userId))) {
+        const newFollowItem: FollowItem = {
+          id: Date.now(), // Temporary ID, will be replaced on refetch
+          following: userId,
+          following_name: userFromFollowers?.follower_name || userFromSuggestions?.display_name || userFromSuggestions?.username || "User",
+          following_avatar: userFromFollowers?.follower_avatar || userFromSuggestions?.avatar || null,
+          following_about: userFromFollowers?.follower_about || userFromSuggestions?.about || null,
+        };
+        setAccumulatedFollowing(prev => [...prev, newFollowItem]);
+      }
+      
       await followUser({ userId }).unwrap();
       toast.success("Followed successfully");
-      // Refetch to update lists
+      
+      // Refetch to get updated data with correct follow_id
+      // RTK Query will automatically refetch due to cache invalidation, but we also manually refetch to ensure immediate update
       refetchFollowing();
       refetchFollowers();
       refetchSuggestions();
     } catch (error) {
+      // Revert optimistic updates on error
+      // Add back to suggestions if we removed them
+      const userFromSuggestions = accumulatedSuggestions.find(user => user.id === userId);
+      if (!userFromSuggestions) {
+        // Need to refetch suggestions to get the user back
+        refetchSuggestions();
+      }
+      // Remove from following list if we added it optimistically (temporary IDs are large timestamps)
+      setAccumulatedFollowing(prev => 
+        prev.filter(item => {
+          const isTempId = item.id && typeof item.id === 'number' && item.id > 1000000000000;
+          const matchesUserId = String(item.following) === String(userId);
+          // Remove if it matches userId AND is a temporary ID we just added
+          return !(matchesUserId && isTempId);
+        })
+      );
       console.error("Failed to follow user:", error);
       toast.error("Failed to follow user");
     }
@@ -127,13 +181,50 @@ const Friends = () => {
 
   const handleUnfollow = async (followId: number | string) => {
     try {
+      // Find the user to update optimistically from following list
+      const followItem = accumulatedFollowing.find(item => item.id === followId);
+      const userIdToUpdate = followItem?.following;
+      
+      // Remove from following list immediately
+      setAccumulatedFollowing(prev => 
+        prev.filter(item => item.id !== followId)
+      );
+      
+      // Add back to suggestions if they were in suggestions before
+      // Since we filter suggestions to exclude followed users, we need to add them back when unfollowed
+      if (userIdToUpdate && followItem) {
+        // Check if user is not already in suggestions
+        const alreadyInSuggestions = accumulatedSuggestions.some(user => String(user.id) === String(userIdToUpdate));
+        if (!alreadyInSuggestions && String(userIdToUpdate) !== String(currentUser?.id)) {
+          // Add them back to suggestions optimistically
+          const newSuggestion: UserSuggestion = {
+            id: userIdToUpdate,
+            username: followItem.following_name || "User",
+            display_name: followItem.following_name || undefined,
+            avatar: followItem.following_avatar || null,
+            about: followItem.following_about || null,
+            is_following: false,
+            follow_id: undefined,
+            followers_count: 0,
+            posts_count: 0,
+          };
+          setAccumulatedSuggestions(prev => [...prev, newSuggestion]);
+        }
+      }
+      
       await unfollowUser({ followingId: followId }).unwrap();
       toast.success("Unfollowed successfully");
-      // Refetch to update lists
+      
+      // Refetch to get updated data
+      // RTK Query will automatically refetch due to cache invalidation, but we also manually refetch to ensure immediate update
       refetchFollowing();
       refetchFollowers();
       refetchSuggestions();
     } catch (error) {
+      // Revert optimistic update on error - refetch to get correct state
+      refetchSuggestions();
+      refetchFollowing();
+      refetchFollowers();
       console.error("Failed to unfollow user:", error);
       toast.error("Failed to unfollow user");
     }
