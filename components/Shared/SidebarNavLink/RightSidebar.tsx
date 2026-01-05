@@ -13,10 +13,14 @@ import { useGetCategoriesQuery } from '@/store/categoryApi';
 import { FiUsers, FiTag } from 'react-icons/fi';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { getStoredAccessToken } from '@/lib/auth';
 
 const RightSidebar = () => {
   const router = useRouter();
-  const { data: communitiesResponse, isLoading } = useGetPopularCommunitiesQuery();
+  const token = getStoredAccessToken();
+  const { data: communitiesResponse, isLoading } = useGetPopularCommunitiesQuery(undefined, {
+    skip: false, // Allow unauthenticated users to see communities
+  });
   const { data: categoriesResponse, isLoading: isCategoriesLoading } = useGetCategoriesQuery();
   const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
   const [leaveCommunity, { isLoading: isLeaving }] = useLeaveCommunityMutation();
@@ -27,10 +31,17 @@ const RightSidebar = () => {
     return Array.isArray(data) ? data : [];
   }, [communitiesResponse]);
 
-  // Filter to only show public communities
+  // Filter to only show public communities (and restricted for authenticated users)
   const communities = useMemo(() => {
-    return allCommunities.filter((c: CommunityItem) => c.visibility === 'public').slice(0, 5);
-  }, [allCommunities]);
+    if (!token) {
+      // For unauthenticated users, only show public communities
+      return allCommunities.filter((c: CommunityItem) => c.visibility === 'public').slice(0, 5);
+    }
+    // For authenticated users, show public and restricted
+    return allCommunities.filter((c: CommunityItem) => 
+      c.visibility === 'public' || c.visibility === 'restricted'
+    ).slice(0, 5);
+  }, [allCommunities, token]);
 
   // Get interest categories
   const categories = useMemo(() => {
@@ -128,19 +139,31 @@ const RightSidebar = () => {
                             <p className='text-gray-400 text-xs'>{formatMembers(community.members_count || 0)} Members</p>
                           </div>
                         </div>
-                        <button 
-                          onClick={(e) => {
-                            if (community.is_member) {
-                              handleLeave(community.name!, e);
-                            } else {
-                              handleJoin(community.name!, e);
-                            }
-                          }}
-                          disabled={isJoining || isLeaving}
-                          className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed'
-                        >
-                          {community.is_member ? 'Joined' : 'Join'}
-                        </button>
+                        {token ? (
+                          <button 
+                            onClick={(e) => {
+                              if (community.is_member) {
+                                handleLeave(community.name!, e);
+                              } else {
+                                handleJoin(community.name!, e);
+                              }
+                            }}
+                            disabled={isJoining || isLeaving}
+                            className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                          >
+                            {community.is_member ? 'Joined' : 'Join'}
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push('/auth/login');
+                            }}
+                            className='text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm'
+                          >
+                            Join
+                          </button>
+                        )}
                       </div>
                     );
                   })

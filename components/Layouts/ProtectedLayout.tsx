@@ -13,12 +13,14 @@ type ProtectedLayoutProps = {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
   fallbackRedirect?: string;
+  unauthenticatedRedirect?: string;
 };
 
 export default function ProtectedLayout({
   children,
   allowedRoles,
   fallbackRedirect,
+  unauthenticatedRedirect,
 }: ProtectedLayoutProps) {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
@@ -60,7 +62,8 @@ export default function ProtectedLayout({
 
     if (!token || isExpired) {
       clearStoredTokens();
-      router.replace("/auth/login");
+      const redirectTarget = unauthenticatedRedirect || "/auth/login";
+      router.replace(redirectTarget);
       return;
     }
 
@@ -75,7 +78,7 @@ export default function ProtectedLayout({
         fallbackRedirect || (role === "admin" ? "/dashboard" : "/");
       router.replace(redirectTarget);
     }
-  }, [allowedRoles, fallbackRedirect, isBootstrapping, isExpired, router, token]);
+  }, [allowedRoles, fallbackRedirect, unauthenticatedRedirect, isBootstrapping, isExpired, router, token]);
 
   if (isBootstrapping) {
     return (

@@ -18,6 +18,7 @@ import { FiEdit2, FiTrash2, FiFlag } from "react-icons/fi";
 import EditPost from "../../EditPost/EditPost";
 import CreatePost from "../../CreatePost/CreatePost";
 import ReportPostModal from "./ReportPostModal";
+import { getStoredAccessToken } from "@/lib/auth";
 
 interface Profile {
   id: string | number;
@@ -35,6 +36,7 @@ interface PostProps {
 
 const Post = ({ post, profile }: PostProps) => {
   const router = useRouter();
+  const token = getStoredAccessToken();
   const [showComments, setShowComments] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -265,6 +267,13 @@ const Post = ({ post, profile }: PostProps) => {
 
   const handleLikeClick = async () => {
     if (!post?.id || isLiking) return;
+    
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+    
     try {
       if (isLiked) {
         await likePost({ postId: post.id, isLiked: false }).unwrap();
@@ -277,6 +286,11 @@ const Post = ({ post, profile }: PostProps) => {
   };
 
   const handleShareClick = () => {
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
     console.log("Share button clicked - handler called");
     setIsShareModalOpen(true);
     console.log("Modal state set to:", true);
@@ -285,6 +299,12 @@ const Post = ({ post, profile }: PostProps) => {
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim() || !post?.id || isCreatingComment) return;
+    
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
     
     try {
       await createComment({
@@ -389,6 +409,12 @@ const Post = ({ post, profile }: PostProps) => {
   };
 
   const handleFollowClick = async () => {
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+    
     if (!postUserId) {
       console.error("User ID not found in post data");
       return;
@@ -1026,7 +1052,13 @@ const Post = ({ post, profile }: PostProps) => {
           )}
           {!isCurrentUserPost && (
             <button
-              onClick={() => setIsReportModalOpen(true)}
+              onClick={() => {
+                if (!token) {
+                  router.push("/auth/login");
+                  return;
+                }
+                setIsReportModalOpen(true);
+              }}
               className="text-red-400/60 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-red-500/10"
               title="Report post"
             >

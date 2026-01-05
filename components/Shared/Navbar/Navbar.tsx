@@ -18,6 +18,7 @@ import { useGetNotificationsQuery } from "@/store/notificationApi";
 import { useGetConversationsListQuery, useGetChatRoomsQuery } from "@/store/chatApi";
 import { useSearch } from "@/contexts/SearchContext";
 import { useMessage } from "@/contexts/MessageContext";
+import { getStoredAccessToken } from "@/lib/auth";
 
 // Fallback hook for when SearchContext is not available
 const useSearchSafe = () => {
@@ -34,22 +35,32 @@ interface NavbarProps {
 }
 
 const Navbar = ({ onMenuToggle }: NavbarProps) => {
-  const [activeButton, setActiveButton] = useState("login");
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const { searchQuery, setSearchQuery } = useSearchSafe();
   const { isOpen: isMessagePopupOpen, openMessagePopup, closeMessagePopup } = useMessage();
 
   const router = useRouter();
+  const token = getStoredAccessToken();
+  const isAuthenticated = !!token;
+  
   const {
     data: profileData,
     isLoading: isProfileLoading,
     isError: isProfileError,
-  } = useGetCurrentUserProfileQuery();
+  } = useGetCurrentUserProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
-  const { data: notificationsData } = useGetNotificationsQuery();
-  const { data: conversationsData } = useGetConversationsListQuery();
-  const { data: roomsData } = useGetChatRoomsQuery();
+  const { data: notificationsData } = useGetNotificationsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const { data: conversationsData } = useGetConversationsListQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  const { data: roomsData } = useGetChatRoomsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
   const profile = profileData?.data;
 
@@ -99,14 +110,13 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
     setIsProfileSidebarOpen(false);
   };
 
-  const user = true;
   const avatarUrl =
     (profile?.profile_image as string) ||
     (profile?.avatar as string) ||
     null;
 
   const pathname = usePathname();
-  const isHomePage = pathname === '/' || pathname === '/main/';
+  const isHomePage = pathname === '/' || pathname === '/main/' || pathname === '/explore';
 
   return (
     <nav className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-40 border-b border-white/10">
@@ -126,8 +136,8 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           </div>
         </div>
 
-        {/* Search Bar - Only visible on home page, matches create post design */}
-        {isHomePage && (
+        {/* Search Bar - Only visible on home page for authenticated users, matches create post design */}
+        {isHomePage && isAuthenticated && (
           <div className="hidden md:flex md:absolute md:left-1/2 md:-translate-x-1/2 w-[35vw]  md:max-w-xl md:px-4">
             <div className="w-full bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl  p-1">
               <div className="relative flex items-center">
@@ -144,7 +154,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           </div>
         )}
 
-        {user ? (
+        {isAuthenticated ? (
           <div className="relative flex items-center gap-2 md:gap-4 text-white">
             <button 
               onClick={() => router.push("/main/create-post")} 
@@ -227,39 +237,25 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             </button>
           </div>
         ) : (
-          <div className="flex items-center bg-[#2F6544] rounded-full flex-shrink-0">
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
             <button
-              onClick={() => {
-                setActiveButton("login");
-                router.push("/auth/login");
-              }}
-              className={`px-3 md:px-6 py-2 md:py-3 rounded-full transition-all duration-300 cursor-pointer text-sm md:text-base ${
-                activeButton === "login"
-                  ? "bg-white text-black"
-                  : "bg-transparent text-white"
-              }`}
+              onClick={() => router.push("/auth/login")}
+              className="px-4 md:px-6 py-2 md:py-2.5 rounded-full bg-transparent border border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300 cursor-pointer text-sm md:text-base font-medium"
             >
               Login
             </button>
             <button
-              onClick={() => {
-                setActiveButton("signup");
-                router.push("/auth/sign-up");
-              }}
-              className={`px-3 md:px-6 py-2 md:py-3 rounded-full transition-all duration-300 cursor-pointer text-sm md:text-base ${
-                activeButton === "signup"
-                  ? "bg-white text-black"
-                  : "bg-transparent text-white"
-              }`}
+              onClick={() => router.push("/auth/sign-up")}
+              className="px-4 md:px-6 py-2 md:py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
             >
-              Signup
+              Sign Up
             </button>
           </div>
         )}
       </div>
 
-      {/* Profile Sidebar */}
-      {isProfileSidebarOpen && (
+      {/* Profile Sidebar - Only show for authenticated users */}
+      {isAuthenticated && isProfileSidebarOpen && (
         <ProfileSidebar
           onClose={handleCloseSidebar}
           profile={profile || null}
@@ -268,11 +264,13 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
         />
       )}
       
-      {/* Message Popup */}
-      <MessagePopup 
-        isOpen={isMessagePopupOpen} 
-        onClose={closeMessagePopup} 
-      />
+      {/* Message Popup - Only show for authenticated users */}
+      {isAuthenticated && (
+        <MessagePopup 
+          isOpen={isMessagePopupOpen} 
+          onClose={closeMessagePopup} 
+        />
+      )}
     </nav>
   );
 };
