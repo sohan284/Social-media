@@ -63,7 +63,7 @@ const Login = () => {
         response.tokens?.access ||
         (typeof response.token === "string" ? response.token : undefined);
       const refreshToken = response.tokens?.refresh;
-      const persistSession = Boolean(data.keepMeLoggedIn);
+      const persistSession = Boolean(data.rememberMe);
 
       // Clear RTK Query cache before storing new tokens
       store.dispatch(baseApi.util.resetApiState());
@@ -73,7 +73,6 @@ const Login = () => {
         refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,
         persist: persistSession,
       });
-
       const role =
         getRoleFromToken(accessToken || null) || response.user?.role || "user";
 
@@ -274,23 +273,14 @@ const Login = () => {
                 </div>
 
                 <div className="flex justify-between items-center text-xs sm:text-sm">
-                  {/* <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      {...loginForm.register("keepMeLoggedIn")}
-                      className="accent-green-500"
-                    />
-                    <span className="text-[#299616]">Keep me Log in</span>
-                  </label> */}
-
-                  {/* <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       {...loginForm.register("rememberMe")}
                       className="accent-green-500"
                     />
                     <span className="text-[#299616]">Remember me</span>
-                  </label> */}
+                  </label>
                 </div>
 
                 {/* <div className="flex items-center my-4">

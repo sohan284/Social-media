@@ -18,6 +18,7 @@ import { toast } from "sonner";
 type LoginForm = {
   email: string;
   password: string;
+  rememberMe: boolean;
 };
 
 type ResetStep1Form = {
@@ -101,16 +102,26 @@ export default function AdminLoginPage() {
       store.dispatch(baseApi.util.resetApiState());
 
       // Store tokens
+      const persistSession = Boolean(data.rememberMe);
       storeAuthTokens({
         accessToken,
         refreshToken: typeof refreshToken === "string" ? refreshToken : undefined,
-        persist: true, // Admin sessions should persist
+        persist: persistSession,
       });
 
       // Store user data
       if (typeof window !== "undefined" && response.user) {
-        window.localStorage.setItem("user", JSON.stringify(response.user));
-        window.localStorage.setItem("role", role);
+        const primaryStorage = persistSession
+          ? window.localStorage
+          : window.sessionStorage;
+        const secondaryStorage = persistSession
+          ? window.sessionStorage
+          : window.localStorage;
+
+        primaryStorage.setItem("user", JSON.stringify(response.user));
+        secondaryStorage.removeItem("user");
+        primaryStorage.setItem("role", role);
+        secondaryStorage.removeItem("role");
       }
 
       toast.success("Admin login successful");
@@ -323,7 +334,20 @@ export default function AdminLoginPage() {
                   </p>
                 )}
 
-                <div className="text-right mt-1">
+                {/* Remember Me Checkbox */}
+                <div className="flex items-center gap-2 mt-2">
+                  
+                </div>
+
+                <div className=" m-3 flex justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...loginForm.register("rememberMe")}
+                      className="accent-green-500"
+                    />
+                    <span className="text-sm text-[#299616]">Remember me</span>
+                  </label>
                   <button
                     type="button"
                     onClick={() => setCurrentMode('reset-step1')}
