@@ -9,6 +9,7 @@ export interface CreatePostRequest {
   media_files?: File[];
   post_type: "media" | "text" | "link";
   community?: number | string;
+  status?: "draft" | "approved" | "pending" | "rejected";
 }
 
 export interface UpdatePostRequest {
@@ -19,6 +20,7 @@ export interface UpdatePostRequest {
   media_files?: File[];
   post_type?: "media" | "text" | "link";
   community?: number | string;
+  status?: "draft" | "approved" | "pending" | "rejected";
 }
 
 export interface CreatePostResponse {
@@ -48,6 +50,8 @@ export interface PostItem {
   likes_count?: number;
   is_liked?: boolean;
   comments_count?: number;
+  shared_from?: number | string | null;
+  original_post?: PostItem | null;
   [key: string]: unknown;
 }
 
@@ -187,6 +191,9 @@ export const postApi = baseApi.injectEndpoints({
         if (data.community !== undefined) {
           formData.append("community", data.community.toString());
         }
+        if (data.status) {
+          formData.append("status", data.status);
+        }
         console.log(formData);
         formData.append("post_type", data.post_type.toString());
         return {
@@ -222,6 +229,9 @@ export const postApi = baseApi.injectEndpoints({
         }
         if (data.post_type) {
           formData.append("post_type", data.post_type.toString());
+        }
+        if (data.status) {
+          formData.append("status", data.status);
         }
         return {
           url: `/api/posts/${postId}/`,
@@ -335,12 +345,16 @@ export const postApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
-    getAllPosts: builder.query<GetPostsResponse, { page?: number; limit?: number } | void>({
+    getAllPosts: builder.query<GetPostsResponse, { page?: number; limit?: number; status?: string; start_date?: string; end_date?: string; search?: string } | void>({
       query: (params) => {
         const searchParams = new URLSearchParams();
         if (params && typeof params === 'object') {
           if (params.page) searchParams.append('page', params.page.toString());
           if (params.limit) searchParams.append('limit', params.limit.toString());
+          if (params.status) searchParams.append('status', params.status);
+          if (params.start_date) searchParams.append('start_date', params.start_date);
+          if (params.end_date) searchParams.append('end_date', params.end_date);
+          if (params.search) searchParams.append('search', params.search);
         }
         const queryString = searchParams.toString();
         return {
@@ -662,11 +676,21 @@ export const postApi = baseApi.injectEndpoints({
       count?: number; 
       success?: boolean; 
       message?: string 
-    }, void>({
-      query: () => ({
-        url: `/api/reports/all/`,
-        method: "GET",
-      }),
+    }, { status?: string; start_date?: string; end_date?: string; search?: string } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object') {
+          if (params.status) searchParams.append('status', params.status);
+          if (params.start_date) searchParams.append('start_date', params.start_date);
+          if (params.end_date) searchParams.append('end_date', params.end_date);
+          if (params.search) searchParams.append('search', params.search);
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/api/reports/all/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
       providesTags: () => [{ type: 'UnifiedReports' }],
     }),
     reviewUnifiedReport: builder.mutation<{ success?: boolean; message?: string; data?: unknown }, { reportId: number | string; reportType: 'post' | 'user'; status: 'reviewed' | 'resolved' | 'dismissed' }>({
@@ -686,6 +710,18 @@ export const postApi = baseApi.injectEndpoints({
         }
       },
       invalidatesTags: () => [{ type: 'PostReports' }, { type: 'UserReports' }, { type: 'UnifiedReports' }],
+    }),
+    sharePost: builder.mutation<{ success?: boolean; message?: string; data?: PostItem }, { post: number | string }>({
+      query: (data) => {
+        const formData = new FormData();
+        formData.append("post", data.post.toString());
+        return {
+          url: "/api/shares/",
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: () => [{ type: 'Posts' }, { type: 'NewsFeed' }, { type: 'MyPosts' }],
     }),
   }),
 });
@@ -758,4 +794,5 @@ export const {
   useReviewUnifiedReportMutation,
   useGetPostByIdQuery,
   useApprovePostMutation,
+  useSharePostMutation,
 } = postApi;

@@ -4,10 +4,11 @@ import React, { useMemo, useState } from "react";
 import ProfileHeader from "./_components/ProfileHeader";
 import Post from "../Main/Post/Post";
 import ProfileSidebar from "./_components/ProfileSidebar";
-import { useGetMyPostsQuery, type PostItem } from "@/store/postApi";
+import { useGetMyPostsQuery, useUpdatePostMutation, type PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import CreatePost from "../CreatePost/CreatePost";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { FiMenu, FiX } from "react-icons/fi";
 
 const Profile = () => {
@@ -15,9 +16,53 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "posts">("overview");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const { data: postsResponse, isLoading, isError } = useGetMyPostsQuery();
+  const { data: postsResponse, isLoading, isError, refetch } = useGetMyPostsQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
+  const [updatePost] = useUpdatePostMutation();
   const profile = profileResponse?.data;
+  
+  // Separate approved posts and drafts
+  const { approvedPosts, draftPosts } = useMemo(() => {
+    const allPosts: PostItem[] = (() => {
+      if (!postsResponse) return [];
+      if (Array.isArray(postsResponse)) return postsResponse;
+      if (typeof postsResponse === 'object' && postsResponse !== null) {
+        if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
+          return (postsResponse as { data: PostItem[] }).data;
+        }
+        if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
+          return (postsResponse as { results: { data: PostItem[] } }).results.data;
+        }
+        if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
+          return (postsResponse as { posts: PostItem[] }).posts;
+        }
+      }
+      return [];
+    })();
+    
+    const approved = allPosts.filter(p => p.status === 'approved' || !p.status);
+    const drafts = allPosts.filter(p => p.status === 'draft');
+    
+    return { approvedPosts: approved, draftPosts: drafts };
+  }, [postsResponse]);
+  
+  const handlePublishDraft = async (postId: number | string) => {
+    try {
+      await updatePost({ 
+        postId, 
+        data: { status: "approved" } 
+      }).unwrap();
+      toast.success("Post published successfully!");
+      refetch();
+    } catch (error: unknown) {
+      const errorMessage = 
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to publish post";
+      toast.error(errorMessage);
+    }
+  };
+  
   const posts = useMemo((): PostItem[] => {
     if (!postsResponse) return [];
     
@@ -83,7 +128,7 @@ const Profile = () => {
       );
     }
 
-    if (!posts.length) {
+    if (!approvedPosts.length && !draftPosts.length) {
       return (
           <p className="text-gray-300 text-sm text-center">
             No posts available yet.
@@ -93,9 +138,16 @@ const Profile = () => {
 
     return (
       <div className="space-y-6">
-        {posts.map((post) => (
+        {/* Approved Posts Only - Drafts are shown in Posts tab */}
+        {approvedPosts.map((post) => (
           <Post key={post.id} post={post} profile={profile} />
         ))}
+        
+        {approvedPosts.length === 0 && (
+          <p className="text-gray-300 text-sm text-center">
+            No posts available yet.
+          </p>
+        )}
       </div>
     );
   };
@@ -143,12 +195,34 @@ const Profile = () => {
           </div>
 
           <div className=" space-y-6">
-            {activeTab !== "overview" ? (
-               <CreatePost isProfile={true}/>
+            {activeTab === "posts" ? (
+              <div className="space-y-6">
+                <CreatePost isProfile={true} onSuccess={refetch} />
+                
+                {/* Draft Posts Section - Below CreatePost Form */}
+                {draftPosts.length > 0 && (
+                  <div className="border-t border-white/10 pt-6 mt-6">
+                    <h3 className="text-lg font-semibold text-white/70 mb-4">Drafts</h3>
+                    <div className="space-y-6">
+                      {draftPosts.map((post) => (
+                        <div key={post.id} className="relative">
+                          <Post post={post} profile={profile} />
+                          <button
+                            onClick={() => handlePublishDraft(post.id)}
+                            className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
+                          >
+                            Publish
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
-          <div className="mt-6 space-y-6">
-            {renderPosts()}
-          </div>
+              <div className="mt-6 space-y-6">
+                {renderPosts()}
+              </div>
             )}
           </div>
         </div>

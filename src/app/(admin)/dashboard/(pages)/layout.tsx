@@ -16,6 +16,7 @@ import {
   Menu,
   Flag,
   Mail,
+  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -27,9 +28,9 @@ import { toast } from "sonner";
 const menu = [
   { name: "Home", icon: Home, path: "/dashboard" },
   { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
-  { name: "Rejected Posts", icon: FileText, path: "/dashboard/rejected-posts" },
   { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "Users", icon: Users, path: "/dashboard/user-management" },
+  { name: "Communities", icon: UsersRound, path: "/dashboard/communities" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
   { name: "All Products", icon: Package, path: "/dashboard/all-products" },

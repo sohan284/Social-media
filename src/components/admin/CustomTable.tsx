@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, AlertCircle, Inbox } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertCircle, Inbox, ChevronDown } from "lucide-react";
 
 export interface Column<T> {
   header: string | ((row: T) => string);
@@ -17,12 +17,27 @@ export interface Column<T> {
   className?: string;
 }
 
+interface ServerPaginationProps {
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+  getPageNumbers: () => (number | string)[];
+  handlePreviousPage: () => void;
+  handleNextPage: () => void;
+}
+
 interface CustomTableProps<T> {
   columns: Column<T>[];
   data: T[];
   title?: string;
+  filters?: React.ReactNode;
   emptyMessage?: string;
   emptyIcon?: React.ReactNode;
+  isLoading?: boolean;
   isError?: boolean;
   errorMessage?: string;
   className?: string;
@@ -31,6 +46,7 @@ interface CustomTableProps<T> {
   cellClassName?: string;
   onRowClick?: (row: T, index: number) => void;
   disablePagination?: boolean;
+  serverPagination?: ServerPaginationProps;
   maxHeight?: string;
   enableScroll?: boolean;
 }
@@ -41,8 +57,10 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   columns,
   data,
   title,
+  filters,
   emptyMessage = "No data available",
   emptyIcon,
+  isLoading = false,
   isError = false,
   errorMessage = "Failed to load data. Please try again later.",
   className = "",
@@ -51,6 +69,7 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   cellClassName = "",
   onRowClick,
   disablePagination = false,
+  serverPagination,
   maxHeight = "80vh",
   enableScroll = false,
 }: CustomTableProps<T>) {
@@ -158,9 +177,23 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
       className={`w-[88vw] lg:w-full rounded-2xl border bg-black/30 backdrop-blur-sm border-white/20 flex flex-col ${className}`}
       style={enableScroll ? { maxHeight } : {}}
     >
-      {title && (
+      {/* Title and Filters Section */}
+      {(title || filters) && (
         <div className="p-6 border-b border-white/10 flex-shrink-0">
-          <h2 className="text-2xl font-semibold text-center text-white">{title}</h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            {/* Left side - Title */}
+            {title && (
+              <div className="flex-shrink-0">
+                <h2 className="text-2xl font-semibold text-white">{title}</h2>
+              </div>
+            )}
+            {/* Right side - Filters */}
+            {filters && (
+              <div className="flex flex-wrap items-center gap-3">
+                {filters}
+              </div>
+            )}
+          </div>
         </div>
       )}
       <div 
@@ -168,7 +201,7 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
         style={enableScroll ? { maxHeight: `calc(${maxHeight} - ${title ? '120px' : '0px'})` } : {}}
       >
         <div className={enableScroll ? 'overflow-y-auto flex-1' : ''}>
-          <Table className="min-w-max">
+          <Table className="min-w-max h-[60vh]">
             <TableHeader className={enableScroll ? 'sticky top-0 z-10 bg-black/30 backdrop-blur-sm' : ''}>
               <TableRow className={`bg-white/10 text-left ${headerClassName}`}>
                 {columns.map((column, index) => {
@@ -184,7 +217,25 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
               </TableRow>
             </TableHeader>
             <TableBody>
-            {isError ? (
+            {isLoading ? (
+              // Loading State - Skeleton
+              <>
+                {Array.from({ length: ITEMS_PER_PAGE }).map((_, rowIndex) => (
+                  <TableRow key={`skeleton-${rowIndex}`} className="border-t border-white/10">
+                    {columns.map((_, colIndex) => (
+                      <TableCell
+                        key={colIndex}
+                        className={`px-4 py-5 ${cellClassName}`.trim()}
+                      >
+                        <div className="animate-pulse">
+                          <div className="h-5 bg-white/10 rounded w-full" />
+                        </div>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>
+            ) : isError ? (
               // Error State
               <TableRow className="hover:!bg-transparent cursor-default">
                 <TableCell
@@ -224,9 +275,6 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
                     <div>
                       <p className="text-white/80 text-lg font-medium mb-1">
                         {emptyMessage}
-                      </p>
-                      <p className="text-white/40 text-sm">
-                        No data available to display
                       </p>
                     </div>
                   </div>
@@ -276,8 +324,8 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
         </div>
       </div>
 
-      {/* Pagination Controls - Always show if there's data and pagination is enabled */}
-      {!disablePagination && data.length > 0 && (
+      {/* Client-side Pagination Controls */}
+      {!disablePagination && !serverPagination && data.length > 0 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-white/5">
           <div className="text-sm text-white/60">
             Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, data.length)} of {data.length} entries
@@ -333,6 +381,92 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
               disabled={currentPage === totalPages}
               className={`p-2 rounded-lg transition ${
                 currentPage === totalPages
+                  ? "bg-white/5 text-white/30 cursor-not-allowed"
+                  : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+              }`}
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Server-side Pagination Controls */}
+      {serverPagination && serverPagination.totalCount > 0 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-white/5">
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-white/60">
+              Showing {(serverPagination.currentPage - 1) * serverPagination.pageSize + 1} to {Math.min(serverPagination.currentPage * serverPagination.pageSize, serverPagination.totalCount)} of {serverPagination.totalCount} entries
+            </div>
+            {/* Limit Selector */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <select
+                  value={serverPagination.pageSize}
+                  onChange={(e) => serverPagination.onLimitChange(Number(e.target.value))}
+                  className="appearance-none bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer pr-8"
+                >
+                  <option value={10} className="bg-[#1F2149] text-white">10</option>
+                  <option value={20} className="bg-[#1F2149] text-white">20</option>
+                  <option value={50} className="bg-[#1F2149] text-white">50</option>
+                  <option value={100} className="bg-[#1F2149] text-white">100</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Previous Button */}
+            <button
+              onClick={serverPagination.handlePreviousPage}
+              disabled={!serverPagination.hasPrevious || serverPagination.currentPage === 1}
+              className={`p-2 rounded-lg transition ${
+                !serverPagination.hasPrevious || serverPagination.currentPage === 1
+                  ? "bg-white/5 text-white/30 cursor-not-allowed"
+                  : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+              }`}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1">
+              {serverPagination.getPageNumbers().map((page, index) => {
+                if (page === "...") {
+                  return (
+                    <span key={`ellipsis-${index}`} className="px-2 text-white/60">
+                      ...
+                    </span>
+                  );
+                }
+                const pageNum = page as number;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => serverPagination.onPageChange(pageNum)}
+                    className={`px-3 py-1 rounded-lg text-sm transition ${
+                      serverPagination.currentPage === pageNum
+                        ? "bg-[#6B83FA] text-white"
+                        : "bg-white/10 text-white/80 hover:bg-white/20"
+                    }`}
+                    aria-label={`Go to page ${pageNum}`}
+                    aria-current={serverPagination.currentPage === pageNum ? "page" : undefined}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={serverPagination.handleNextPage}
+              disabled={!serverPagination.hasNext || serverPagination.currentPage === Math.ceil(serverPagination.totalCount / serverPagination.pageSize)}
+              className={`p-2 rounded-lg transition ${
+                !serverPagination.hasNext || serverPagination.currentPage === Math.ceil(serverPagination.totalCount / serverPagination.pageSize)
                   ? "bg-white/5 text-white/30 cursor-not-allowed"
                   : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
               }`}
