@@ -4,13 +4,26 @@ import { useMemo, useState } from "react";
 import { useGetProductsQuery, useDeleteProductMutation, MarketplaceItem } from "@/store/marketplaceApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
+import { TableFilters } from "@/components/admin/TableFilters";
+import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
+import { SearchFilter } from "@/components/admin/SearchFilter";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ProductDetailsModal from "@/components/admin/ProductDetailsModal";
 import EditProductModal from "@/components/admin/EditProductModal";
 
 export default function AllProductsTable() {
-  const { data, isLoading, isError, refetch } = useGetProductsQuery();
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  const { data, isLoading, isError, refetch } = useGetProductsQuery({
+    start_date: dateRange?.start_date,
+    end_date: dateRange?.end_date,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    search: searchQuery.trim() || undefined,
+  });
   const [deleteProduct] = useDeleteProductMutation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<{
@@ -39,14 +52,6 @@ export default function AllProductsTable() {
     const allProducts = data?.data || data?.results?.data || data?.items || data?.products || [];
     return Array.isArray(allProducts) ? allProducts : [];
   }, [data]);
-
-  // Filter only published products
-  const publishedProducts = useMemo(() => {
-    return products.filter((product: MarketplaceItem) => {
-      const status = (product as { status?: string }).status;
-      return status === "published";
-    });
-  }, [products]);
 
   const getImageUrl = (image: string | undefined) => {
     if (!image) return "/sheep.jpg";
@@ -159,14 +164,28 @@ export default function AllProductsTable() {
       header: "Status",
       accessor: (row) => {
         const status = (row.status || "N/A") as string;
+        let badgeClass = "";
+        switch (status) {
+          case "published":
+            badgeClass = "bg-green-500/20 text-green-300";
+            break;
+          case "draft":
+            badgeClass = "bg-yellow-500/20 text-yellow-300";
+            break;
+          case "sold":
+            badgeClass = "bg-blue-500/20 text-blue-300";
+            break;
+          case "unpublished":
+            badgeClass = "bg-red-500/20 text-red-300";
+            break;
+          default:
+            badgeClass = "bg-gray-500/20 text-gray-300";
+            break;
+        }
         return (
           <div className="flex items-center justify-center">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                status === "published"
-                  ? "bg-green-500/20 text-green-300"
-                  : "bg-gray-500/20 text-gray-300"
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${badgeClass}`}
             >
               {status}
             </span>
@@ -253,31 +272,55 @@ export default function AllProductsTable() {
     refetch();
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-2xl font-semibold text-center text-white mb-8">All Products</h2>
-        </div>
-        <div className="animate-pulse space-y-4 mt-8">
-          {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="h-20 bg-white/10 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <div>
         <CustomTable
           title="All Products"
           columns={columns}
-          data={publishedProducts}
-          emptyMessage="No published products found."
+          data={products}
+          isLoading={isLoading}
+          filters={
+            <>
+              <TableFilters
+                filters={[
+                  {
+                    type: "select",
+                    key: "status",
+                    label: "Status",
+                    options: [
+                      { label: "All", value: "all" },
+                      { label: "Published", value: "published" },
+                      { label: "Draft", value: "draft" },
+                      
+                    ],
+                    value: statusFilter,
+                    onChange: (value) => {
+                      setStatusFilter(value);
+                    },
+                  },
+                ]}
+              />
+              <DateFilter
+                value={datePreset}
+                dateRange={dateRange}
+                onChange={(preset, range) => {
+                  setDatePreset(preset);
+                  setDateRange(range);
+                }}
+                label="Date"
+              />
+              <SearchFilter
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by name or description..."
+                label="Search"
+              />
+            </>
+          }
+          emptyMessage="No products found"
           isError={isError}
-          errorMessage="Failed to load products. Please try again later."
+          errorMessage="Failed to load products. Please try again later"
           onRowClick={handleRowClick}
         />
       </div>

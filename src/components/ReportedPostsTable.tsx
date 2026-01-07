@@ -2,6 +2,9 @@
 import { useMemo, useState } from "react";
 import { useGetUnifiedReportsQuery, useReviewUnifiedReportMutation, UnifiedReportItem } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
+import { TableFilters } from "@/components/admin/TableFilters";
+import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
+import { SearchFilter } from "@/components/admin/SearchFilter";
 import { CheckCircle2, XCircle, Eye, Clock, FileText, User } from "lucide-react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +12,17 @@ import { useRouter } from "next/navigation";
 
 export default function ReportedPostsTable() {
   const router = useRouter();
-  const { data, isLoading, isError, refetch } = useGetUnifiedReportsQuery();
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  const { data, isLoading, isError, refetch } = useGetUnifiedReportsQuery({
+    status: statusFilter === "all" ? undefined : statusFilter,
+    start_date: dateRange?.start_date,
+    end_date: dateRange?.end_date,
+    search: searchQuery.trim() || undefined,
+  });
   const [reviewReport, { isLoading: isReviewing }] = useReviewUnifiedReportMutation();
   const [selectedReport, setSelectedReport] = useState<UnifiedReportItem | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -301,21 +314,6 @@ export default function ReportedPostsTable() {
     },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-2xl font-semibold text-center text-white mb-8">All Reports</h2>
-        </div>
-        <div className="animate-pulse space-y-4 mt-8">
-          {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="h-20 bg-white/10 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="w-[88vw] lg:w-full rounded-2xl border border-white/20 flex flex-col">
@@ -323,9 +321,49 @@ export default function ReportedPostsTable() {
           columns={columns}
           data={reports}
           title="All Reports"
-          emptyMessage="No reports found."
+          isLoading={isLoading}
+          filters={
+            <>
+              <TableFilters
+                filters={[
+                  {
+                    type: "select",
+                    key: "status",
+                    label: "Status",
+                    options: [
+                      { label: "All", value: "all" },
+                      { label: "Pending", value: "pending" },
+                      { label: "Reviewed", value: "reviewed" },
+                      { label: "Resolved", value: "resolved" },
+                      { label: "Dismissed", value: "dismissed" },
+                    ],
+                    value: statusFilter,
+                    onChange: (value) => {
+                      setStatusFilter(value);
+                    },
+                  },
+                ]}
+              />
+              <DateFilter
+                value={datePreset}
+                dateRange={dateRange}
+                onChange={(preset, range) => {
+                  setDatePreset(preset);
+                  setDateRange(range);
+                }}
+                label="Date"
+              />
+              <SearchFilter
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by reporter, reason, or content..."
+                label="Search"
+              />
+            </>
+          }
+          emptyMessage="No reports found"
           isError={isError}
-          errorMessage="Failed to load reports. Please try again later."
+          errorMessage="Failed to load reports. Please try again later"
           disablePagination={true}
           onRowClick={handleRowClick}
         />

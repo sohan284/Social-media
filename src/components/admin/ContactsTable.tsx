@@ -150,29 +150,16 @@ export default function ContactsTable() {
     },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="w-full flex items-center justify-center py-12">
-        <div className="text-white">Loading contacts...</div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="w-full flex items-center justify-center py-12">
-        <div className="text-red-400">Failed to load contacts. Please try again.</div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full">
       <CustomTable
         columns={columns}
         data={contacts}
-        title="Contact Submissions"
-        emptyMessage="No contact submissions yet"
+        title="All Contacts"
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage="Failed to load contacts. Please try again later"
+        emptyMessage="No contact submissions found"
         onRowClick={handleRowClick}
         rowClassName={(row) => (row.is_read ? "opacity-60" : "")}
       />

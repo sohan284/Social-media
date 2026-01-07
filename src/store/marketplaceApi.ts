@@ -237,11 +237,21 @@ export const marketplaceApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["MarketplaceItems"],
     }),
-    getProducts: builder.query<GetProductsResponse, void>({
-      query: () => ({
-        url: "/api/marketplace/items/",
-        method: "GET",
-      }),
+    getProducts: builder.query<GetProductsResponse, { start_date?: string; end_date?: string; status?: string; search?: string } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object') {
+          if (params.start_date) searchParams.append('start_date', params.start_date);
+          if (params.end_date) searchParams.append('end_date', params.end_date);
+          if (params.status) searchParams.append('status', params.status);
+          if (params.search) searchParams.append('search', params.search);
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/api/marketplace/items/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
       providesTags: ["MarketplaceItems"],
     }),
     deleteProduct: builder.mutation<{ success: boolean; message: string }, number | string>({

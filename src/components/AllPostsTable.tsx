@@ -2,9 +2,12 @@
 import { useMemo, useState } from "react";
 import { useGetAllPostsQuery, useDeletePostMutation, useApprovePostMutation, PostItem } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
+import { TableFilters } from "@/components/admin/TableFilters";
+import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
+import { SearchFilter } from "@/components/admin/SearchFilter";
 import { getApiBaseUrl } from "@/lib/utils";
 import Image from "next/image";
-import { Trash2, ChevronLeft, ChevronRight, CheckCircle, ChevronDown } from "lucide-react";
+import { Trash2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import PostDetailsModal from "@/components/admin/PostDetailsModal";
@@ -12,10 +15,18 @@ import PostDetailsModal from "@/components/admin/PostDetailsModal";
 export default function AllPostsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   
   const { data, isLoading, isError, refetch } = useGetAllPostsQuery({
     page: currentPage,
     limit: pageSize,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    start_date: dateRange?.start_date,
+    end_date: dateRange?.end_date,
+    search: searchQuery.trim() || undefined,
   });
   const [deletePost] = useDeletePostMutation();
   const [approvePost, { isLoading: isApproving }] = useApprovePostMutation();
@@ -319,124 +330,78 @@ export default function AllPostsTable() {
     },
   ];
 
-  if (isLoading) {
-    return (
-      <div className="w-full p-6 border bg-black/30 backdrop-blur-sm rounded-xl border-white/20">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-2xl font-semibold text-center text-white mb-8">All Posts</h2>
-        </div>
-        <div className="animate-pulse space-y-4 mt-8">
-          {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="h-20 bg-white/10 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const statusFilterOptions = [
+    { value: "all", label: "All" },
+    { value: "approved", label: "Approved" },
+    { value: "pending", label: "Pending" },
+    { value: "rejected", label: "Rejected" },
+    { value: "draft", label: "Draft" },
+  ];
 
   return (
     <>
-      <div className="w-[88vw] lg:w-full rounded-2xl border  border-white/20 flex flex-col">
-      
-        
+      <div className="w-[88vw] lg:w-full">
         <CustomTable
           columns={columns}
           data={posts}
           title="All Posts"
-          emptyMessage="No posts found."
+          isLoading={isLoading}
+          filters={
+            <>
+              <TableFilters
+                filters={[
+                  {
+                    type: "select",
+                    key: "status",
+                    label: "Status",
+                    options: statusFilterOptions,
+                    value: statusFilter,
+                    onChange: (value) => {
+                      setStatusFilter(value);
+                      setCurrentPage(1); // Reset to first page when filter changes
+                    },
+                  },
+                ]}
+              />
+              <DateFilter
+                value={datePreset}
+                dateRange={dateRange}
+                onChange={(preset, range) => {
+                  setDatePreset(preset);
+                  setDateRange(range);
+                  setCurrentPage(1); // Reset to first page when filter changes
+                }}
+                label="Date"
+              />
+              <SearchFilter
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search by title, content, or author..."
+                label="Search"
+              />
+            </>
+          }
+          emptyMessage="No posts found"
           isError={isError}
-          errorMessage="Failed to load posts. Please try again later."
+          errorMessage="Failed to load posts. Please try again later"
           disablePagination={true}
+          serverPagination={{
+            totalCount,
+            currentPage,
+            pageSize,
+            hasNext,
+            hasPrevious,
+            onPageChange: handlePageChange,
+            onLimitChange: handleLimitChange,
+            getPageNumbers,
+            handlePreviousPage,
+            handleNextPage,
+          }}
           onRowClick={handleRowClick}
-          maxHeight="80vh"
-          enableScroll={pageSize >= 20}
         />
-
-        {/* Server-side Pagination Controls */}
-        {totalCount > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-white/10 bg-white/5">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-white/60">
-                Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
-              </div>
-              {/* Limit Selector */}
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handleLimitChange(Number(e.target.value))}
-                    className="appearance-none bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer pr-8"
-                  >
-                    <option value={10} className="bg-[#1F2149] text-white">10</option>
-                    <option value={20} className="bg-[#1F2149] text-white">20</option>
-                    <option value={50} className="bg-[#1F2149] text-white">50</option>
-                    <option value={100} className="bg-[#1F2149] text-white">100</option>
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Previous Button */}
-              <button
-                onClick={handlePreviousPage}
-                disabled={!hasPrevious || currentPage === 1}
-                className={`p-2 rounded-lg transition ${
-                  !hasPrevious || currentPage === 1
-                    ? "bg-white/5 text-white/30 cursor-not-allowed"
-                    : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
-                }`}
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Page Numbers */}
-              <div className="flex items-center gap-1">
-                {getPageNumbers().map((page, index) => {
-                  if (page === "...") {
-                    return (
-                      <span key={`ellipsis-${index}`} className="px-2 text-white/60">
-                        ...
-                      </span>
-                    );
-                  }
-                  const pageNum = page as number;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-1 rounded-lg text-sm transition ${
-                        currentPage === pageNum
-                          ? "bg-[#6B83FA] text-white"
-                          : "bg-white/10 text-white/80 hover:bg-white/20"
-                      }`}
-                      aria-label={`Go to page ${pageNum}`}
-                      aria-current={currentPage === pageNum ? "page" : undefined}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Next Button */}
-              <button
-                onClick={handleNextPage}
-                disabled={!hasNext || currentPage === totalPages}
-                className={`p-2 rounded-lg transition ${
-                  !hasNext || currentPage === totalPages
-                    ? "bg-white/5 text-white/30 cursor-not-allowed"
-                    : "bg-white/10 text-white hover:bg-white/20 cursor-pointer"
-                }`}
-                aria-label="Next page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

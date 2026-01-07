@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import UserProfileHeader from "./_components/UserProfileHeader";
 import Post from "../Main/Post/Post";
 import UserProfileSidebar from "./_components/UserProfileSidebar";
-import { useGetUserPostsQuery, useGetUserProfileQuery, useToggleFollowMutation, type PostItem } from "@/store/postApi";
+import { useGetUserPostsQuery, useGetUserProfileQuery, useToggleFollowMutation, useUpdatePostMutation, type PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery, useGetPublicUsersQuery } from "@/store/authApi";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -46,15 +46,58 @@ const UserProfile = () => {
     skip: !userId || !username,
   });
   
-  const { data: postsResponse, isLoading: isPostsLoading, isError: isPostsError } = useGetUserPostsQuery(userId, {
+  const { data: postsResponse, isLoading: isPostsLoading, isError: isPostsError, refetch: refetchPosts } = useGetUserPostsQuery(userId, {
     skip: !userId || !username,
   });
   
   const [toggleFollow, { isLoading: isTogglingFollow }] = useToggleFollowMutation();
+  const [updatePost] = useUpdatePostMutation();
   
   const userProfile = userProfileResponse?.data;
   const isFollowing = userProfile?.is_following || false;
   const isOwnProfile = currentUserId && userId && String(currentUserId) === String(userId);
+  
+  // Separate approved posts and drafts (only for own profile)
+  const { approvedPosts, draftPosts } = useMemo(() => {
+    const allPosts: PostItem[] = (() => {
+      if (!postsResponse) return [];
+      if (Array.isArray(postsResponse)) return postsResponse;
+      if (typeof postsResponse === 'object' && postsResponse !== null) {
+        if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
+          return (postsResponse as { data: PostItem[] }).data;
+        }
+        if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
+          return (postsResponse as { results: { data: PostItem[] } }).results.data;
+        }
+        if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
+          return (postsResponse as { posts: PostItem[] }).posts;
+        }
+      }
+      return [];
+    })();
+    
+    const approved = allPosts.filter(p => p.status === 'approved' || !p.status);
+    const drafts = isOwnProfile ? allPosts.filter(p => p.status === 'draft') : [];
+    
+    return { approvedPosts: approved, draftPosts: drafts };
+  }, [postsResponse, isOwnProfile]);
+  
+  const handlePublishDraft = async (postId: number | string) => {
+    try {
+      await updatePost({ 
+        postId, 
+        data: { status: "approved" } 
+      }).unwrap();
+      toast.success("Post published successfully!");
+      refetchPosts();
+    } catch (error: unknown) {
+      const errorMessage = 
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to publish post";
+      toast.error(errorMessage);
+    }
+  };
   
   const posts = useMemo((): PostItem[] => {
     if (!postsResponse) return [];
@@ -145,7 +188,7 @@ const UserProfile = () => {
       );
     }
 
-    if (!posts.length) {
+    if (!approvedPosts.length && !draftPosts.length) {
       return (
           <p className="text-gray-300 text-sm text-center">
             No posts available yet.
@@ -155,9 +198,32 @@ const UserProfile = () => {
 
     return (
       <div className="space-y-6">
-        {posts.map((post) => (
+        {/* Approved Posts */}
+        {approvedPosts.map((post) => (
           <Post key={post.id} post={post} profile={currentUserProfile?.data} />
         ))}
+        
+        {/* Draft Posts Section (only for own profile) */}
+        {isOwnProfile && draftPosts.length > 0 && (
+          <>
+            <div className="border-t border-white/10 pt-6 mt-6">
+              <h3 className="text-lg font-semibold text-white/70 mb-4">Drafts</h3>
+              <div className="space-y-6">
+                {draftPosts.map((post) => (
+                  <div key={post.id} className="relative">
+                    <Post post={post} profile={currentUserProfile?.data} />
+                    <button
+                      onClick={() => handlePublishDraft(post.id)}
+                      className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
+                    >
+                      Publish
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   };

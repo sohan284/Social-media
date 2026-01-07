@@ -148,7 +148,7 @@ const NotificationDropdown = ({
         )}
 
         {!isLoading && !isError && notifications.length > 0 && (
-          <ul className="flex-1 overflow-y-auto divide-y divide-gray-800">
+          <ul className="flex-1 overflow-y-auto divide-y divide-gray-800 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {notifications.map((notification: NotificationItem) => {
               const isUnread = !notification.is_read;
               return (

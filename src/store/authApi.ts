@@ -326,11 +326,21 @@ export const authApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
-    getUsers: builder.query<GetUsersResponse, void>({
-      query: () => ({
-        url: "/auth/admin/users/",
-        method: "GET",
-      }),
+    getUsers: builder.query<GetUsersResponse, { status?: string; start_date?: string; end_date?: string; search?: string } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object') {
+          if (params.status) searchParams.append('status', params.status);
+          if (params.start_date) searchParams.append('start_date', params.start_date);
+          if (params.end_date) searchParams.append('end_date', params.end_date);
+          if (params.search) searchParams.append('search', params.search);
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/auth/admin/users/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
       providesTags: ["UserProfile"],
     }),
     getPublicUsers: builder.query<GetUsersResponse, void>({
@@ -410,6 +420,51 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'Contacts' }],
     }),
+    blockUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/block/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
+    unblockUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/unblock/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
+    deleteUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/delete/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
+    getCommunities: builder.query<{ success?: boolean; message?: string; data?: unknown[] }, { visibility?: string; start_date?: string; end_date?: string; search?: string } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object') {
+          if (params.visibility) searchParams.append('visibility', params.visibility);
+          if (params.start_date) searchParams.append('start_date', params.start_date);
+          if (params.end_date) searchParams.append('end_date', params.end_date);
+          if (params.search) searchParams.append('search', params.search);
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/auth/admin/communities/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["UserProfile"],
+    }),
+    deleteCommunity: builder.mutation<{ success?: boolean; message?: string; error?: string }, { communityId: number | string }>({
+      query: ({ communityId }) => ({
+        url: `/auth/admin/communities/${communityId}/delete/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["UserProfile"],
+    }),
   }),
 });
 
@@ -428,6 +483,11 @@ export const {
   useSendPasswordResetOtpMutation,
   useVerifyPasswordResetOtpMutation,
   useResetPasswordMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+  useDeleteUserMutation,
+  useGetCommunitiesQuery,
+  useDeleteCommunityMutation,
 } = authApi;
 
 export const   useGetCurrentUserProfileQuery = (

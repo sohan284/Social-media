@@ -10,14 +10,15 @@ import { AiFillLike } from "react-icons/ai";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { BiSend } from "react-icons/bi";
 import type { PostItem, CommentItem, FollowItem } from "@/store/postApi";
-import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowingQuery, useDeletePostMutation } from "@/store/postApi";
+import { useLikePostMutation, useGetCommentsQuery, useCreateCommentMutation, useUpdateCommentMutation, useDeleteCommentMutation, useFollowUserMutation, useUnfollowUserMutation, useGetFollowingQuery, useDeletePostMutation, useSharePostMutation } from "@/store/postApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import CustomDialog from "@/components/ui/CustomDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { FiEdit2, FiTrash2, FiFlag } from "react-icons/fi";
 import EditPost from "../../EditPost/EditPost";
-import CreatePost from "../../CreatePost/CreatePost";
 import ReportPostModal from "./ReportPostModal";
+import { getStoredAccessToken } from "@/lib/auth";
+import { toast } from "sonner";
 
 interface Profile {
   id: string | number;
@@ -35,6 +36,7 @@ interface PostProps {
 
 const Post = ({ post, profile }: PostProps) => {
   const router = useRouter();
+  const token = getStoredAccessToken();
   const [showComments, setShowComments] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -49,13 +51,16 @@ const Post = ({ post, profile }: PostProps) => {
   const [commentToDelete, setCommentToDelete] = useState<number | string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<number | string | null>(null);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isSharePreviewModalOpen, setIsSharePreviewModalOpen] = useState(false);
   
   const [likePost, { isLoading: isLiking }] = useLikePostMutation();
   const [deletePost, { isLoading: isDeletingPost }] = useDeletePostMutation();
-  const { data: commentsData, isLoading: isLoadingComments } = useGetCommentsQuery(post?.id, {
-    skip: !showComments || !post?.id,
+  const [sharePost, { isLoading: isSharing }] = useSharePostMutation();
+  // For shared posts, get comments from the shared post itself (separate from original)
+  const postIdForComments = post?.id;
+  const { data: commentsData, isLoading: isLoadingComments } = useGetCommentsQuery(postIdForComments, {
+    skip: !showComments || !postIdForComments,
   });
   const [createComment, { isLoading: isCreatingComment }] = useCreateCommentMutation();
   const [updateComment, { isLoading: isUpdatingComment }] = useUpdateCommentMutation();
@@ -118,6 +123,7 @@ const Post = ({ post, profile }: PostProps) => {
     }
   }, [followingData, postUserId, post]);
 
+  // For shared posts, use the shared post's own like count and is_liked status (separate from original)
   const isLiked = post?.is_liked || false;
   const likeCount = post?.likes_count as number || 0;
 
@@ -142,6 +148,17 @@ const Post = ({ post, profile }: PostProps) => {
       return `${baseUrl}media/${cleanPath}`;
     });
   }, [post?.media_file]);
+
+  // Original post media URLs for shared posts
+  const originalPostMediaUrls = useMemo(() => {
+    if (!post?.original_post?.media_file || !Array.isArray(post.original_post.media_file) || post.original_post.media_file.length === 0) return [];
+    const apiBase = getApiBaseUrl();
+    const baseUrl = apiBase.endsWith("/") ? apiBase : `${apiBase}/`;
+    return post.original_post.media_file.map((mediaPath: string) => {
+      const cleanPath = mediaPath.startsWith("/") ? mediaPath.slice(1) : mediaPath;
+      return `${baseUrl}media/${cleanPath}`;
+    });
+  }, [post?.original_post?.media_file]);
 
   // Helper function to detect if a media URL is a video
   const isVideoUrl = (url: string, index?: number): boolean => {
@@ -264,12 +281,22 @@ const Post = ({ post, profile }: PostProps) => {
   };
 
   const handleLikeClick = async () => {
-    if (!post?.id || isLiking) return;
+    // Like the post itself (for shared posts, like the shared post, not the original)
+    const postIdToLike = post?.id;
+    
+    if (!postIdToLike || isLiking) return;
+    
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+    
     try {
       if (isLiked) {
-        await likePost({ postId: post.id, isLiked: false }).unwrap();
+        await likePost({ postId: postIdToLike, isLiked: false }).unwrap();
       } else {
-        await likePost({ postId: post.id, isLiked: true }).unwrap();
+        await likePost({ postId: postIdToLike, isLiked: true }).unwrap();
       }
     } catch (error) {
       console.error("Failed to like post:", error);
@@ -277,18 +304,51 @@ const Post = ({ post, profile }: PostProps) => {
   };
 
   const handleShareClick = () => {
-    console.log("Share button clicked - handler called");
-    setIsShareModalOpen(true);
-    console.log("Modal state set to:", true);
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+    
+    if (!post?.id) return;
+    
+    // Open share preview modal
+    setIsSharePreviewModalOpen(true);
+  };
+
+  const handleConfirmShare = async () => {
+    if (!post?.id || isSharing) return;
+    
+    try {
+      await sharePost({ post: post.id }).unwrap();
+      toast.success("Post shared successfully!");
+      setIsSharePreviewModalOpen(false);
+    } catch (error: unknown) {
+      console.error("Failed to share post:", error);
+      const errorMessage = (error as { data?: { error?: string; message?: string } })?.data?.error || 
+                          (error as { data?: { error?: string; message?: string } })?.data?.message || 
+                          'Failed to share post';
+      toast.error('Failed to share post', {
+        description: errorMessage,
+      });
+    }
   };
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || !post?.id || isCreatingComment) return;
+    // Comment on the post itself (for shared posts, comment on the shared post, not the original)
+    const postIdForComment = post?.id;
+    if (!commentText.trim() || !postIdForComment || isCreatingComment) return;
+    
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
     
     try {
       await createComment({
-        post: post.id,
+        post: postIdForComment,
         content: commentText,
       }).unwrap();
       setCommentText("");
@@ -299,11 +359,13 @@ const Post = ({ post, profile }: PostProps) => {
 
   const handleReplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim() || !post?.id || !replyingTo || isCreatingComment) return;
+    // Reply on the post itself (for shared posts, reply on the shared post, not the original)
+    const postIdForReply = post?.id;
+    if (!replyText.trim() || !postIdForReply || !replyingTo || isCreatingComment) return;
     
     try {
       await createComment({
-        post: post.id,
+        post: postIdForReply,
         content: replyText,
         parent: replyingTo.id,
       }).unwrap();
@@ -389,6 +451,12 @@ const Post = ({ post, profile }: PostProps) => {
   };
 
   const handleFollowClick = async () => {
+    // Redirect to login if not authenticated
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+    
     if (!postUserId) {
       console.error("User ID not found in post data");
       return;
@@ -1026,7 +1094,13 @@ const Post = ({ post, profile }: PostProps) => {
           )}
           {!isCurrentUserPost && (
             <button
-              onClick={() => setIsReportModalOpen(true)}
+              onClick={() => {
+                if (!token) {
+                  router.push("/auth/login");
+                  return;
+                }
+                setIsReportModalOpen(true);
+              }}
               className="text-red-400/60 hover:text-red-400 transition-colors p-2 rounded-full hover:bg-red-500/10"
               title="Report post"
             >
@@ -1052,9 +1126,184 @@ const Post = ({ post, profile }: PostProps) => {
       </div>
 
       <div>
+        {/* Shared Post Indicator */}
+        {(post?.original_post && ((): React.ReactElement | null => {
+          const isCurrentUserShare = profile?.username === (post?.user_name || post?.username);
+          const originalPostId = post.original_post.id;
+          const contentValue = post.original_post.content;
+          const originalPostContent: string | null = typeof contentValue === 'string' && contentValue ? contentValue : null;
+          
+          const renderContent = (): React.ReactNode => {
+            if (!originalPostContent) return null;
+            return React.createElement('div', {
+              dangerouslySetInnerHTML: { __html: originalPostContent },
+              className: "text-base text-white whitespace-pre-line mb-3"
+            });
+          };
+          
+          return (
+            <div 
+              className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700 cursor-pointer hover:bg-slate-800/70 transition-colors"
+              onClick={() => {
+                if (originalPostId) {
+                  router.push(`/main/post/${originalPostId}`);
+                }
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <FaRegShareFromSquare className="text-green-400" size={16} />
+                <span className="text-sm text-white/80">
+                  {isCurrentUserShare ? (
+                    <>
+                      <span className="font-semibold text-white">You</span>
+                      {" shared "}
+                      <span className="font-semibold text-white">{post.original_post.user_name || "someone"}&apos;s post</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold text-white">{post?.user_name || post?.username || "User"}</span>
+                      {" shared "}
+                      <span className="font-semibold text-white">{post.original_post.user_name || "someone"}&apos;s post</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              {/* Original Post Content - Full Display */}
+              <div className="pl-4 border-l-2 border-slate-600">
+                {/* Original Post Author */}
+                <div className="flex items-center gap-2 mb-3">
+                  {post.original_post.avatar && typeof post.original_post.avatar === 'string' ? (
+                    <Image
+                      src={post.original_post.avatar.startsWith('http') 
+                        ? post.original_post.avatar 
+                        : `${getApiBaseUrl()}${post.original_post.avatar.startsWith('/') ? post.original_post.avatar.slice(1) : post.original_post.avatar}`}
+                      alt={post.original_post.user_name || "Original Author"}
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
+                      {(post.original_post.user_name || "A").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-sm text-white font-medium">
+                    {post.original_post.user_name || "Original Author"}
+                  </span>
+                </div>
+                
+                {/* Original Post Title */}
+                {post.original_post.title && (
+                  <h3 className="text-xl font-bold text-white mb-3 break-words">
+                    {post.original_post.title}
+                  </h3>
+                )}
+                
+                {/* Original Post Content */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {renderContent() as any}
+                
+                {/* Original Post Media - Full Gallery */}
+                {originalPostMediaUrls.length > 0 && (
+                  <div className="mb-3">
+                    {originalPostMediaUrls.length === 1 ? (
+                      <div className="rounded-lg overflow-hidden">
+                        {isVideoUrl(originalPostMediaUrls[0], 0) ? (
+                          <video
+                            src={originalPostMediaUrls[0]}
+                            className="w-full h-auto max-h-[50vh] object-contain"
+                            muted
+                            preload="metadata"
+                            playsInline
+                            onLoadedMetadata={(e) => {
+                              const video = e.currentTarget;
+                              video.currentTime = 0.1;
+                            }}
+                          />
+                        ) : (
+                          <Image
+                            src={originalPostMediaUrls[0]}
+                            alt={post.original_post.title || "Shared post media"}
+                            width={800}
+                            height={400}
+                            className="w-full h-auto max-h-[50vh] object-contain rounded-lg"
+                            unoptimized
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
+                        {originalPostMediaUrls.slice(0, 4).map((url, idx) => (
+                          <div key={idx} className="relative aspect-square">
+                            {isVideoUrl(url, idx) ? (
+                              <video
+                                src={url}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                                playsInline
+                              />
+                            ) : (
+                              <Image
+                                src={url}
+                                alt={`${post.original_post?.title || "Shared post"} ${idx + 1}`}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            )}
+                          </div>
+                        ))}
+                        {originalPostMediaUrls.length > 4 && (
+                          <div className="relative aspect-square bg-slate-700 flex items-center justify-center">
+                            <span className="text-white text-lg font-semibold">
+                              +{originalPostMediaUrls.length - 4}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Original Post Link */}
+                {post.original_post.link && typeof post.original_post.link === 'string' && (
+                  <div className="mt-3">
+                    <a
+                      href={post.original_post.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 hover:underline transition-colors break-all"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                        />
+                      </svg>
+                      <span className="break-all">{post.original_post.link}</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()) as React.ReactElement | null}
+        
         <div className="mb-5">
-          {/* Post Title - Bold */}
-          {post?.title && (
+          {/* Post Title - Bold - Only show if not a shared post */}
+          {/* For shared posts, title is shown in the original_post section, so don't show it here */}
+          {post?.title && !post?.original_post && (
             <h2 
               className="text-xl font-bold text-white mb-3 break-words cursor-pointer hover:text-blue-400 transition-colors"
               onClick={() => {
@@ -1066,9 +1315,11 @@ const Post = ({ post, profile }: PostProps) => {
               {post.title}
             </h2>
           )}
-          {/* Post Content */}
-          <p dangerouslySetInnerHTML={{ __html: truncatedContent }} className="text-base text-white whitespace-pre-line">
-          </p>
+          {/* Post Content - Only show if not a shared post */}
+          {!post?.original_post && (
+            <p dangerouslySetInnerHTML={{ __html: truncatedContent }} className="text-base text-white whitespace-pre-line">
+            </p>
+          )}
           {shouldTruncate && (
             <button
               onClick={() => setIsContentExpanded(!isContentExpanded)}
@@ -1105,7 +1356,7 @@ const Post = ({ post, profile }: PostProps) => {
             </div>
           )}
         </div>
-        {allMediaUrls.length > 0 && (
+        {!post?.original_post && allMediaUrls.length > 0 && (
           <div className="mb-5">
             {renderImageGallery()}
           </div>
@@ -1327,25 +1578,6 @@ const Post = ({ post, profile }: PostProps) => {
         onSuccess={handleEditSuccess}
       />
 
-      {/* Share Post Modal */}
-      <CustomDialog
-        open={isShareModalOpen}
-        onOpenChange={setIsShareModalOpen}
-        maxWidth="4xl"
-        maxHeight="90vh"
-        contentClassName="overflow-y-auto"
-      >
-        <CreatePost 
-          sharedPostData={{
-            content: post?.content || "",
-            title: post?.title || "",
-            mediaUrls: allMediaUrls || [],
-          }}
-          onSuccess={() => {
-            setIsShareModalOpen(false);
-          }}
-        />
-      </CustomDialog>
 
       {/* Report Post Modal */}
       <ReportPostModal
@@ -1354,6 +1586,212 @@ const Post = ({ post, profile }: PostProps) => {
         postId={post?.id || 0}
         postTitle={post?.title}
       />
+
+      {/* Share Preview Modal */}
+      <CustomDialog
+        open={isSharePreviewModalOpen}
+        onOpenChange={setIsSharePreviewModalOpen}
+        maxWidth="2xl"
+        maxHeight="90vh"
+        contentClassName="overflow-y-auto"
+      >
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Share Post</h2>
+          <p className="text-white/70 mb-6">This is how your shared post will appear:</p>
+          
+          {/* Preview of Shared Post */}
+          {(() => {
+            const contentValue = post?.content;
+            const previewContent: string | null = typeof contentValue === 'string' && contentValue ? contentValue : null;
+            
+            const renderPreviewContent = (): React.ReactNode => {
+              if (!previewContent) return null;
+              return React.createElement('div', {
+                dangerouslySetInnerHTML: { __html: previewContent },
+                className: "text-base text-white whitespace-pre-line mb-3"
+              });
+            };
+            
+            return (
+              <div className="border border-slate-600 rounded-lg p-4 bg-slate-800/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <FaRegShareFromSquare className="text-green-400" size={16} />
+                  <span className="text-sm text-white/80">
+                    <span className="font-semibold text-white">You</span>
+                    {" shared "}
+                    <span className="font-semibold text-white">{post?.user_name || post?.username || "someone"}&apos;s post</span>
+                  </span>
+                </div>
+                
+                {/* Original Post Content Preview */}
+                <div className="pl-4 border-l-2 border-slate-600">
+                  {/* Original Post Author */}
+                  <div className="flex items-center gap-2 mb-3">
+                    {post?.avatar && typeof post.avatar === 'string' ? (
+                      <Image
+                        src={post.avatar.startsWith('http') 
+                          ? post.avatar 
+                          : `${getApiBaseUrl()}${post.avatar.startsWith('/') ? post.avatar.slice(1) : post.avatar}`}
+                        alt={post?.user_name || post?.username || "Author"}
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
+                        {(post?.user_name || post?.username || "A").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm text-white font-medium">
+                      {post?.user_name || post?.username || "Author"}
+                    </span>
+                  </div>
+                  
+                  {/* Original Post Title */}
+                  {post?.title && (
+                    <h3 className="text-xl font-bold text-white mb-3 break-words">
+                      {post.title}
+                    </h3>
+                  )}
+                  
+                  {/* Original Post Content */}
+                  {/* Original Post Content */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {renderPreviewContent() as any}
+              
+              {/* Original Post Media Preview */}
+              {allMediaUrls.length > 0 && (
+                <div className="mb-3">
+                  {allMediaUrls.length === 1 ? (
+                    <div className="rounded-lg overflow-hidden">
+                      {isVideoUrl(allMediaUrls[0], 0) ? (
+                        <video
+                          src={allMediaUrls[0]}
+                          className="w-full h-auto max-h-[40vh] object-contain"
+                          muted
+                          preload="metadata"
+                          playsInline
+                        />
+                      ) : (
+                        <Image
+                          src={allMediaUrls[0]}
+                          alt={post?.title || "Post media"}
+                          width={800}
+                          height={400}
+                          className="w-full h-auto max-h-[40vh] object-contain rounded-lg"
+                          unoptimized
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
+                      {allMediaUrls.slice(0, 4).map((url, idx) => (
+                        <div key={idx} className="relative aspect-square">
+                          {isVideoUrl(url, idx) ? (
+                            <video
+                              src={url}
+                              className="w-full h-full object-cover"
+                              muted
+                              preload="metadata"
+                              playsInline
+                            />
+                          ) : (
+                            <Image
+                              src={url}
+                              alt={`${post?.title || "Post"} ${idx + 1}`}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          )}
+                        </div>
+                      ))}
+                      {allMediaUrls.length > 4 && (
+                        <div className="relative aspect-square bg-slate-700 flex items-center justify-center">
+                          <span className="text-white text-lg font-semibold">
+                            +{allMediaUrls.length - 4}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Original Post Link */}
+              {post?.link && typeof post.link === 'string' && (
+                <div className="mt-3">
+                  <a
+                    href={post.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 hover:underline transition-colors break-all"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                      />
+                    </svg>
+                    <span className="break-all">{post.link}</span>
+                  </a>
+                </div>
+              )}
+              
+              {/* Original Post Engagement (Like/Comment counts) */}
+              <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-slate-700">
+                <div className="text-sm text-white flex items-center gap-2">
+                  <VscThumbsup size={18} />
+                  <span>{post?.likes_count || 0}</span>
+                </div>
+                <div className="text-sm text-white flex items-center gap-2">
+                  <FaRegComment size={18} />
+                  <span>{post?.comments_count || 0}</span>
+                </div>
+              </div>
+            </div>
+            </div>
+          );
+        })() as React.ReactElement | null}
+          
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={() => setIsSharePreviewModalOpen(false)}
+              className="px-4 py-2 text-white/70 hover:text-white transition-colors"
+              disabled={isSharing}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmShare}
+              disabled={isSharing}
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isSharing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Sharing...
+                </>
+              ) : (
+                <>
+                  <FaRegShareFromSquare size={16} />
+                  Share Post
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </CustomDialog>
     </div>
   );
 };

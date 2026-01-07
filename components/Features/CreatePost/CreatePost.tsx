@@ -215,12 +215,14 @@ const CreatePost = ({
         media_files: data.files ?? [],
         post_type: derivePostType(),
         ...(communityId && { community: communityId }),
+        ...(isDraft && { status: "draft" }),
       }).unwrap();
 
       toast.success(
         isDraft ? "Draft saved successfully!" : "Post published successfully!"
       );
       setIsMediaModalOpen(false);
+      setIsDraft(false); // Reset draft state
       reset();
       setTags([]);
       setTagInput("");
@@ -499,16 +501,18 @@ const CreatePost = ({
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-">
-              {/* <button
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <button
                 type="button"
                 onClick={handleDraft}
-                disabled={isSubmitting || isCreating}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting || isCreating || !titleValue?.trim()}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
                 <FiSave size={18} />
-                Save as Draft
-              </button> */}
+                {isSubmitting || isCreating
+                  ? "Saving..."
+                  : "Save as Draft"}
+              </button>
               <button
                 type="button"
                 onClick={handlePublish}

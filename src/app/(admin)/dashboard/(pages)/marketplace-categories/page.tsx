@@ -303,60 +303,33 @@ export default function MarketplaceCategories() {
     setSelectedCategoryForSubcategory("");
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-10">
-        <h1 className="text-4xl font-semibold">Marketplace Categories</h1>
-        <div className="animate-pulse space-y-4">
-          {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="h-20 bg-white/10 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="space-y-10">
-        <h1 className="text-4xl font-semibold">Marketplace Categories</h1>
-        <div className="text-center py-12">
-          <p className="text-red-400 text-lg mb-2">Failed to load categories</p>
-          <p className="text-white/60 text-sm">Please try again later</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-10">
-      {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-semibold">Marketplace Categories</h1>
-        <div className="flex gap-4">
-          <button
-            onClick={handleCreateCategory}
-            className="bg-[#6B83FA] px-6 py-3 cursor-pointer rounded-xl hover:bg-[#5a70e8] transition text-sm font-medium"
-          >
-            + Create Category
-          </button>
-          <button
-            onClick={handleCreateSubcategory}
-            className="bg-white/10 border border-white/20 px-6 py-3 cursor-pointer rounded-xl hover:bg-white/20 transition text-sm font-medium"
-          >
-            + Create Subcategory
-          </button>
-        </div>
-      </div>
-
       {/* TABLE */}
-       <CustomTable
+      <CustomTable
           title="All Categories"
           columns={columns}
           data={tableData}
-          emptyMessage="No categories found. Create your first category!"
+          isLoading={isLoading}
           isError={isError}
-          errorMessage="Failed to load categories. Please try again later."
+          errorMessage="Failed to load categories. Please try again later"
+          emptyMessage="No categories found"
+          filters={
+            <div className="flex gap-3">
+              <button
+                onClick={handleCreateCategory}
+                className="bg-[#6B83FA] px-4 py-2 cursor-pointer rounded-lg hover:bg-[#5a70e8] transition text-sm font-medium whitespace-nowrap"
+              >
+                + Create Category
+              </button>
+              <button
+                onClick={handleCreateSubcategory}
+                className="bg-white/10 border border-white/20 px-4 py-2 cursor-pointer rounded-lg hover:bg-white/20 transition text-sm font-medium whitespace-nowrap"
+              >
+                + Create Subcategory
+              </button>
+            </div>
+          }
           rowClassName={(row) =>
             row.type === "subcategory" ? "bg-white/5 border-white/5" : ""
           }
