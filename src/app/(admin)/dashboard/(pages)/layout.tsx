@@ -291,7 +291,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end lg:mr-[2.5vw]">
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -325,7 +325,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* SCROLLABLE INNER CONTENT */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-10 py-4 md:py-8">
+        <div className="flex-1 w-[95vw] lg:max-w-[80vw] overflow-y-auto px-4 md:px-10 py-4 md:py-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {children}
         </div>
       </main>
