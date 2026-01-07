@@ -53,7 +53,7 @@ export function TableFilters({ title, filters, children }: TableFiltersProps) {
                     <button
                       key={option.value}
                       onClick={() => filter.onChange(option.value)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
                         filter.value === option.value
                           ? "bg-blue-600 text-white"
                           : "bg-transparent text-white/70 hover:bg-white/20"
@@ -79,7 +79,7 @@ export function TableFilters({ title, filters, children }: TableFiltersProps) {
                 value={filter.value}
                 onValueChange={filter.onChange}
               >
-                <SelectTrigger className="min-w-[120px] h-9 bg-white/10 border border-white/20 text-white hover:bg-white/15 focus:ring-2 focus:ring-blue-500">
+                <SelectTrigger className="min-w-[120px] h-9 bg-white/10 border border-white/20 text-white hover:bg-white/15 focus:ring-2 focus:ring-blue-500 cursor-pointer">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
                 <SelectContent className="bg-[#06133FBF] text-white backdrop-blur-md border border-white/20 shadow-lg">

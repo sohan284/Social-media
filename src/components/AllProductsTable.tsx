@@ -204,7 +204,7 @@ export default function AllProductsTable() {
               setProductToEdit(row);
               setIsEditModalOpen(true);
             }}
-            className="p-2 cursor-pointer text-blue-400 rounded-lg bg-white/10 hover:bg-white/20 transition"
+            className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
             title="Edit product"
           >
             <svg
@@ -222,7 +222,7 @@ export default function AllProductsTable() {
               const productName = (row.name || row.title || "Product") as string;
               handleDeleteClick(row.id, productName);
             }}
-            className="p-2 cursor-pointer text-red-500 rounded-lg bg-white/10 hover:bg-white/20 transition"
+            className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
             title="Delete product"
           >
             <svg

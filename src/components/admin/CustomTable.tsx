@@ -447,7 +447,7 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
                   <button
                     key={pageNum}
                     onClick={() => serverPagination.onPageChange(pageNum)}
-                    className={`px-3 py-1 rounded-lg text-sm transition ${
+                    className={`px-3 py-1 rounded-lg text-sm transition cursor-pointer ${
                       serverPagination.currentPage === pageNum
                         ? "bg-[#6B83FA] text-white"
                         : "bg-white/10 text-white/80 hover:bg-white/20"

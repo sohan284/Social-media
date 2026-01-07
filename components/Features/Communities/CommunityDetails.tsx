@@ -1,7 +1,8 @@
 "use client";
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useInView } from 'react-intersection-observer';
 import { 
   useGetPopularCommunitiesQuery, 
   useJoinCommunityMutation, 
@@ -12,12 +13,15 @@ import {
   useRejectInvitationMutation,
   CommunityItem
 } from '@/store/communityApi';
-import { useGetCommunityPostsQuery } from '@/store/postApi';
+import { PostItem } from '@/store/postApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import { FiUsers, FiUserPlus, FiUserMinus, FiFileText, FiArrowLeft, FiCheck, FiX } from 'react-icons/fi';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Post from '../Main/Post/Post';
 import CreatePost from '../CreatePost/CreatePost';
+import EmptyPostsState from '../../Shared/EmptyPostsState';
+import { useCommunityPostsInfinite } from '@/hooks/useCommunityPostsInfinite';
 
 interface CommunityDetailsProps {
   communityName: string;
@@ -28,9 +32,53 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
   const { data: communitiesResponse, isLoading, refetch } = useGetPopularCommunitiesQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
-  const { data: postsResponse, isLoading: isLoadingPosts, refetch: refetchPosts } = useGetCommunityPostsQuery(communityName, {
-    skip: !communityName,
+  
+  // Use infinite query for community posts
+  const {
+    data: postsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingPosts,
+    isError: isPostsError,
+    refetch: refetchPosts,
+  } = useCommunityPostsInfinite(communityName);
+
+  // Track if initial load is complete
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  
+  // Mark initial load as complete once we have data and are not loading
+  useEffect(() => {
+    if (!isLoadingPosts && postsData && postsData.pages && postsData.pages.length > 0 && !isInitialLoadComplete) {
+      // Small delay to ensure initial render is complete
+      const timer = setTimeout(() => {
+        setIsInitialLoadComplete(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingPosts, postsData, isInitialLoadComplete]);
+
+  // Only set up intersection observer if we have posts loaded and more pages available
+  const hasInitialData = postsData && postsData.pages && postsData.pages.length > 0;
+  const allPosts = useMemo((): PostItem[] => {
+    return postsData?.posts || [];
+  }, [postsData]);
+  
+  const shouldObserve = hasNextPage && !isLoadingPosts && allPosts.length > 0 && hasInitialData && isInitialLoadComplete;
+  
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px", // Small margin to start loading before reaching exact bottom
+    triggerOnce: false,
   });
+
+  // Load more when scrolled to bottom - only if initial load is complete
+  useEffect(() => {
+    if (inView && shouldObserve && !isFetchingNextPage && isInitialLoadComplete) {
+      fetchNextPage();
+    }
+  }, [inView, shouldObserve, isFetchingNextPage, isInitialLoadComplete, fetchNextPage]);
+
   const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
   const [leaveCommunity, { isLoading: isLeaving }] = useLeaveCommunityMutation();
   const [cancelJoinRequest, { isLoading: isCanceling }] = useCancelJoinRequestMutation();
@@ -82,26 +130,8 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
     return communities.find((c: CommunityItem) => c.name === communityName);
   }, [communities, communityName]);
 
-  const posts = useMemo(() => {
-    if (!postsResponse) return [];
-    
-    if (Array.isArray(postsResponse.data)) {
-      return postsResponse.data;
-    }
-    if (Array.isArray(postsResponse.posts)) {
-      return postsResponse.posts;
-    }
-    if (postsResponse.results) {
-      if (Array.isArray(postsResponse.results)) {
-        return postsResponse.results;
-      }
-      if (postsResponse.results.data && Array.isArray(postsResponse.results.data)) {
-        return postsResponse.results.data;
-      }
-    }
-    
-    return [];
-  }, [postsResponse]);
+  // Posts are already extracted in allPosts from useCommunityPostsInfinite
+  const posts = allPosts;
 
   const getVisibilityLabel = (visibility?: string) => {
     switch (visibility) {
@@ -236,20 +266,51 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
       );
     }
 
-    if (!posts.length) {
+    if (isPostsError) {
       return (
-        <p className="text-gray-300 text-sm text-center py-12">
-          No posts available in this community yet.
+        <p className="text-red-400 text-sm">
+          Failed to load posts. Please try again later.
         </p>
       );
     }
 
+    if (!posts.length) {
+      return (
+        <EmptyPostsState
+          message="No posts available in this community yet"
+          showCreateButton={false}
+        />
+      );
+    }
+
     return (
-      <div className="space-y-6">
-        {posts.map((post) => (
-          <Post key={post.id} post={post} profile={profile} />
-        ))}
-      </div>
+      <>
+        <div className="space-y-6">
+          {posts.map((post) => (
+            <Post key={post.id} post={post} profile={profile} />
+          ))}
+        </div>
+        {/* Infinite scroll trigger - Only render when initial load is complete */}
+        {hasNextPage && allPosts.length > 0 && isInitialLoadComplete && (
+          <div 
+            ref={ref} 
+            className="h-20 flex flex-col items-center justify-center py-4 w-full gap-2"
+            style={{ minHeight: '80px' }}
+          >
+            {isFetchingNextPage && (
+              <>
+                <Loader2 className="animate-spin text-white/60" size={24} />
+                <div className="text-white/60 text-sm">Loading more posts...</div>
+              </>
+            )}
+          </div>
+        )}
+        {!hasNextPage && posts.length > 0 && (
+          <div className="text-center text-white/40 text-sm py-4">
+            No more posts to load
+          </div>
+        )}
+      </>
     );
   };
 

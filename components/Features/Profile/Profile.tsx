@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import ProfileHeader from "./_components/ProfileHeader";
 import Post from "../Main/Post/Post";
 import ProfileSidebar from "./_components/ProfileSidebar";
@@ -10,41 +10,132 @@ import CreatePost from "../CreatePost/CreatePost";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FiMenu, FiX } from "react-icons/fi";
+import EmptyPostsState from "../../Shared/EmptyPostsState";
 
 const Profile = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "posts">("overview");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const { data: postsResponse, isLoading, isError, refetch } = useGetMyPostsQuery();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allLoadedPosts, setAllLoadedPosts] = useState<PostItem[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTargetOverview = useRef<HTMLDivElement>(null);
+  const observerTargetPosts = useRef<HTMLDivElement>(null);
+  
+  const { data: postsResponse, isLoading, isError, refetch } = useGetMyPostsQuery(
+    { page: currentPage }
+  );
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const [updatePost] = useUpdatePostMutation();
   const profile = profileResponse?.data;
   
+  // Extract posts from response and handle pagination
+  useEffect(() => {
+    if (!postsResponse) return;
+
+    let newPosts: PostItem[] = [];
+    
+    // Handle different response structures
+    if (Array.isArray(postsResponse.data)) {
+      newPosts = postsResponse.data;
+    } else if (Array.isArray(postsResponse.posts)) {
+      newPosts = postsResponse.posts;
+    } else if (postsResponse.results) {
+      if (Array.isArray(postsResponse.results)) {
+        newPosts = postsResponse.results;
+      } else if (postsResponse.results.data && Array.isArray(postsResponse.results.data)) {
+        newPosts = postsResponse.results.data;
+      }
+    }
+
+    // Check if there are more pages
+    const hasNextPage = postsResponse.next !== null && postsResponse.next !== undefined;
+    setHasMore(hasNextPage);
+
+    // Accumulate posts
+    if (currentPage === 1) {
+      // First page - replace all posts
+      setAllLoadedPosts(newPosts);
+    } else {
+      // Subsequent pages - append new posts
+      setAllLoadedPosts(prev => {
+        // Avoid duplicates
+        const existingIds = new Set(prev.map(p => p.id));
+        const uniqueNewPosts = newPosts.filter(p => p.id && !existingIds.has(p.id));
+        return [...prev, ...uniqueNewPosts];
+      });
+    }
+  }, [postsResponse, currentPage]);
+
+  // Reset to page 1 only on initial mount or when refetching
+  const [isInitialMount, setIsInitialMount] = useState(true);
+  useEffect(() => {
+    if (isInitialMount) {
+      setIsInitialMount(false);
+      setCurrentPage(1);
+      setAllLoadedPosts([]);
+      setHasMore(true);
+    }
+  }, [isInitialMount]);
+
+  // Intersection Observer for infinite scrolling (Overview tab)
+  useEffect(() => {
+    if (activeTab !== "overview") return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          setCurrentPage(prev => prev + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTargetOverview.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, isLoading, activeTab]);
+
+  // Intersection Observer for infinite scrolling (Posts tab)
+  useEffect(() => {
+    if (activeTab !== "posts") return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          setCurrentPage(prev => prev + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTargetPosts.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasMore, isLoading, activeTab]);
+
   // Separate approved posts and drafts
   const { approvedPosts, draftPosts } = useMemo(() => {
-    const allPosts: PostItem[] = (() => {
-      if (!postsResponse) return [];
-      if (Array.isArray(postsResponse)) return postsResponse;
-      if (typeof postsResponse === 'object' && postsResponse !== null) {
-        if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
-          return (postsResponse as { data: PostItem[] }).data;
-        }
-        if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
-          return (postsResponse as { results: { data: PostItem[] } }).results.data;
-        }
-        if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
-          return (postsResponse as { posts: PostItem[] }).posts;
-        }
-      }
-      return [];
-    })();
-    
-    const approved = allPosts.filter(p => p.status === 'approved' || !p.status);
-    const drafts = allPosts.filter(p => p.status === 'draft');
+    const approved = allLoadedPosts.filter(p => p.status === 'approved' || !p.status);
+    const drafts = allLoadedPosts.filter(p => p.status === 'draft');
     
     return { approvedPosts: approved, draftPosts: drafts };
-  }, [postsResponse]);
+  }, [allLoadedPosts]);
   
   const handlePublishDraft = async (postId: number | string) => {
     try {
@@ -53,6 +144,10 @@ const Profile = () => {
         data: { status: "approved" } 
       }).unwrap();
       toast.success("Post published successfully!");
+      // Reset and refetch from page 1
+      setCurrentPage(1);
+      setAllLoadedPosts([]);
+      setHasMore(true);
       refetch();
     } catch (error: unknown) {
       const errorMessage = 
@@ -62,30 +157,6 @@ const Profile = () => {
       toast.error(errorMessage);
     }
   };
-  
-  const posts = useMemo((): PostItem[] => {
-    if (!postsResponse) return [];
-    
-    // Handle different response structures
-    if (Array.isArray(postsResponse)) {
-      return postsResponse;
-    }
-    
-    // Handle object with data property
-    if (typeof postsResponse === 'object' && postsResponse !== null) {
-      if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
-        return (postsResponse as { data: PostItem[] }).data;
-      }
-      if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
-        return (postsResponse as { results: { data: PostItem[] } }).results.data;
-      }
-      if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
-        return (postsResponse as { posts: PostItem[] }).posts;
-      }
-    }
-    
-    return [];
-  }, [postsResponse]);
 
   const openModal = () => {
     router.push('/main/edit-profile');
@@ -130,9 +201,10 @@ const Profile = () => {
 
     if (!approvedPosts.length && !draftPosts.length) {
       return (
-          <p className="text-gray-300 text-sm text-center">
-            No posts available yet.
-          </p>
+        <EmptyPostsState
+          message="You haven't created any posts yet"
+          showCreateButton={false}
+        />
       );
     }
 
@@ -144,9 +216,22 @@ const Profile = () => {
         ))}
         
         {approvedPosts.length === 0 && (
-          <p className="text-gray-300 text-sm text-center">
-            No posts available yet.
-          </p>
+          <EmptyPostsState
+            message="No published posts yet"
+            showCreateButton={false}
+          />
+        )}
+        
+        {/* Infinite scroll trigger */}
+        <div ref={observerTargetOverview} className="h-10 flex items-center justify-center">
+          {isLoading && hasMore && (
+            <div className="text-white/60 text-sm">Loading more posts...</div>
+          )}
+        </div>
+        {!hasMore && allLoadedPosts.length > 0 && (
+          <div className="text-center text-white/40 text-sm py-4">
+            No more posts to load
+          </div>
         )}
       </div>
     );
@@ -156,6 +241,7 @@ const Profile = () => {
     <>
       <div className="mx-auto flex gap-10 pt-6 lg:p-4">
         <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
+          <div className="max-w-[47vw] mx-auto">
           <div className="border-b border-white/10 pb-4">
             <div className="flex items-center justify-between mb-4 lg:mb-0">
               <div className="flex-1">
@@ -197,7 +283,13 @@ const Profile = () => {
           <div className=" space-y-6">
             {activeTab === "posts" ? (
               <div className="space-y-6">
-                <CreatePost isProfile={true} onSuccess={refetch} />
+                <CreatePost isProfile={true} onSuccess={() => {
+                  // Reset and refetch from page 1 when new post is created
+                  setCurrentPage(1);
+                  setAllLoadedPosts([]);
+                  setHasMore(true);
+                  refetch();
+                }} />
                 
                 {/* Draft Posts Section - Below CreatePost Form */}
                 {draftPosts.length > 0 && (
@@ -218,12 +310,36 @@ const Profile = () => {
                     </div>
                   </div>
                 )}
+                
+                {/* Approved Posts in Posts Tab */}
+                {approvedPosts.length > 0 && (
+                  <div className="border-t border-white/10 pt-6 mt-6">
+                    <h3 className="text-lg font-semibold text-white/70 mb-4">Published Posts</h3>
+                    <div className="space-y-6">
+                      {approvedPosts.map((post) => (
+                        <Post key={post.id} post={post} profile={profile} />
+                      ))}
+                    </div>
+                    {/* Infinite scroll trigger */}
+                    <div ref={observerTargetPosts} className="h-10 flex items-center justify-center">
+                      {isLoading && hasMore && (
+                        <div className="text-white/60 text-sm">Loading more posts...</div>
+                      )}
+                    </div>
+                    {!hasMore && allLoadedPosts.length > 0 && (
+                      <div className="text-center text-white/40 text-sm py-4">
+                        No more posts to load
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mt-6 space-y-6">
                 {renderPosts()}
               </div>
             )}
+          </div>
           </div>
         </div>
         

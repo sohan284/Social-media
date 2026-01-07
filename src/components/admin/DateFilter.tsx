@@ -211,7 +211,7 @@ export function DateFilter({
           </label>
         )}
         <Select value={selectedPreset} onValueChange={handlePresetChange}>
-          <SelectTrigger className="min-w-[160px] h-9 bg-white/10 border border-white/20 text-white hover:bg-white/15 focus:ring-2 focus:ring-blue-500">
+          <SelectTrigger className="min-w-[160px] h-9 bg-white/10 border border-white/20 text-white hover:bg-white/15 focus:ring-2 focus:ring-blue-500 cursor-pointer">
             <SelectValue>{getDisplayValue()}</SelectValue>
           </SelectTrigger>
           <SelectContent className="bg-[#06133FBF] text-white backdrop-blur-md border border-white/20 shadow-lg">
@@ -261,7 +261,7 @@ export function DateFilter({
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
             </div>
             <div className="space-y-2">
@@ -273,14 +273,14 @@ export function DateFilter({
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
                 max={formatDate(new Date())} // Can't select future dates
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
             </div>
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => setCustomRangeOpen(false)}
-                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition"
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -288,7 +288,7 @@ export function DateFilter({
                 type="button"
                 onClick={handleCustomRangeApply}
                 disabled={!customStartDate || !customEndDate}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-white/10 disabled:text-white/50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition"
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-white/10 disabled:text-white/50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition cursor-pointer"
               >
                 Apply
               </button>

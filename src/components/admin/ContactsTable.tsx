@@ -1,15 +1,22 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useGetContactsQuery, useMarkContactReadMutation, ContactResponse } from "@/store/authApi";
+import { useGetContactsQuery, useMarkContactReadMutation, useDeleteContactMutation, ContactResponse } from "@/store/authApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { toast } from "sonner";
 import { CheckCircle, Mail, MailOpen } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ContactsTable() {
   const { data, isLoading, isError, refetch } = useGetContactsQuery();
   const [markContactRead] = useMarkContactReadMutation();
+  const [deleteContact] = useDeleteContactMutation();
   const [selectedContact, setSelectedContact] = useState<ContactResponse | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<{
+    id: number | string;
+    name: string;
+  } | null>(null);
 
   const contacts = useMemo(() => {
     if (!data) return [];
@@ -53,6 +60,32 @@ export default function ContactsTable() {
       markContactRead({ contactId: contact.id }).unwrap().catch(() => {
         // Silently fail if marking as read fails
       });
+    }
+  };
+
+  const handleDeleteClick = (contact: ContactResponse, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!contact.id) return;
+    const contactName = `${contact.first_name} ${contact.last_name}`;
+    setContactToDelete({ id: contact.id, name: contactName });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!contactToDelete) return;
+
+    try {
+      await deleteContact({ contactId: contactToDelete.id }).unwrap();
+      toast.success("Contact deleted successfully!");
+      setDeleteDialogOpen(false);
+      setContactToDelete(null);
+      refetch();
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to delete contact";
+      toast.error("Failed to delete contact", { description: errorMessage });
     }
   };
 
@@ -135,18 +168,33 @@ export default function ContactsTable() {
     {
       header: "Actions",
       accessor: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center space-x-3">
           {!row.is_read && row.id && (
             <button
               onClick={(e) => handleMarkAsRead(row.id!, e)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
               title="Mark as read"
             >
-              <CheckCircle className="w-4 h-4 text-green-400" />
+              <CheckCircle className="w-4 h-4" />
             </button>
           )}
+          <button
+            onClick={(e) => handleDeleteClick(row, e)}
+            className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
+            title="Delete contact"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+            </svg>
+          </button>
         </div>
       ),
+      className: "text-center",
     },
   ];
 
@@ -260,6 +308,21 @@ export default function ContactsTable() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Contact?"
+        description={`Are you sure you want to delete the contact from "${contactToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setContactToDelete(null);
+        }}
+      />
     </div>
   );
 }

@@ -285,7 +285,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Mobile menu button */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-full bg-black/30 border border-white/20 hover:bg-black/50 transition"
+            className="lg:hidden p-2 rounded-full bg-black/30 border border-white/20 hover:bg-black/50 transition cursor-pointer"
             aria-label="Open admin menu"
           >
             <Menu className="w-5 h-5" />
@@ -295,7 +295,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[20px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors"
+                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[20px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors cursor-pointer"
               >
                 <span>Hi {username}</span>
                 <ChevronDown className={`w-5 h-5 md:w-6 md:h-6 ml-2 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -313,7 +313,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full px-4 cursor-pointer py-2 text-left text-red-600 hover:bg-red-500 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-500 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>

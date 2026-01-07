@@ -420,6 +420,13 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'Contacts' }],
     }),
+    deleteContact: builder.mutation<{ success?: boolean; message?: string; error?: string }, { contactId: number | string }>({
+      query: ({ contactId }) => ({
+        url: `/auth/contacts/${contactId}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: () => [{ type: 'Contacts' }],
+    }),
     blockUser: builder.mutation<{ success?: boolean; message?: string; error?: string }, { userId: number | string }>({
       query: ({ userId }) => ({
         url: `/auth/admin/users/${userId}/block/`,
@@ -476,6 +483,7 @@ export const {
   useSubmitContactMutation,
   useGetContactsQuery,
   useMarkContactReadMutation,
+  useDeleteContactMutation,
   useUpdateUserProfileMutation,
   useGetCategoriesQuery,
   useGetUsersQuery,

@@ -218,7 +218,7 @@ export default function UserManagementTable() {
         const isAdmin = row.role === 'admin';
         
         return (
-          <div className="flex items-center gap-2 justify-center">
+          <div className="flex items-center justify-center space-x-3">
             {isActive ? (
               <button
                 onClick={(e) => {
@@ -227,15 +227,14 @@ export default function UserManagementTable() {
                   setBlockDialogOpen(true);
                 }}
                 disabled={isAdmin}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm transition-colors ${
+                className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${
                   isAdmin
-                    ? "bg-gray-500/20 text-gray-400 cursor-not-allowed"
-                    : "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                    ? "opacity-50 cursor-not-allowed"
+                    : "cursor-pointer"
                 }`}
                 title={isAdmin ? "Cannot block admin users" : "Block User"}
               >
                 <Ban className="w-4 h-4" />
-                Block
               </button>
             ) : (
               <button
@@ -244,11 +243,10 @@ export default function UserManagementTable() {
                   setSelectedUser(row);
                   setUnblockDialogOpen(true);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-colors flex items-center gap-1.5 text-sm"
+                className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
                 title="Unblock User"
               >
                 <UserCheck className="w-4 h-4" />
-                Unblock
               </button>
             )}
             <button
@@ -258,15 +256,21 @@ export default function UserManagementTable() {
                 setDeleteDialogOpen(true);
               }}
               disabled={isAdmin}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm transition-colors ${
+              className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${
                 isAdmin
-                  ? "bg-gray-500/20 text-gray-400 cursor-not-allowed"
-                  : "bg-red-600/20 text-red-400 hover:bg-red-600/30"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer"
               }`}
               title={isAdmin ? "Cannot delete admin users" : "Delete User"}
             >
-              <Trash2 className="w-4 h-4" />
-              Delete
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-4 h-4"
+              >
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+              </svg>
             </button>
           </div>
         );

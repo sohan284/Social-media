@@ -99,7 +99,7 @@ export default function HomeLayoutTwo({
         style={{
           scrollbarGutter: "stable both-edges",
         }}
-        className={`bg-slate-900/50 backdrop-blur-[17.5px] fixed left-0 top-0 h-full bg-cover bg-center bg-no-repeat shadow-md z-30 lg:w-[370px] px-6 
+        className={` fixed left-0 top-0 h-full bg-cover bg-center bg-no-repeat shadow-md z-30 lg:w-[370px] px-6 
           hover:overflow-y-auto overflow-y-hidden custom-scroll
           hidden lg:block
         `}

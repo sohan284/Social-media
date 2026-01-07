@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useInView } from "react-intersection-observer";
 import UserProfileHeader from "./_components/UserProfileHeader";
 import Post from "../Main/Post/Post";
 import UserProfileSidebar from "./_components/UserProfileSidebar";
-import { useGetUserPostsQuery, useGetUserProfileQuery, useToggleFollowMutation, useUpdatePostMutation, type PostItem } from "@/store/postApi";
+import { useGetUserProfileQuery, useToggleFollowMutation, useUpdatePostMutation, type PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery, useGetPublicUsersQuery } from "@/store/authApi";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useMessage } from "@/contexts/MessageContext";
 import { FiMenu, FiX } from "react-icons/fi";
+import { Loader2 } from "lucide-react";
+import EmptyPostsState from "../../Shared/EmptyPostsState";
+import { useUserPostsInfinite } from "@/hooks/useUserPostsInfinite";
 
 const UserProfile = () => {
   const router = useRouter();
@@ -46,9 +50,51 @@ const UserProfile = () => {
     skip: !userId || !username,
   });
   
-  const { data: postsResponse, isLoading: isPostsLoading, isError: isPostsError, refetch: refetchPosts } = useGetUserPostsQuery(userId, {
-    skip: !userId || !username,
+  // Use infinite query for user posts
+  const {
+    data: postsResponse,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isPostsLoading,
+    isError: isPostsError,
+    refetch: refetchPosts,
+  } = useUserPostsInfinite(userId);
+
+  // Track if initial load is complete
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  
+  // Mark initial load as complete once we have data and are not loading
+  useEffect(() => {
+    if (!isPostsLoading && postsResponse && postsResponse.pages && postsResponse.pages.length > 0 && !isInitialLoadComplete) {
+      // Small delay to ensure initial render is complete
+      const timer = setTimeout(() => {
+        setIsInitialLoadComplete(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPostsLoading, postsResponse, isInitialLoadComplete]);
+
+  // Only set up intersection observer if we have posts loaded and more pages available
+  const hasInitialData = postsResponse && postsResponse.pages && postsResponse.pages.length > 0;
+  const allPosts = useMemo((): PostItem[] => {
+    return postsResponse?.posts || [];
+  }, [postsResponse]);
+  
+  const shouldObserve = hasNextPage && !isPostsLoading && allPosts.length > 0 && hasInitialData && isInitialLoadComplete;
+  
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px", // Small margin to start loading before reaching exact bottom
+    triggerOnce: false,
   });
+
+  // Load more when scrolled to bottom - only if initial load is complete
+  useEffect(() => {
+    if (inView && shouldObserve && !isFetchingNextPage && isInitialLoadComplete) {
+      fetchNextPage();
+    }
+  }, [inView, shouldObserve, isFetchingNextPage, isInitialLoadComplete, fetchNextPage]);
   
   const [toggleFollow, { isLoading: isTogglingFollow }] = useToggleFollowMutation();
   const [updatePost] = useUpdatePostMutation();
@@ -63,12 +109,6 @@ const UserProfile = () => {
       if (!postsResponse) return [];
       if (Array.isArray(postsResponse)) return postsResponse;
       if (typeof postsResponse === 'object' && postsResponse !== null) {
-        if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
-          return (postsResponse as { data: PostItem[] }).data;
-        }
-        if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
-          return (postsResponse as { results: { data: PostItem[] } }).results.data;
-        }
         if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
           return (postsResponse as { posts: PostItem[] }).posts;
         }
@@ -107,12 +147,6 @@ const UserProfile = () => {
     }
     
     if (typeof postsResponse === 'object' && postsResponse !== null) {
-      if (Array.isArray((postsResponse as { data?: PostItem[] }).data)) {
-        return (postsResponse as { data: PostItem[] }).data;
-      }
-      if (Array.isArray((postsResponse as { results?: { data?: PostItem[] } }).results?.data)) {
-        return (postsResponse as { results: { data: PostItem[] } }).results.data;
-      }
       if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
         return (postsResponse as { posts: PostItem[] }).posts;
       }
@@ -190,41 +224,64 @@ const UserProfile = () => {
 
     if (!approvedPosts.length && !draftPosts.length) {
       return (
-          <p className="text-gray-300 text-sm text-center">
-            No posts available yet.
-          </p>
+        <EmptyPostsState
+          message={`${userProfile?.username || "This user"} hasn't created any posts yet`}
+          showCreateButton={false}
+        />
       );
     }
 
     return (
-      <div className="space-y-6">
-        {/* Approved Posts */}
-        {approvedPosts.map((post) => (
-          <Post key={post.id} post={post} profile={currentUserProfile?.data} />
-        ))}
-        
-        {/* Draft Posts Section (only for own profile) */}
-        {isOwnProfile && draftPosts.length > 0 && (
-          <>
-            <div className="border-t border-white/10 pt-6 mt-6">
-              <h3 className="text-lg font-semibold text-white/70 mb-4">Drafts</h3>
-              <div className="space-y-6">
-                {draftPosts.map((post) => (
-                  <div key={post.id} className="relative">
-                    <Post post={post} profile={currentUserProfile?.data} />
-                    <button
-                      onClick={() => handlePublishDraft(post.id)}
-                      className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
-                    >
-                      Publish
-                    </button>
-                  </div>
-                ))}
+      <>
+        <div className="space-y-6">
+          {/* Approved Posts */}
+          {approvedPosts.map((post) => (
+            <Post key={post.id} post={post} profile={currentUserProfile?.data} />
+          ))}
+          
+          {/* Draft Posts Section (only for own profile) */}
+          {isOwnProfile && draftPosts.length > 0 && (
+            <>
+              <div className="border-t border-white/10 pt-6 mt-6">
+                <h3 className="text-lg font-semibold text-white/70 mb-4">Drafts</h3>
+                <div className="space-y-6">
+                  {draftPosts.map((post) => (
+                    <div key={post.id} className="relative">
+                      <Post post={post} profile={currentUserProfile?.data} />
+                      <button
+                        onClick={() => handlePublishDraft(post.id)}
+                        className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
+                      >
+                        Publish
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
+            </>
+          )}
+        </div>
+        {/* Infinite scroll trigger - Only render when initial load is complete */}
+        {hasNextPage && allPosts.length > 0 && isInitialLoadComplete && (
+          <div 
+            ref={ref} 
+            className="h-20 flex flex-col items-center justify-center py-4 w-full gap-2"
+            style={{ minHeight: '80px' }}
+          >
+            {isFetchingNextPage && (
+              <>
+                <Loader2 className="animate-spin text-white/60" size={24} />
+                <div className="text-white/60 text-sm">Loading more posts...</div>
+              </>
+            )}
+          </div>
         )}
-      </div>
+        {!hasNextPage && allPosts.length > 0 && (
+          <div className="text-center text-white/40 text-sm py-4">
+            No more posts to load
+          </div>
+        )}
+      </>
     );
   };
 
@@ -344,8 +401,9 @@ const UserProfile = () => {
   return (
     <>
       <div className="mx-auto flex gap-10 pt-6 lg:p-4">
-        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
-          <div className="border-b border-white/10 pb-4">
+        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10 ">
+        <div className="max-w-[47vw] mx-auto">
+        <div className="border-b border-white/10 pb-4">
             <div className="flex items-center justify-between mb-4 lg:mb-0">
               <div className="flex-1">
                 <UserProfileHeader 
@@ -369,9 +427,10 @@ const UserProfile = () => {
             </div>
           </div>
 
-          <div className="mt-6 space-y-6">
+          <div className="mt-6 space-y-6 ">
             {renderPosts()}
           </div>
+        </div>
         </div>
         
         {/* Desktop Sidebar */}

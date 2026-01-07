@@ -324,12 +324,31 @@ export const postApi = baseApi.injectEndpoints({
         }
       },
     }),
-    getMyPosts: builder.query<GetPostsResponse, void>({
-      query: () => ({
-        url: "/api/posts/my_posts/",
-        method: "GET",
-      }),
+    getMyPosts: builder.query<GetPostsResponse, { page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object' && params.page) {
+          searchParams.append('page', params.page.toString());
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/api/posts/my_posts/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
       providesTags: () => [{ type: 'UserProfile' }],
+      // Merge pages for infinite scrolling
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems) => {
+        // For infinite scrolling, we handle merging in the component
+        return newItems;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => {
+        // Only refetch if page number changes
+        return currentArg?.page !== previousArg?.page;
+      },
     }),
     getUserPosts: builder.query<GetPostsResponse, number | string>({
       query: (userId) => ({
@@ -338,11 +357,30 @@ export const postApi = baseApi.injectEndpoints({
       }),
       providesTags: () => [{ type: 'UserProfile' }],
     }),
-    getNewsFeed: builder.query<GetPostsResponse, void>({
-      query: () => ({
-        url: "/api/posts/news_feed/",
-        method: "GET",
-      }),
+    getNewsFeed: builder.query<GetPostsResponse, { page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params && typeof params === 'object' && params.page) {
+          searchParams.append('page', params.page.toString());
+        }
+        const queryString = searchParams.toString();
+        return {
+          url: `/api/posts/news_feed/${queryString ? `?${queryString}` : ''}`,
+          method: "GET",
+        };
+      },
+      // Merge pages for infinite scrolling
+      serializeQueryArgs: ({ endpointName }) => {
+        return endpointName;
+      },
+      merge: (currentCache, newItems) => {
+        // For infinite scrolling, we handle merging in the component
+        return newItems;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => {
+        // Only refetch if page number changes
+        return currentArg?.page !== previousArg?.page;
+      },
     }),
     getAllPosts: builder.query<GetPostsResponse, { page?: number; limit?: number; status?: string; start_date?: string; end_date?: string; search?: string } | void>({
       query: (params) => {
@@ -402,14 +440,16 @@ export const postApi = baseApi.injectEndpoints({
       invalidatesTags: () => [{ type: 'UserProfile' }],
       async onQueryStarted({ postId, isLiked }, { dispatch, queryFulfilled, getState }) {
         // Helper function to update post in query cache
+        // Use the cached post's is_liked state (source of truth) to determine the action
         const updatePostInCache = (draft: GetPostsResponse) => {
           const updatePost = (posts: PostItem[] | undefined) => {
             if (!posts) return;
             const post = posts.find((p) => p.id === postId);
             if (post) {
+              // Use the cached post's is_liked state to determine the action
               const wasLiked = post.is_liked || false;
               post.is_liked = !wasLiked;
-              post.likes_count = (post.likes_count || 0) + (wasLiked ? -1 : 1);
+              post.likes_count = Math.max(0, (post.likes_count || 0) + (wasLiked ? -1 : 1));
             }
           };
           if (draft.posts) updatePost(draft.posts);
@@ -423,27 +463,61 @@ export const postApi = baseApi.injectEndpoints({
           }
         };
 
-        // Get all cached getUserPosts queries and update them
+        // Helper function to update single post in cache (for getPostById)
+        const updateSinglePostInCache = (draft: { success?: boolean; message?: string; data?: PostItem }) => {
+          if (draft.data && draft.data.id === postId) {
+            const wasLiked = draft.data.is_liked || false;
+            draft.data.is_liked = !wasLiked;
+            draft.data.likes_count = Math.max(0, (draft.data.likes_count || 0) + (wasLiked ? -1 : 1));
+          }
+        };
+
+        // Get all cached queries and update them
         // RTK Query stores queries in the cache with serialized keys
-        const state = getState() as { api?: { queries?: Record<string, { endpointName?: string; originalArgs?: unknown }> } };
+        const state = getState() as { api?: { queries?: Record<string, { endpointName?: string; originalArgs?: unknown; data?: unknown }> } };
         const cachedUserPostsQueries: Array<number | string> = [];
+        const cachedMyPostsQueries: Array<{ page?: number } | void> = [];
+        const cachedPostByIdQueries: Array<number | string> = [];
         
-        // Find all cached getUserPosts queries
+        // Find all cached queries
         if (state?.api?.queries) {
           Object.values(state.api.queries).forEach((queryState) => {
             if (queryState?.endpointName === 'getUserPosts' && queryState.originalArgs) {
               cachedUserPostsQueries.push(queryState.originalArgs as number | string);
             }
+            // Find all cached getMyPosts queries (they can have different page numbers)
+            if (queryState?.endpointName === 'getMyPosts') {
+              // Only add if query has data (is actually cached)
+              if (queryState.data !== undefined) {
+                cachedMyPostsQueries.push(queryState.originalArgs as { page?: number } | void);
+              }
+            }
+            // Find all cached getPostById queries
+            if (queryState?.endpointName === 'getPostById' && queryState.originalArgs) {
+              cachedPostByIdQueries.push(queryState.originalArgs as number | string);
+            }
           });
         }
 
         // Optimistic updates
+        // Note: getMyPosts uses serializeQueryArgs that returns just endpointName,
+        // but we still need to update with specific arguments to ensure cache match
         const patchResults = [
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostInCache)),
-          dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache)),
+          // Update all cached getMyPosts queries with their specific arguments
+          ...(cachedMyPostsQueries.length > 0
+            ? cachedMyPostsQueries.map((args) =>
+                dispatch(postApi.util.updateQueryData("getMyPosts", args, updatePostInCache))
+              )
+            : // Fallback: try updating with undefined if no cached queries found
+              [dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache))]),
           // Update all cached getUserPosts queries
           ...cachedUserPostsQueries.map((userId) =>
             dispatch(postApi.util.updateQueryData("getUserPosts", userId, updatePostInCache))
+          ),
+          // Update all cached getPostById queries (single post page)
+          ...cachedPostByIdQueries.map((postIdArg) =>
+            dispatch(postApi.util.updateQueryData("getPostById", postIdArg, updateSinglePostInCache))
           ),
         ];
 
@@ -710,6 +784,22 @@ export const postApi = baseApi.injectEndpoints({
       },
       invalidatesTags: () => [{ type: 'PostReports' }, { type: 'UserReports' }, { type: 'UnifiedReports' }],
     }),
+    deleteUnifiedReport: builder.mutation<{ success?: boolean; message?: string; error?: string }, { reportId: number | string; reportType: 'post' | 'user' }>({
+      query: ({ reportId, reportType }) => {
+        if (reportType === 'post') {
+          return {
+            url: `/api/post-reports/${reportId}/`,
+            method: "DELETE",
+          };
+        } else {
+          return {
+            url: `/api/chat/reports/${reportId}/`,
+            method: "DELETE",
+          };
+        }
+      },
+      invalidatesTags: () => [{ type: 'PostReports' }, { type: 'UserReports' }, { type: 'UnifiedReports' }],
+    }),
     sharePost: builder.mutation<{ success?: boolean; message?: string; data?: PostItem }, { post: number | string }>({
       query: (data) => {
         const formData = new FormData();
@@ -791,6 +881,7 @@ export const {
   useReviewReportMutation,
   useGetUnifiedReportsQuery,
   useReviewUnifiedReportMutation,
+  useDeleteUnifiedReportMutation,
   useGetPostByIdQuery,
   useApprovePostMutation,
   useSharePostMutation,

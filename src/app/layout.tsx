@@ -4,6 +4,7 @@ import "./globals.css";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
@@ -32,10 +33,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ReduxProvider>
-          <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>}>
-            {children}
-          </Suspense>
-          <Toaster />
+          <QueryProvider>
+            <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>}>
+              {children}
+            </Suspense>
+            <Toaster />
+          </QueryProvider>
         </ReduxProvider>
       </body>
     </html >
