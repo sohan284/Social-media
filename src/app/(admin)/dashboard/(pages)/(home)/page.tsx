@@ -394,7 +394,7 @@ export default function AdminDashboardHome() {
   const data = analyticsData.data;
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] overflow-y-auto">
       {/* MAIN KPI CARDS - Top Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
