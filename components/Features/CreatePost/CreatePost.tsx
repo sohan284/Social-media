@@ -205,7 +205,7 @@ const CreatePost = ({
     return "text";
   };
 
-  const onSubmit = async (data: FormData, saveAsDraft: boolean = false) => {
+  const onSubmit = async (data: FormData) => {
     try {
       await createPost({
         title: data.title,
@@ -215,11 +215,11 @@ const CreatePost = ({
         media_files: data.files ?? [],
         post_type: derivePostType(),
         ...(communityId && { community: communityId }),
-        ...(saveAsDraft && { status: "draft" }),
+        ...(isDraft && { status: "draft" }),
       }).unwrap();
 
       toast.success(
-        saveAsDraft ? "Draft saved successfully!" : "Post published successfully!"
+        isDraft ? "Draft saved successfully!" : "Post published successfully!"
       );
       setIsMediaModalOpen(false);
       setIsDraft(false); // Reset draft state
@@ -242,11 +242,13 @@ const CreatePost = ({
   };
 
   const handleDraft = () => {
-    handleSubmit((data) => onSubmit(data, true))();
+    setIsDraft(true);
+    handleSubmit(onSubmit)();
   };
 
   const handlePublish = () => {
-    handleSubmit((data) => onSubmit(data, false))();
+    setIsDraft(false);
+    handleSubmit(onSubmit)();
   };
 
   const tabs = [

@@ -1127,9 +1127,19 @@ const Post = ({ post, profile }: PostProps) => {
 
       <div>
         {/* Shared Post Indicator */}
-        {post?.original_post && (() => {
+        {(post?.original_post && ((): React.ReactElement | null => {
           const isCurrentUserShare = profile?.username === (post?.user_name || post?.username);
           const originalPostId = post.original_post.id;
+          const contentValue = post.original_post.content;
+          const originalPostContent: string | null = typeof contentValue === 'string' && contentValue ? contentValue : null;
+          
+          const renderContent = (): React.ReactNode => {
+            if (!originalPostContent) return null;
+            return React.createElement('div', {
+              dangerouslySetInnerHTML: { __html: originalPostContent },
+              className: "text-base text-white whitespace-pre-line mb-3"
+            });
+          };
           
           return (
             <div 
@@ -1147,13 +1157,13 @@ const Post = ({ post, profile }: PostProps) => {
                     <>
                       <span className="font-semibold text-white">You</span>
                       {" shared "}
-                      <span className="font-semibold text-white">{post.original_post.user_name || "someone"}'s post</span>
+                      <span className="font-semibold text-white">{post.original_post.user_name || "someone"}&apos;s post</span>
                     </>
                   ) : (
                     <>
                       <span className="font-semibold text-white">{post?.user_name || post?.username || "User"}</span>
                       {" shared "}
-                      <span className="font-semibold text-white">{post.original_post.user_name || "someone"}'s post</span>
+                      <span className="font-semibold text-white">{post.original_post.user_name || "someone"}&apos;s post</span>
                     </>
                   )}
                 </span>
@@ -1191,12 +1201,8 @@ const Post = ({ post, profile }: PostProps) => {
                 )}
                 
                 {/* Original Post Content */}
-                {post.original_post.content && (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: post.original_post.content }} 
-                    className="text-base text-white whitespace-pre-line mb-3"
-                  />
-                )}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {renderContent() as any}
                 
                 {/* Original Post Media - Full Gallery */}
                 {originalPostMediaUrls.length > 0 && (
@@ -1241,7 +1247,7 @@ const Post = ({ post, profile }: PostProps) => {
                             ) : (
                               <Image
                                 src={url}
-                                alt={`${post.original_post.title || "Shared post"} ${idx + 1}`}
+                                alt={`${post.original_post?.title || "Shared post"} ${idx + 1}`}
                                 fill
                                 className="object-cover"
                                 unoptimized
@@ -1262,7 +1268,7 @@ const Post = ({ post, profile }: PostProps) => {
                 )}
                 
                 {/* Original Post Link */}
-                {post.original_post.link && (
+                {post.original_post.link && typeof post.original_post.link === 'string' && (
                   <div className="mt-3">
                     <a
                       href={post.original_post.link}
@@ -1292,7 +1298,7 @@ const Post = ({ post, profile }: PostProps) => {
               </div>
             </div>
           );
-        })()}
+        })()) as React.ReactElement | null}
         
         <div className="mb-5">
           {/* Post Title - Bold - Only show if not a shared post */}
@@ -1594,55 +1600,65 @@ const Post = ({ post, profile }: PostProps) => {
           <p className="text-white/70 mb-6">This is how your shared post will appear:</p>
           
           {/* Preview of Shared Post */}
-          <div className="border border-slate-600 rounded-lg p-4 bg-slate-800/50">
-            <div className="flex items-center gap-2 mb-3">
-              <FaRegShareFromSquare className="text-green-400" size={16} />
-              <span className="text-sm text-white/80">
-                <span className="font-semibold text-white">You</span>
-                {" shared "}
-                <span className="font-semibold text-white">{post?.user_name || post?.username || "someone"}'s post</span>
-              </span>
-            </div>
+          {(() => {
+            const contentValue = post?.content;
+            const previewContent: string | null = typeof contentValue === 'string' && contentValue ? contentValue : null;
             
-            {/* Original Post Content Preview */}
-            <div className="pl-4 border-l-2 border-slate-600">
-              {/* Original Post Author */}
-              <div className="flex items-center gap-2 mb-3">
-                {post?.avatar && typeof post.avatar === 'string' ? (
-                  <Image
-                    src={post.avatar.startsWith('http') 
-                      ? post.avatar 
-                      : `${getApiBaseUrl()}${post.avatar.startsWith('/') ? post.avatar.slice(1) : post.avatar}`}
-                    alt={post?.user_name || post?.username || "Author"}
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
-                    {(post?.user_name || post?.username || "A").charAt(0).toUpperCase()}
+            const renderPreviewContent = (): React.ReactNode => {
+              if (!previewContent) return null;
+              return React.createElement('div', {
+                dangerouslySetInnerHTML: { __html: previewContent },
+                className: "text-base text-white whitespace-pre-line mb-3"
+              });
+            };
+            
+            return (
+              <div className="border border-slate-600 rounded-lg p-4 bg-slate-800/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <FaRegShareFromSquare className="text-green-400" size={16} />
+                  <span className="text-sm text-white/80">
+                    <span className="font-semibold text-white">You</span>
+                    {" shared "}
+                    <span className="font-semibold text-white">{post?.user_name || post?.username || "someone"}&apos;s post</span>
+                  </span>
+                </div>
+                
+                {/* Original Post Content Preview */}
+                <div className="pl-4 border-l-2 border-slate-600">
+                  {/* Original Post Author */}
+                  <div className="flex items-center gap-2 mb-3">
+                    {post?.avatar && typeof post.avatar === 'string' ? (
+                      <Image
+                        src={post.avatar.startsWith('http') 
+                          ? post.avatar 
+                          : `${getApiBaseUrl()}${post.avatar.startsWith('/') ? post.avatar.slice(1) : post.avatar}`}
+                        alt={post?.user_name || post?.username || "Author"}
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-medium">
+                        {(post?.user_name || post?.username || "A").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm text-white font-medium">
+                      {post?.user_name || post?.username || "Author"}
+                    </span>
                   </div>
-                )}
-                <span className="text-sm text-white font-medium">
-                  {post?.user_name || post?.username || "Author"}
-                </span>
-              </div>
-              
-              {/* Original Post Title */}
-              {post?.title && (
-                <h3 className="text-xl font-bold text-white mb-3 break-words">
-                  {post.title}
-                </h3>
-              )}
-              
-              {/* Original Post Content */}
-              {post?.content && (
-                <div 
-                  dangerouslySetInnerHTML={{ __html: post.content }} 
-                  className="text-base text-white whitespace-pre-line mb-3"
-                />
-              )}
+                  
+                  {/* Original Post Title */}
+                  {post?.title && (
+                    <h3 className="text-xl font-bold text-white mb-3 break-words">
+                      {post.title}
+                    </h3>
+                  )}
+                  
+                  {/* Original Post Content */}
+                  {/* Original Post Content */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {renderPreviewContent() as any}
               
               {/* Original Post Media Preview */}
               {allMediaUrls.length > 0 && (
@@ -1704,7 +1720,7 @@ const Post = ({ post, profile }: PostProps) => {
               )}
               
               {/* Original Post Link */}
-              {post?.link && (
+              {post?.link && typeof post.link === 'string' && (
                 <div className="mt-3">
                   <a
                     href={post.link}
@@ -1743,7 +1759,9 @@ const Post = ({ post, profile }: PostProps) => {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          );
+        })() as React.ReactElement | null}
           
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6">

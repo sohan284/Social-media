@@ -114,7 +114,6 @@ export interface CreateCommentResponse {
   post?: number | string;
   message?: string;
   success?: boolean;
-  [key: string]: unknown;
 }
 
 export interface FollowItem {
@@ -721,7 +720,7 @@ export const postApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: () => [{ type: 'Posts' }, { type: 'NewsFeed' }, { type: 'MyPosts' }],
+      invalidatesTags: () => [{ type: 'UserProfile' }],
     }),
   }),
 });

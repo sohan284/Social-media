@@ -98,7 +98,7 @@ export function PostAnalyticsChart({ data, title }: PostAnalyticsChartProps) {
         borderWidth: 1,
         callbacks: {
           label: function(context) {
-            return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+            return `${context.dataset.label}: ${context.parsed.y?.toLocaleString() ?? '0'}`;
           }
         }
       },
