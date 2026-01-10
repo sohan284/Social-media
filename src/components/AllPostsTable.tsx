@@ -352,6 +352,7 @@ export default function AllPostsTable() {
           columns={columns}
           data={posts}
           title="All Posts"
+          description="View and manage all posts created by users"
           isLoading={isLoading}
           filters={
             <>

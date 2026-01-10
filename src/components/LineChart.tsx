@@ -27,16 +27,20 @@ ChartJS.register(
 
 interface ActivityData {
   date: string;
-  posts: number;
-  users: number;
+  posts?: number;
+  users?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
 }
 
 interface LineChartProps {
   data: ActivityData[];
   title?: string;
+  showEngagement?: boolean; // If true, shows likes, comments, shares instead of posts/users
 }
 
-export function LineChart({ data, title }: LineChartProps) {
+export function LineChart({ data, title, showEngagement = false }: LineChartProps) {
   // Format dates for display (show last 7 days more clearly, or show month-day)
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -51,10 +55,53 @@ export function LineChart({ data, title }: LineChartProps) {
   
   const chartData = {
     labels,
-    datasets: [
+    datasets: showEngagement ? [
+      {
+        label: 'Likes',
+        data: last7Days.map(item => item.likes || 0),
+        borderColor: '#1E40AF',
+        backgroundColor: 'rgba(30, 64, 175, 0.1)',
+        tension: 0.4,
+        fill: true,
+        borderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#1E40AF',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+      },
+      {
+        label: 'Comments',
+        data: last7Days.map(item => item.comments || 0),
+        borderColor: '#F97316',
+        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        tension: 0.4,
+        fill: true,
+        borderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#F97316',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+      },
+      {
+        label: 'Shares',
+        data: last7Days.map(item => item.shares || 0),
+        borderColor: '#8B5CF6',
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        tension: 0.4,
+        fill: true,
+        borderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#8B5CF6',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+      },
+    ] : [
       {
         label: 'New Posts',
-        data: last7Days.map(item => item.posts),
+        data: last7Days.map(item => item.posts || 0),
         borderColor: '#517EE0',
         backgroundColor: 'rgba(81, 126, 224, 0.1)',
         tension: 0.4,
@@ -68,7 +115,7 @@ export function LineChart({ data, title }: LineChartProps) {
       },
       {
         label: 'New Users',
-        data: last7Days.map(item => item.users),
+        data: last7Days.map(item => item.users || 0),
         borderColor: '#10B981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         tension: 0.4,

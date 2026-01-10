@@ -375,6 +375,7 @@ export default function ReportedPostsTable() {
           columns={columns}
           data={reports}
           title="All Reports"
+          description="Review and manage reported posts and content"
           isLoading={isLoading}
           filters={
             <>

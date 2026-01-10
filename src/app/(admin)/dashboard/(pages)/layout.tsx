@@ -17,6 +17,7 @@ import {
   Flag,
   Mail,
   UsersRound,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -35,6 +36,7 @@ const menu = [
   { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
   { name: "All Products", icon: Package, path: "/dashboard/all-products" },
   { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },
+  { name: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -242,7 +244,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             {/* MENU */}
-            <nav className="space-y-6 flex-1 overflow-y-auto pr-1">
+            <nav className="space-y-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {renderMenuItems(() => setIsSidebarOpen(false))}
             </nav>
 
@@ -265,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* MENU */}
-        <nav className="space-y-6 flex-1 overflow-y-auto pr-1">
+        <nav className="space-y-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {renderMenuItems()}
         </nav>
 

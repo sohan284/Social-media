@@ -34,6 +34,7 @@ interface CustomTableProps<T> {
   columns: Column<T>[];
   data: T[];
   title?: string;
+  description?: string;
   filters?: React.ReactNode;
   emptyMessage?: string;
   emptyIcon?: React.ReactNode;
@@ -57,6 +58,7 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
   columns,
   data,
   title,
+  description,
   filters,
   emptyMessage = "No data available",
   emptyIcon,
@@ -178,13 +180,18 @@ export function CustomTable<T extends { id?: string | number } | Record<string, 
       style={enableScroll ? { maxHeight } : {}}
     >
       {/* Title and Filters Section */}
-      {(title || filters) && (
+      {(title || description || filters) && (
         <div className="p-6 border-b border-white/10 flex-shrink-0">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Left side - Title */}
-            {title && (
+            {/* Left side - Title and Description */}
+            {(title || description) && (
               <div className="flex-shrink-0">
-                <h2 className="text-2xl font-semibold text-white">{title}</h2>
+                {title && (
+                  <h2 className="text-2xl font-semibold text-white">{title}</h2>
+                )}
+                {description && (
+                  <p className="text-sm text-white/60 mt-1">{description}</p>
+                )}
               </div>
             )}
             {/* Right side - Filters */}

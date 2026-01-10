@@ -6,7 +6,7 @@ export interface Column<T> {
 }
 
 interface DataTableProps<T> {
-  title: string;
+  title?: string;
   columns: Column<T>[];
   data: T[];
 }
@@ -14,7 +14,7 @@ interface DataTableProps<T> {
 export function DataTable<T>({ title, columns, data }: DataTableProps<T>) {
   return (
     <div className="bg-black/30 backdrop-blur-sm text-white p-6 rounded-xl border border-white/20">
-      <h3 className="text-center text-lg font-bold mb-4 text-white">{title}</h3>
+      {title && <h3 className="text-center text-lg font-bold mb-4 text-white">{title}</h3>}
 
       <table className="w-full text-sm">
         <thead>

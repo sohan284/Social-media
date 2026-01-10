@@ -6,7 +6,7 @@ import { MdBlock, MdReport } from 'react-icons/md';
 import Image from 'next/image';
 import MessageBubble from './MessageBubble';
 import { PiPaperPlaneRightFill } from 'react-icons/pi';
-import { useGetConversationQuery, useSendDirectMessageMutation, useBlockUserMutation, useUnblockUserMutation, useGetBlockedUsersQuery, chatApi } from '@/store/chatApi';
+import { useGetConversationQuery, useSendDirectMessageMutation, useBlockUserMutation, useUnblockUserMutation, useGetBlockedUsersQuery, useUpdateDirectMessageMutation, useDeleteDirectMessageMutation, chatApi } from '@/store/chatApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { store } from '@/store/store';
@@ -80,6 +80,8 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
     }
   );
   const [sendDirectMessage, { isLoading: isSending }] = useSendDirectMessageMutation();
+  const [updateMessage, { isLoading: isUpdatingMessage }] = useUpdateDirectMessageMutation();
+  const [deleteMessage, { isLoading: isDeletingMessage }] = useDeleteDirectMessageMutation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const currentUserId = useMemo(() => {
@@ -399,6 +401,26 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
                 key={message.id} 
                 message={message} 
                 isCurrentUser={message.senderId === 'current-user'}
+                onEdit={async (messageId, newText) => {
+                  try {
+                    await updateMessage({ message_id: messageId, content: newText }).unwrap();
+                    toast.success('Message updated');
+                    refetchConversation();
+                  } catch (error) {
+                    toast.error('Failed to update message');
+                  }
+                }}
+                onDelete={async (messageId) => {
+                  try {
+                    await deleteMessage({ message_id: messageId }).unwrap();
+                    toast.success('Message deleted');
+                    refetchConversation();
+                  } catch (error) {
+                    toast.error('Failed to delete message');
+                  }
+                }}
+                isEditing={isUpdatingMessage}
+                isDeleting={isDeletingMessage}
               />
             ))}
             <div ref={messagesEndRef} />

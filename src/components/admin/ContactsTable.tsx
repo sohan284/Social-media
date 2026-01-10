@@ -204,6 +204,7 @@ export default function ContactsTable() {
         columns={columns}
         data={contacts}
         title="All Contacts"
+        description="View and manage all contact messages and inquiries"
         isLoading={isLoading}
         isError={isError}
         errorMessage="Failed to load contacts. Please try again later"

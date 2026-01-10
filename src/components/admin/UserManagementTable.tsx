@@ -10,7 +10,7 @@ import { IoPersonOutline } from "react-icons/io5";
 import { getApiBaseUrl } from "@/lib/utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "sonner";
-import { Ban, Trash2, UserCheck } from "lucide-react";
+import { Ban, UserCheck } from "lucide-react";
 
 export default function UserManagementTable() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -289,6 +289,7 @@ export default function UserManagementTable() {
     <div>
       <CustomTable
         title="All Users"
+        description="Manage and view all registered users in the system"
         isLoading={isLoading}
         filters={
           <>

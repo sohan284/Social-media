@@ -213,6 +213,7 @@ export default function CommunityManagementTable() {
     <>
       <CustomTable
         title="All Communities"
+        description="Manage and view all communities in the platform"
         isLoading={isLoading}
         filters={
           <>

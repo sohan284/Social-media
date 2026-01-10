@@ -248,6 +248,7 @@ export default function RejectedPostsTable() {
     <>
       <CustomTable
         title="Rejected Posts"
+        description="View and manage posts that have been rejected"
         columns={columns}
         data={rejectedPosts}
         emptyMessage="No rejected posts found."

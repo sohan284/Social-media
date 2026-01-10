@@ -277,6 +277,7 @@ export default function AllProductsTable() {
       <div>
         <CustomTable
           title="All Products"
+          description="View and manage all products in the marketplace"
           columns={columns}
           data={products}
           isLoading={isLoading}
