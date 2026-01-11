@@ -308,6 +308,7 @@ export default function MarketplaceCategories() {
       {/* TABLE */}
       <CustomTable
           title="All Categories"
+          description="Manage marketplace categories for product listings"
           columns={columns}
           data={tableData}
           isLoading={isLoading}

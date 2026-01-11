@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { AiOutlineArrowLeft, AiOutlineMore } from 'react-icons/ai';
 import MessageBubble from './MessageBubble';
 import { PiPaperPlaneRightFill } from 'react-icons/pi';
-import { useGetRoomMessagesQuery, useSendMessageMutation, useUpdateChatRoomMutation, useDeleteChatRoomMutation, useGetChatRoomsQuery, chatApi, type ChatRoom } from '@/store/chatApi';
+import { useGetRoomMessagesQuery, useSendMessageMutation, useUpdateChatRoomMutation, useDeleteChatRoomMutation, useGetChatRoomsQuery, useUpdateRoomMessageMutation, useDeleteRoomMessageMutation, chatApi, type ChatRoom } from '@/store/chatApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { store } from '@/store/store';
@@ -58,6 +58,8 @@ const RoomConversationView = ({ room, onBack }: RoomConversationViewProps) => {
   const [sendMessage, { isLoading: isSending }] = useSendMessageMutation();
   const [updateRoom, { isLoading: isUpdating }] = useUpdateChatRoomMutation();
   const [deleteRoom, { isLoading: isDeleting }] = useDeleteChatRoomMutation();
+  const [updateMessage, { isLoading: isUpdatingMessage }] = useUpdateRoomMessageMutation();
+  const [deleteMessage, { isLoading: isDeletingMessage }] = useDeleteRoomMessageMutation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const currentUserId = useMemo(() => {
@@ -314,6 +316,24 @@ const RoomConversationView = ({ room, onBack }: RoomConversationViewProps) => {
                 <MessageBubble 
                   message={message} 
                   isCurrentUser={message.senderId === 'current-user'}
+                  onEdit={async (messageId, newText) => {
+                    try {
+                      await updateMessage({ roomId, message_id: messageId, content: newText }).unwrap();
+                      toast.success('Message updated');
+                    } catch (error) {
+                      toast.error('Failed to update message');
+                    }
+                  }}
+                  onDelete={async (messageId) => {
+                    try {
+                      await deleteMessage({ roomId, message_id: messageId }).unwrap();
+                      toast.success('Message deleted');
+                    } catch (error) {
+                      toast.error('Failed to delete message');
+                    }
+                  }}
+                  isEditing={isUpdatingMessage}
+                  isDeleting={isDeletingMessage}
                 />
               </div>
             ))}

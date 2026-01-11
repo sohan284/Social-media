@@ -7,7 +7,7 @@ import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateF
 import { SearchFilter } from "@/components/admin/SearchFilter";
 import { getApiBaseUrl } from "@/lib/utils";
 import Image from "next/image";
-import { Trash2, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import PostDetailsModal from "@/components/admin/PostDetailsModal";
@@ -83,11 +83,11 @@ export default function AllPostsTable() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "2-digit",
-      });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -307,10 +307,10 @@ export default function AllPostsTable() {
               <button
                 onClick={(e) => handleApproveClick(row, e)}
                 disabled={isApproving}
-                className="p-2 cursor-pointer text-green-500 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Approve and Repost"
               >
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-4 h-4 text-green-500" />
               </button>
             )}
             <button
@@ -318,10 +318,17 @@ export default function AllPostsTable() {
                 e.stopPropagation();
                 handleDeleteClick(row);
               }}
-              className="p-2 cursor-pointer text-red-500 rounded-lg bg-white/10 hover:bg-white/20 transition"
+              className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
               title="Delete post"
             >
-              <Trash2 className="w-4 h-4" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-4 h-4"
+              >
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+              </svg>
             </button>
           </div>
         );
@@ -345,6 +352,7 @@ export default function AllPostsTable() {
           columns={columns}
           data={posts}
           title="All Posts"
+          description="View and manage all posts created by users"
           isLoading={isLoading}
           filters={
             <>

@@ -17,6 +17,7 @@ import {
   Flag,
   Mail,
   UsersRound,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -27,13 +28,14 @@ import { toast } from "sonner";
 
 const menu = [
   { name: "Home", icon: Home, path: "/dashboard" },
-  { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
-  { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "Users", icon: Users, path: "/dashboard/user-management" },
+  { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
   { name: "Communities", icon: UsersRound, path: "/dashboard/communities" },
+  { name: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
+  { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
+  { name: "All Products", icon: Package, path: "/dashboard/all-products" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
-  { name: "All Products", icon: Package, path: "/dashboard/all-products" },
   { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },
 ];
 
@@ -242,7 +244,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             {/* MENU */}
-            <nav className="space-y-6 flex-1 overflow-y-auto pr-1">
+            <nav className="space-y-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {renderMenuItems(() => setIsSidebarOpen(false))}
             </nav>
 
@@ -265,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* MENU */}
-        <nav className="space-y-6 flex-1 overflow-y-auto pr-1">
+        <nav className="space-y-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {renderMenuItems()}
         </nav>
 
@@ -285,7 +287,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Mobile menu button */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-full bg-black/30 border border-white/20 hover:bg-black/50 transition"
+            className="lg:hidden p-2 rounded-full bg-black/30 border border-white/20 hover:bg-black/50 transition cursor-pointer"
             aria-label="Open admin menu"
           >
             <Menu className="w-5 h-5" />
@@ -295,7 +297,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[20px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors"
+                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[20px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors cursor-pointer"
               >
                 <span>Hi {username}</span>
                 <ChevronDown className={`w-5 h-5 md:w-6 md:h-6 ml-2 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -313,7 +315,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full px-4 cursor-pointer py-2 text-left text-red-600 hover:bg-red-500 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-500 hover:text-white cursor-pointer flex items-center gap-2 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>

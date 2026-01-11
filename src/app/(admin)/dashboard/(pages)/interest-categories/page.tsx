@@ -293,6 +293,7 @@ export default function InterestCategories() {
       {/* TABLE */}
       <CustomTable
           title="All Categories"
+          description="Manage interest categories and subcategories for user preferences"
           columns={columns}
           data={tableData}
           isLoading={isLoading}

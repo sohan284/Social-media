@@ -1,12 +1,9 @@
 import { GoHome } from "react-icons/go";
-import { IoTrendingUp } from "react-icons/io5";
 import { BsExclamationCircle } from "react-icons/bs";
-import { RiMenuSearchLine } from "react-icons/ri";
 import { FaRegQuestionCircle } from "react-icons/fa";
+import { FiHeadphones, FiUsers, FiShield } from "react-icons/fi";
 import FriendsIcon from "../../Icons/FriendsIcon";
 import StoreIcon from "../../Icons/StoreIcon";
-import SubscriptionIcon from "../../Icons/SubscriptionIcon";
-import DatabaseIcon from "../../Icons/DatabaseIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus, FiTag } from "react-icons/fi";
@@ -35,24 +32,29 @@ const menuItems = [
 ];
 const menuItemsTwo = [
   {
-    icon: <FriendsIcon />,
-    label: "Communities",
-    href: "/main/communities",
+    icon: <FaRegQuestionCircle size={24} />,
+    label: "Help",
+    href: "/help",
   },
   {
-    icon: <RiMenuSearchLine size={24} />,
-    label: "Topics",
-    href: "/main/topics",
+    icon: <FiHeadphones size={24} />,
+    label: "Support",
+    href: "/help-support",
   },
   {
     icon: <BsExclamationCircle size={24} className="scale-y-[-1]" />,
     label: "Contact Us",
-    href: "/main/contact-us",
+    href: "/contact-us",
   },
   {
-    icon: <FaRegQuestionCircle size={24} />,
-    label: "Help",
-    href: "/main/help",
+    icon: <FiUsers size={24} />,
+    label: "About Us",
+    href: "/about-us",
+  },
+  {
+    icon: <FiShield size={24} />,
+    label: "Privacy",
+    href: "/privacy",
   },
   // {
   //   icon: <SubscriptionIcon />,
@@ -86,6 +88,12 @@ const SidebarNavLink = () => {
       </div>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-3 px-2.5 rounded-2xl">
         <h3 className="text-base text-[#BCB3B3] px-8 my-4">Communities</h3>
+        <Link
+          href="/main/communities"
+          className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out"
+        >
+          <FriendsIcon /> Communities
+        </Link>
         <button onClick={() => router.push('/main/create-community')} className="w-full text-xs text-white flex items-center gap-5 hover:bg-[#06133FBF] p-2.5 px-6 rounded-xl duration-300 ease-in-out cursor-pointer">
           <FiPlus size={24} /> Create Communities
         </button>

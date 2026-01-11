@@ -80,7 +80,7 @@ export default function PublicLayout({
                   </button>
                 )}
                 
-                <div className="lg:max-w-[47vw] mx-auto pt-20 pb-4">
+                <div className="xl:max-w-[47vw] mx-auto pt-20 pb-4">
                   {children}
                 </div>
               </div>

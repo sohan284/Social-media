@@ -112,6 +112,22 @@ export interface GetConversationsListResponse {
   [key: string]: unknown;
 }
 
+export interface AdminConversation {
+  id: string;
+  type: 'direct' | 'room';
+  room_id?: number | string;
+  name?: string;
+  is_group?: boolean;
+  user1?: ChatUser;
+  user2?: ChatUser;
+  participants?: ChatUser[];
+  admins?: ChatUser[];
+  last_message?: ChatMessage;
+  message_count?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
 export interface SearchChatUsersResponse {
   data?: ChatUser[];
   results?: {
@@ -356,6 +372,149 @@ export const chatApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["UserReports"],
     }),
+    // Message edit and delete endpoints
+    updateDirectMessage: builder.mutation<SendMessageResponse, { message_id: number | string; content: string }>({
+      query: (data) => ({
+        url: "/api/chat/messages/update/",
+        method: "PATCH",
+        body: data,
+      }),
+      async onQueryStarted({ message_id }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate all message queries to refetch
+          dispatch(chatApi.util.invalidateTags(["Messages"]));
+          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
+    deleteDirectMessage: builder.mutation<{ success?: boolean; message?: string; error?: string }, { message_id: number | string }>({
+      query: ({ message_id }) => ({
+        url: `/api/chat/messages/delete/?message_id=${message_id}`,
+        method: "DELETE",
+      }),
+      async onQueryStarted({ message_id }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate all message queries to refetch
+          dispatch(chatApi.util.invalidateTags(["Messages"]));
+          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
+    updateRoomMessage: builder.mutation<SendMessageResponse, { roomId: number | string; message_id: number | string; content: string }>({
+      query: ({ roomId, message_id, content }) => ({
+        url: `/api/chat/rooms/${roomId}/update_message/`,
+        method: "PATCH",
+        body: { message_id, content },
+      }),
+      async onQueryStarted({ roomId }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: roomId }]));
+          dispatch(chatApi.util.invalidateTags(["ChatRooms"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
+    deleteRoomMessage: builder.mutation<{ success?: boolean; message?: string; error?: string }, { roomId: number | string; message_id: number | string }>({
+      query: ({ roomId, message_id }) => ({
+        url: `/api/chat/rooms/${roomId}/delete_message/?message_id=${message_id}`,
+        method: "DELETE",
+      }),
+      async onQueryStarted({ roomId }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: roomId }]));
+          dispatch(chatApi.util.invalidateTags(["ChatRooms"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
+    // Admin endpoints
+    getAdminAllConversations: builder.query<
+      { 
+        count?: number;
+        next?: string | null;
+        previous?: string | null;
+        results?: { success?: boolean; data?: AdminConversation[] };
+        data?: AdminConversation[];
+      },
+      { page?: number; limit?: number; type?: string; search?: string }
+    >({
+      query: ({ page = 1, limit = 10, type, search }) => {
+        const params = new URLSearchParams();
+        params.append('page', page.toString());
+        params.append('limit', limit.toString());
+        if (type && type !== 'all') {
+          params.append('type', type);
+        }
+        if (search) {
+          params.append('search', search);
+        }
+        return {
+          url: `/api/chat/admin/conversations/?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: ["Conversations"],
+    }),
+    getAdminConversationMessages: builder.query<
+      GetMessagesResponse,
+      { type: 'direct' | 'room'; user1_id?: number | string; user2_id?: number | string; room_id?: number | string }
+    >({
+      query: ({ type, user1_id, user2_id, room_id }) => {
+        const params = new URLSearchParams();
+        params.append('type', type);
+        if (type === 'direct' && user1_id && user2_id) {
+          params.append('user1_id', user1_id.toString());
+          params.append('user2_id', user2_id.toString());
+        } else if (type === 'room' && room_id) {
+          params.append('room_id', room_id.toString());
+        }
+        return {
+          url: `/api/chat/admin/conversation/messages/?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      providesTags: (result, error, arg) => [{ type: "Messages", id: arg.type === 'direct' ? `${arg.user1_id}_${arg.user2_id}` : arg.room_id }],
+    }),
+    deleteAdminConversation: builder.mutation<
+      { success?: boolean; message?: string; error?: string; deleted_count?: number },
+      { type: 'direct' | 'room'; user1_id?: number | string; user2_id?: number | string; room_id?: number | string }
+    >({
+      query: ({ type, user1_id, user2_id, room_id }) => {
+        const params = new URLSearchParams();
+        params.append('type', type);
+        if (type === 'direct' && user1_id && user2_id) {
+          params.append('user1_id', user1_id.toString());
+          params.append('user2_id', user2_id.toString());
+        } else if (type === 'room' && room_id) {
+          params.append('room_id', room_id.toString());
+        }
+        return {
+          url: `/api/chat/admin/conversation/delete/?${params.toString()}`,
+          method: "DELETE",
+        };
+      },
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate conversations list to refresh
+          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+          dispatch(chatApi.util.invalidateTags(["ChatRooms"]));
+          dispatch(chatApi.util.invalidateTags(["Messages"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
   }),
 });
 
@@ -378,4 +537,11 @@ export const {
   useUnblockUserMutation,
   useGetBlockedUsersQuery,
   useReportUserMutation,
+  useUpdateDirectMessageMutation,
+  useDeleteDirectMessageMutation,
+  useUpdateRoomMessageMutation,
+  useDeleteRoomMessageMutation,
+  useGetAdminAllConversationsQuery,
+  useGetAdminConversationMessagesQuery,
+  useDeleteAdminConversationMutation,
 } = chatApi;

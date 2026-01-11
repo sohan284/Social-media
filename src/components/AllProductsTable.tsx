@@ -72,7 +72,11 @@ export default function AllProductsTable() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -204,7 +208,7 @@ export default function AllProductsTable() {
               setProductToEdit(row);
               setIsEditModalOpen(true);
             }}
-            className="p-2 cursor-pointer text-blue-400 rounded-lg bg-white/10 hover:bg-white/20 transition"
+            className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
             title="Edit product"
           >
             <svg
@@ -222,7 +226,7 @@ export default function AllProductsTable() {
               const productName = (row.name || row.title || "Product") as string;
               handleDeleteClick(row.id, productName);
             }}
-            className="p-2 cursor-pointer text-red-500 rounded-lg bg-white/10 hover:bg-white/20 transition"
+            className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
             title="Delete product"
           >
             <svg
@@ -277,6 +281,7 @@ export default function AllProductsTable() {
       <div>
         <CustomTable
           title="All Products"
+          description="View and manage all products in the marketplace"
           columns={columns}
           data={products}
           isLoading={isLoading}

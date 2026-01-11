@@ -134,11 +134,11 @@ export default function AdminDashboardHome() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "2-digit",
-      });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -413,7 +413,7 @@ export default function AdminDashboardHome() {
           { 
             title: "Total Engagement", 
             count: formatNumber(data.total_engagement),
-            subtitle: `${formatNumber(data.total_likes)} likes, ${formatNumber(data.total_comments)} comments`,
+            subtitle: `${formatNumber(data.total_likes)} likes, ${formatNumber(data.total_comments)} comments, ${formatNumber(data.total_shares)} shares`,
             color: "#10B981"
           },
           { 
@@ -424,7 +424,13 @@ export default function AdminDashboardHome() {
           },
         ].map((item) => (
           <div key={item.title} className="rounded-xl border border-white/20 bg-black/30 backdrop-blur-sm p-6">
-            <h3 className="text-white/70 text-sm font-medium mb-2">{item.title}</h3>
+            <h3 className="text-white/70 text-sm font-medium mb-1">{item.title}</h3>
+            <p className="text-xs text-white/40 mb-2">
+              {item.title === "Total Users" && "Complete count of all registered users in the platform"}
+              {item.title === "Total Posts" && "Total number of posts created by all users"}
+              {item.title === "Total Engagement" && "Combined count of all likes, comments, and shares"}
+              {item.title === "Total Communities" && "Total number of communities created by users"}
+            </p>
             <p className="text-3xl font-bold text-white mb-1">{item.count}</p>
             <p className="text-xs text-white/50">{item.subtitle}</p>
           </div>
@@ -432,17 +438,23 @@ export default function AdminDashboardHome() {
       </div>
 
       {/* SECONDARY METRICS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           { title: "Total Likes", value: formatNumber(data.total_likes), color: "#EF4444" },
           { title: "Total Comments", value: formatNumber(data.total_comments), color: "#3B82F6" },
           { title: "Total Shares", value: formatNumber(data.total_shares), color: "#10B981" },
           { title: "Total Products", value: formatNumber(data.total_products), color: "#F59E0B" },
-          { title: "Verified Users", value: formatNumber(data.user_activity.verified_users), color: "#8B5CF6" },
-          { title: "Active (7d)", value: formatNumber(data.user_activity.active_users_7d), color: "#EC4899" },
+         { title: "Active (7d)", value: formatNumber(data.user_activity.active_users_7d), color: "#EC4899" },
         ].map((item) => (
           <div key={item.title} className="rounded-lg border border-white/10 bg-black/20 backdrop-blur-sm p-4">
             <p className="text-white/60 text-xs mb-1">{item.title}</p>
+            <p className="text-[10px] text-white/40 mb-2 leading-tight">
+              {item.title === "Total Likes" && "All likes received on posts"}
+              {item.title === "Total Comments" && "All comments made on posts"}
+              {item.title === "Total Shares" && "All posts shared by users"}
+              {item.title === "Total Products" && "Total products listed in marketplace"}
+             {item.title === "Active (7d)" && "Users active in the last 7 days"}
+            </p>
             <p className="text-xl font-semibold text-white">{item.value}</p>
           </div>
         ))}
@@ -452,7 +464,8 @@ export default function AdminDashboardHome() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Activity Timeline - Enhanced */}
         <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h2 className="text-xl font-semibold mb-4 text-white">Activity Timeline (30 Days)</h2>
+          <h2 className="text-xl font-semibold mb-1 text-white">Activity Timeline (30 Days)</h2>
+          <p className="text-sm text-white/50 mb-4">Daily breakdown of new posts and user registrations over the last 30 days. Helps track platform growth trends.</p>
           <LineChart
             data={data.activity_timeline}
             title=""
@@ -461,20 +474,19 @@ export default function AdminDashboardHome() {
 
         {/* Engagement Timeline */}
         <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h2 className="text-xl font-semibold mb-4 text-white">Engagement Timeline (30 Days)</h2>
+          <h2 className="text-xl font-semibold mb-1 text-white">Engagement Timeline (30 Days)</h2>
+          <p className="text-sm text-white/50 mb-4">Daily breakdown of likes, comments, and shares over the last 30 days. Helps track platform engagement trends.</p>
           <LineChart
-            data={data.engagement_timeline.map(item => ({
-              date: item.date,
-              posts: item.likes,
-              users: item.comments,
-            }))}
+            data={data.engagement_timeline}
             title=""
+            showEngagement={true}
           />
         </div>
 
         {/* Post Status Distribution */}
         <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h2 className="text-xl font-semibold mb-4 text-white">Post Status Distribution</h2>
+          <h2 className="text-xl font-semibold mb-1 text-white">Post Status Distribution</h2>
+          <p className="text-sm text-white/50 mb-4">Visual breakdown of posts by moderation status. Shows how many posts are approved, rejected, pending review, or saved as drafts.</p>
           <PieChart
             data={{
               labels: ['Approved', 'Rejected', 'Pending', 'Draft'],
@@ -491,7 +503,8 @@ export default function AdminDashboardHome() {
 
         {/* Post Type Distribution */}
         <div className="h-fit w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h2 className="text-xl font-semibold mb-4 text-white">Post Type Distribution</h2>
+          <h2 className="text-xl font-semibold mb-1 text-white">Post Type Distribution</h2>
+          <p className="text-sm text-white/50 mb-4">Breakdown of posts by content type. Shows the proportion of text-only posts, media posts (images/videos), and link posts.</p>
           <PieChart
             data={{
               labels: ['Text', 'Media', 'Link'],
@@ -509,7 +522,10 @@ export default function AdminDashboardHome() {
       {/* POST ANALYTICS CHART WITH FILTERS */}
       <div className="border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-          <h2 className="text-xl font-semibold text-white">Post Analytics</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-1">Post Analytics</h2>
+            <p className="text-sm text-white/50">Time-series analysis of new post creation over time. Use the date filter to analyze specific time periods.</p>
+          </div>
           <DateFilter
             value={postDatePreset}
             dateRange={postDateRange}
@@ -536,7 +552,10 @@ export default function AdminDashboardHome() {
       {/* USER ANALYTICS CHART WITH FILTERS */}
       <div className="w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-          <h2 className="text-xl font-semibold text-white">User Analytics</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-1">User Analytics</h2>
+            <p className="text-sm text-white/50">Time-series analysis of new user registrations over time. Use the date filter to analyze specific time periods.</p>
+          </div>
           <DateFilter
             value={userDatePreset}
             dateRange={userDateRange}
@@ -563,7 +582,8 @@ export default function AdminDashboardHome() {
       {/* ENGAGEMENT METRICS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-white mb-4">Engagement Averages</h3>
+          <h3 className="text-lg font-semibold text-white mb-1">Engagement Averages</h3>
+          <p className="text-xs text-white/50 mb-4">Average engagement metrics per post. Helps understand typical user interaction levels across all posts.</p>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-white/70">Avg Likes/Post</span>
@@ -581,7 +601,8 @@ export default function AdminDashboardHome() {
         </div>
 
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-white mb-4">Recent Activity (7 Days)</h3>
+          <h3 className="text-lg font-semibold text-white mb-1">Recent Activity (7 Days)</h3>
+          <p className="text-xs text-white/50 mb-4">Summary of new content and user activity in the past week. Shows recent platform growth and engagement.</p>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-white/70">New Users</span>
@@ -607,7 +628,8 @@ export default function AdminDashboardHome() {
         </div>
 
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-white mb-4">Community Analytics</h3>
+          <h3 className="text-lg font-semibold text-white mb-1">Community Analytics</h3>
+          <p className="text-xs text-white/50 mb-4">Breakdown of communities by privacy type (public, restricted, private) and top communities by member count.</p>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-white/70">Public</span>
@@ -639,24 +661,20 @@ export default function AdminDashboardHome() {
       {/* MARKETPLACE ANALYTICS */}
       {data.marketplace_analytics && (
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <h3 className="text-xl font-semibold text-white mb-4">Marketplace Analytics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <p className="text-white/70 text-sm mb-1">Published</p>
-              <p className="text-2xl font-bold text-white">{formatNumber(data.marketplace_analytics.published)}</p>
+          <div className="relative">
+            <h3 className="text-xl font-semibold text-white mb-1">Marketplace Analytics</h3>
+            <div className="absolute right-0 top-0 flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-white/70 text-xs mb-0.5">Published</p>
+                <p className="text-lg font-semibold text-white">{formatNumber(data.marketplace_analytics.published)}</p>
+              </div>
+              <span className="text-white/50">|</span>
+              <div className="text-right">
+                <p className="text-white/70 text-xs mb-0.5">Draft</p>
+                <p className="text-lg font-semibold text-white">{formatNumber(data.marketplace_analytics.draft)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-white/70 text-sm mb-1">Draft</p>
-              <p className="text-2xl font-bold text-white">{formatNumber(data.marketplace_analytics.draft)}</p>
-            </div>
-            <div>
-              <p className="text-white/70 text-sm mb-1">Sold</p>
-              <p className="text-2xl font-bold text-white">{formatNumber(data.marketplace_analytics.sold)}</p>
-            </div>
-            <div>
-              <p className="text-white/70 text-sm mb-1">Unpublished</p>
-              <p className="text-2xl font-bold text-white">{formatNumber(data.marketplace_analytics.unpublished)}</p>
-            </div>
+            <p className="text-sm text-white/50 mb-4 mt-2">Overview of marketplace product statuses, pricing statistics, and sales performance. Includes published and draft products.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/10">
             <div>
@@ -681,23 +699,35 @@ export default function AdminDashboardHome() {
 
       {/* TOP POSTS TABLES */}
       <div className="space-y-6">
-        <DataTable 
-          title="Top 10 Most Liked Posts" 
-          columns={postColumns} 
-          data={mostLikedPosts} 
-        />
+        <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-white mb-1">Top 10 Most Liked Posts</h3>
+          <p className="text-sm text-white/50 mb-4">Posts ranked by total number of likes received. Shows the most popular content based on user appreciation.</p>
+          <DataTable 
+            title="" 
+            columns={postColumns} 
+            data={mostLikedPosts} 
+          />
+        </div>
         
-        <DataTable 
-          title="Top 10 Most Commented Posts" 
-          columns={postColumns} 
-          data={mostCommentedPosts} 
-        />
+        <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-white mb-1">Top 10 Most Commented Posts</h3>
+          <p className="text-sm text-white/50 mb-4">Posts ranked by total number of comments. Highlights content that generates the most discussion and conversation.</p>
+          <DataTable 
+            title="" 
+            columns={postColumns} 
+            data={mostCommentedPosts} 
+          />
+        </div>
         
-        <DataTable 
-          title="Top 10 Most Shared Posts" 
-          columns={postColumns} 
-          data={mostSharedPosts} 
-        />
+        <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-white mb-1">Top 10 Most Shared Posts</h3>
+          <p className="text-sm text-white/50 mb-4">Posts ranked by total number of shares. Identifies content that users find most valuable to share with others.</p>
+          <DataTable 
+            title="" 
+            columns={postColumns} 
+            data={mostSharedPosts} 
+          />
+        </div>
       </div>
     </div>
   );

@@ -38,11 +38,11 @@ export default function CommunityManagementTable() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "2-digit",
-      });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -177,18 +177,24 @@ export default function CommunityManagementTable() {
       header: "Actions",
       accessor: (row) => {
         return (
-          <div className="flex items-center gap-2 justify-center">
+          <div className="flex items-center justify-center space-x-3">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedCommunity(row);
                 setDeleteDialogOpen(true);
               }}
-              className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors flex items-center gap-1.5 text-sm"
+              className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
               title="Delete Community"
             >
-              <Trash2 className="w-4 h-4" />
-              Delete
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-4 h-4"
+              >
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+              </svg>
             </button>
           </div>
         );
@@ -207,6 +213,7 @@ export default function CommunityManagementTable() {
     <>
       <CustomTable
         title="All Communities"
+        description="Manage and view all communities in the platform"
         isLoading={isLoading}
         filters={
           <>

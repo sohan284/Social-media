@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { FiShield, FiLock, FiEye, FiEyeOff, FiUser, FiDatabase, FiGlobe, FiChevronDown, FiChevronRight, FiCheck } from 'react-icons/fi';
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 
 const Privacy = () => {
     const [expandedSection, setExpandedSection] = useState<number | null>(null);
@@ -154,21 +155,15 @@ Your continued use of our platform after changes become effective constitutes ac
 
     return (
         <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-            <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
+            <div className="p-4 sm:p-6 md:p-8">
                 {/* Header Section */}
-                <div className="text-center mb-12">
-                    <div className="flex items-center justify-center gap-4 mb-6">
-                        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-                            <FiShield className="w-8 h-8 text-white" />
-                        </div>
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-                            Privacy Policy
-                        </h1>
-                    </div>
-                    <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                        Your privacy is important to us. This policy explains how we collect, use, protect, and share your information when you use our platform.
-                    </p>
-                    <p className="text-white/60 text-sm mt-4">
+                <div className="mb-12">
+                    <PageHeader
+                        icon={<FiShield className="w-8 h-8 text-white" />}
+                        title="Privacy Policy"
+                        description="Your privacy is important to us. This policy explains how we collect, use, protect, and share your information when you use our platform."
+                    />
+                    <p className="text-white/60 text-sm  text-center">
                         Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
@@ -182,7 +177,7 @@ Your continued use of our platform after changes become effective constitutes ac
                                 key={index}
                                 className="bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 transition-all"
                             >
-                                <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 text-white`}>
+                                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 text-white">
                                     {feature.icon}
                                 </div>
                                 <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
@@ -206,7 +201,7 @@ Your continued use of our platform after changes become effective constitutes ac
                                     className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-all text-left"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-600/20 rounded-lg flex items-center justify-center text-purple-300">
+                                        <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-white">
                                             {section.icon}
                                         </div>
                                         <span className="font-medium text-white pr-4">{section.title}</span>
@@ -245,7 +240,7 @@ Your continued use of our platform after changes become effective constitutes ac
                                 'Regular security audits conducted',
                             ].map((point, index) => (
                                 <div key={index} className="flex items-center gap-3">
-                                    <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
                                         <FiCheck className="w-4 h-4 text-white" />
                                     </div>
                                     <span className="text-white/90">{point}</span>
@@ -259,7 +254,7 @@ Your continued use of our platform after changes become effective constitutes ac
                 <div className="bg-gradient-to-r from-purple-500/20 to-pink-600/20 rounded-2xl border border-purple-500/30 p-6 md:p-8 text-center">
                     <h3 className="text-2xl font-bold text-white mb-3">Questions About Privacy?</h3>
                     <p className="text-white/80 mb-6 max-w-2xl mx-auto">
-                        If you have questions about this Privacy Policy or our privacy practices, please contact our privacy team. We're committed to protecting your privacy and will respond to your inquiries promptly.
+                        If you have questions about this Privacy Policy or our privacy practices, please contact our privacy team. We&apos;re committed to protecting your privacy and will respond to your inquiries promptly.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-lg">

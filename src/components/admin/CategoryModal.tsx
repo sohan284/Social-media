@@ -109,7 +109,7 @@ export default function CategoryModal({
                 disabled={!!editingSubcategory}
                 required
               >
-                <SelectTrigger className="w-full h-12 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-[#6B83FA] text-white disabled:bg-white/5 disabled:cursor-not-allowed hover:bg-white/15 transition-colors">
+                <SelectTrigger className="w-full h-12 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-[#6B83FA] text-white disabled:bg-white/5 disabled:cursor-not-allowed hover:bg-white/15 transition-colors cursor-pointer">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#06133FBF] text-white backdrop-blur-md border border-white/20 shadow-lg">
@@ -138,7 +138,7 @@ export default function CategoryModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={`Enter ${type === "category" ? "category" : "subcategory"} name`}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40 cursor-pointer"
               required
               autoFocus
             />

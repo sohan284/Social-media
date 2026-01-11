@@ -14,7 +14,7 @@ import MessagePopup from "../../Message/MessagePopup";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import NotificationDropdown from "../../Message/NotificationDropdown";
 import { IoPersonOutline } from "react-icons/io5";
-import { useGetNotificationsQuery } from "@/store/notificationApi";
+import { useGetUnreadNotificationCountQuery } from "@/store/notificationApi";
 import { useGetConversationsListQuery, useGetChatRoomsQuery } from "@/store/chatApi";
 import { useSearch } from "@/contexts/SearchContext";
 import { useMessage } from "@/contexts/MessageContext";
@@ -52,28 +52,20 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
     skip: !isAuthenticated,
   });
 
-  const { data: notificationsData } = useGetNotificationsQuery(undefined, {
-    skip: !isAuthenticated,
-  });
   const { data: conversationsData } = useGetConversationsListQuery(undefined, {
     skip: !isAuthenticated,
   });
   const { data: roomsData } = useGetChatRoomsQuery(undefined, {
     skip: !isAuthenticated,
   });
+  const { data: unreadCountData } = useGetUnreadNotificationCountQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
   const profile = profileData?.data;
 
-  // Calculate unread notification count
-  const unreadNotificationCount = useMemo(() => {
-    if (!notificationsData) return 0;
-    const notifications =
-      notificationsData.data ??
-      notificationsData.notifications ??
-      notificationsData.results?.data ??
-      [];
-    return notifications.filter((n) => !n.is_read).length;
-  }, [notificationsData]);
+  // Get total unread notification count from API (not paginated)
+  const unreadNotificationCount = unreadCountData?.data?.unread_count ?? 0;
 
   // Calculate unread message count (direct messages + rooms)
   const unreadMessageCount = useMemo(() => {

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { FaRegComment } from "react-icons/fa";
 import { FaRegShareFromSquare } from "react-icons/fa6";
 import { VscThumbsup } from "react-icons/vsc";
@@ -36,6 +37,7 @@ interface PostProps {
 
 const Post = ({ post, profile }: PostProps) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const token = getStoredAccessToken();
   const [showComments, setShowComments] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -292,14 +294,103 @@ const Post = ({ post, profile }: PostProps) => {
       return;
     }
     
+    // Helper function to update post in any TanStack Query cache
+    const updatePostInCache = (queryKey: string[]) => {
+      queryClient.setQueryData(queryKey, (oldData: { pages?: unknown[]; posts?: PostItem[]; pageParams?: unknown[] } | undefined) => {
+        if (!oldData) return oldData;
+        
+        const updatePost = (p: PostItem): PostItem => {
+          if (p.id === postIdToLike) {
+            // Use the component's isLiked prop (source of truth) to determine the action
+            // This ensures consistency with what the user sees and clicks
+            const newLikedState = !isLiked;
+            // If isLiked is true, we're unliking (decrease count)
+            // If isLiked is false, we're liking (increase count)
+            const countChange = isLiked ? -1 : 1;
+            const currentCount = p.likes_count || 0;
+            const newCount = Math.max(0, currentCount + countChange);
+            
+            return {
+              ...p,
+              is_liked: newLikedState,
+              likes_count: newCount,
+            };
+          }
+          return p;
+        };
+        
+        // Update posts in the flattened structure
+        const updatedPosts = (oldData.posts || []).map(updatePost);
+        
+        // Update posts in pages
+        const updatedPages = (oldData.pages || []).map((page: unknown) => {
+          const pageData = page as { data?: PostItem[]; posts?: PostItem[]; results?: PostItem[] | { data?: PostItem[] } };
+          let posts: PostItem[] = [];
+          
+          if (Array.isArray(pageData.data)) {
+            posts = pageData.data;
+          } else if (Array.isArray(pageData.posts)) {
+            posts = pageData.posts;
+          } else if (pageData.results) {
+            if (Array.isArray(pageData.results)) {
+              posts = pageData.results;
+            } else if (pageData.results.data && Array.isArray(pageData.results.data)) {
+              posts = pageData.results.data;
+            }
+          }
+          
+          const updatedPagePosts = posts.map(updatePost);
+          
+          if (Array.isArray(pageData.data)) {
+            return { ...pageData, data: updatedPagePosts };
+          } else if (Array.isArray(pageData.posts)) {
+            return { ...pageData, posts: updatedPagePosts };
+          } else if (pageData.results) {
+            if (Array.isArray(pageData.results)) {
+              return { ...pageData, results: updatedPagePosts };
+            } else if (pageData.results.data) {
+              return { ...pageData, results: { ...pageData.results, data: updatedPagePosts } };
+            }
+          }
+          return pageData;
+        });
+        
+        return {
+          ...oldData,
+          pages: updatedPages,
+          posts: updatedPosts,
+        };
+      });
+    };
+    
+    // Optimistically update all TanStack Query caches before API call
+    // Update news feed cache
+    updatePostInCache(["newsFeed"]);
+    
+    // Update all user posts queries (they have queryKey: ["userPosts", userId])
+    queryClient.getQueryCache().getAll().forEach((query) => {
+      const queryKey = query.queryKey as readonly unknown[];
+      if (queryKey[0] === "userPosts" || queryKey[0] === "communityPosts") {
+        updatePostInCache([...queryKey] as string[]);
+      }
+    });
+    
     try {
+      // Perform the API call in the background
+      // The optimistic update already shows the change, no need to refetch
       if (isLiked) {
         await likePost({ postId: postIdToLike, isLiked: false }).unwrap();
       } else {
         await likePost({ postId: postIdToLike, isLiked: true }).unwrap();
       }
+      // No refetch needed - optimistic update is sufficient
+      // Data will be correct on next page load/refresh
     } catch (error) {
       console.error("Failed to like post:", error);
+      // Revert optimistic updates on error
+      queryClient.invalidateQueries({ queryKey: ["newsFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+      queryClient.invalidateQueries({ queryKey: ["communityPosts"] });
     }
   };
 

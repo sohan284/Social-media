@@ -17,6 +17,7 @@ import {
   useCreatePostMutation,
 } from "@/store/postApi";
 import { toast } from "@/components/ui/sonner";
+import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 
 interface FormData {
   title: string;
@@ -59,6 +60,7 @@ const CreatePost = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<MediaPreview[]>([]);
   const [createPost, { isLoading: isCreating }] = useCreatePostMutation();
+  const { data: profileData } = useGetCurrentUserProfileQuery();
 
   useEffect(() => {
     return () => {
@@ -156,6 +158,25 @@ const CreatePost = ({
     setTags(updatedTags);
     setValue("tags", updatedTags);
   };
+
+  const handleInterestClick = (interestName: string) => {
+    if (!tags.includes(interestName) && tags.length < 5) {
+      const updatedTags = [...tags, interestName];
+      setTags(updatedTags);
+      setValue("tags", updatedTags);
+    }
+  };
+
+  // Get user interests from profile
+  const userInterests = profileData?.data?.interests || {};
+  const allInterests: Array<{ name: string; category: string }> = [];
+  Object.entries(userInterests).forEach(([category, interests]) => {
+    if (Array.isArray(interests)) {
+      interests.forEach((interest: { id: number; name: string }) => {
+        allInterests.push({ name: interest.name, category });
+      });
+    }
+  });
 
   const createPreviewEntry = (file: File): MediaPreview => ({
     id:
@@ -356,6 +377,33 @@ const CreatePost = ({
                 <p className="text-yellow-400 text-sm">
                   Maximum 5 tags allowed
                 </p>
+              )}
+              {allInterests.length > 0 && (
+                <div className=" mb-6 mx-1">
+                  <div className="flex flex-wrap gap-2">
+                    {allInterests.map((interest, index) => {
+                      const isSelected = tags.includes(interest.name);
+                      const isDisabled = tags.length >= 5 && !isSelected;
+                      return (
+                        <button
+                          key={`${interest.category}-${interest.name}-${index}`}
+                          type="button"
+                          onClick={() => handleInterestClick(interest.name)}
+                          disabled={isDisabled}
+                          className={`px-3 py-1 rounded-full text-xs transition-all ${
+                            isSelected
+                              ? "bg-purple-500/30 text-purple-300 border border-purple-400/50"
+                              : isDisabled
+                              ? "bg-white/5 text-white/30 border border-white/10 cursor-not-allowed"
+                              : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20 hover:text-white cursor-pointer"
+                          }`}
+                        >
+                          {interest.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
 

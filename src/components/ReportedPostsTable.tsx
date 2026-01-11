@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useGetUnifiedReportsQuery, useReviewUnifiedReportMutation, UnifiedReportItem } from "@/store/postApi";
+import { useGetUnifiedReportsQuery, useReviewUnifiedReportMutation, useDeleteUnifiedReportMutation, UnifiedReportItem } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
@@ -9,6 +9,7 @@ import { CheckCircle2, XCircle, Eye, Clock, FileText, User } from "lucide-react"
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ReportedPostsTable() {
   const router = useRouter();
@@ -24,8 +25,15 @@ export default function ReportedPostsTable() {
     search: searchQuery.trim() || undefined,
   });
   const [reviewReport, { isLoading: isReviewing }] = useReviewUnifiedReportMutation();
+  const [deleteReport] = useDeleteUnifiedReportMutation();
   const [selectedReport, setSelectedReport] = useState<UnifiedReportItem | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<{
+    id: number | string;
+    type: 'post' | 'user';
+    title: string;
+  } | null>(null);
 
   const reports = useMemo((): UnifiedReportItem[] => {
     if (!data) return [];
@@ -53,13 +61,11 @@ export default function ReportedPostsTable() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -139,6 +145,38 @@ export default function ReportedPostsTable() {
   const handleViewPost = (postId: number | string | undefined) => {
     if (postId) {
       router.push(`/main/post/${postId}`);
+    }
+  };
+
+  const handleDeleteClick = (report: UnifiedReportItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!report.id) return;
+    const reportType = report.report_type || 'post';
+    const reportTitle = report.report_type === 'post' 
+      ? report.post_title || 'Post Report'
+      : getReportedItemName(report) || 'User Report';
+    setReportToDelete({ id: report.id, type: reportType as 'post' | 'user', title: reportTitle });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!reportToDelete) return;
+
+    try {
+      await deleteReport({ 
+        reportId: reportToDelete.id, 
+        reportType: reportToDelete.type 
+      }).unwrap();
+      toast.success("Report deleted successfully!");
+      setDeleteDialogOpen(false);
+      setReportToDelete(null);
+      refetch();
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        "Failed to delete report";
+      toast.error("Failed to delete report", { description: errorMessage });
     }
   };
 
@@ -266,7 +304,7 @@ export default function ReportedPostsTable() {
         const isPending = row.status === 'pending';
         const reportType = row.report_type || 'post';
         return (
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center space-x-3">
             {isPending && (
               <>
                 <button
@@ -275,10 +313,10 @@ export default function ReportedPostsTable() {
                     handleReview(row.id!, reportType as 'post' | 'user', 'reviewed');
                   }}
                   disabled={isReviewing}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   title="Mark as Reviewed"
                 >
-                  Review
+                  <Eye className="w-4 h-4" />
                 </button>
                 <button
                   onClick={(e) => {
@@ -286,10 +324,10 @@ export default function ReportedPostsTable() {
                     handleReview(row.id!, reportType as 'post' | 'user', 'resolved');
                   }}
                   disabled={isReviewing}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   title="Mark as Resolved"
                 >
-                  Resolve
+                  <CheckCircle2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={(e) => {
@@ -297,16 +335,30 @@ export default function ReportedPostsTable() {
                     handleReview(row.id!, reportType as 'post' | 'user', 'dismissed');
                   }}
                   disabled={isReviewing}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   title="Dismiss"
                 >
-                  Dismiss
+                  <XCircle className="w-4 h-4" />
                 </button>
               </>
             )}
             {!isPending && (
               <span className="text-xs text-white/40">Reviewed</span>
             )}
+            <button
+              onClick={(e) => handleDeleteClick(row, e)}
+              className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
+              title="Delete report"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-4 h-4"
+              >
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+              </svg>
+            </button>
           </div>
         );
       },
@@ -321,6 +373,7 @@ export default function ReportedPostsTable() {
           columns={columns}
           data={reports}
           title="All Reports"
+          description="Review and manage reported posts and content"
           isLoading={isLoading}
           filters={
             <>
@@ -377,7 +430,7 @@ export default function ReportedPostsTable() {
               <h3 className="text-xl font-semibold text-white">Report Details</h3>
               <button
                 onClick={() => setDetailsModalOpen(false)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/60 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -404,7 +457,7 @@ export default function ReportedPostsTable() {
                     {selectedReport.post_id && (
                       <button
                         onClick={() => handleViewPost(selectedReport.post_id!)}
-                        className="mt-1 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                        className="mt-1 text-sm text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
                       >
                         View Post →
                       </button>
@@ -492,7 +545,7 @@ export default function ReportedPostsTable() {
                       setDetailsModalOpen(false);
                     }}
                     disabled={isReviewing}
-                    className="flex-1 px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Mark as Reviewed
                   </button>
@@ -503,7 +556,7 @@ export default function ReportedPostsTable() {
                       setDetailsModalOpen(false);
                     }}
                     disabled={isReviewing}
-                    className="flex-1 px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Mark as Resolved
                   </button>
@@ -514,7 +567,7 @@ export default function ReportedPostsTable() {
                       setDetailsModalOpen(false);
                     }}
                     disabled={isReviewing}
-                    className="flex-1 px-4 py-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-300 transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Dismiss
                   </button>
@@ -524,6 +577,21 @@ export default function ReportedPostsTable() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Report?"
+        description={`Are you sure you want to delete this ${reportToDelete?.type === 'post' ? 'post' : 'user'} report? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setReportToDelete(null);
+        }}
+      />
     </>
   );
 }

@@ -9,6 +9,7 @@ import {
   FiChevronRight,
   FiSearch
 } from 'react-icons/fi';
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 import {
   useGetCategoriesQuery,
   useCreateCategoryMutation,
@@ -236,19 +237,11 @@ const Categories = () => {
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
       <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
         {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <FiTag className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-              Categories Management
-            </h1>
-          </div>
-          <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            Manage categories and subcategories to organize content and help users find what they&apos;re looking for.
-          </p>
-        </div>
+        <PageHeader
+          icon={<FiTag className="w-8 h-8 text-white" />}
+          title="Categories Management"
+          description="Manage categories and subcategories to organize content and help users find what they're looking for."
+        />
 
         {/* Search Bar */}
         <div className="mb-8">

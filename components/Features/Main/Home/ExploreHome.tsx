@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useInView } from "react-intersection-observer";
 import Post from "../Post/Post";
-import { useGetNewsFeedQuery, PostItem } from "@/store/postApi";
+import { PostItem } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { FiEdit3, FiImage, FiLink } from "react-icons/fi";
+import { Loader2 } from "lucide-react";
 import { useSearch } from "@/contexts/SearchContext";
 import { getStoredAccessToken } from "@/lib/auth";
+import EmptyPostsState from "../../../Shared/EmptyPostsState";
+import { useNewsFeedInfinite } from "@/hooks/useNewsFeedInfinite";
 
 // Fallback hook for when SearchContext is not available
 const useSearchSafe = () => {
@@ -27,36 +31,58 @@ const useSearchSafe = () => {
 const ExploreHome = () => {
   const router = useRouter();
   const token = getStoredAccessToken();
-  const { data: postsResponse, isLoading, isError } = useGetNewsFeedQuery(undefined, {
-    skip: false, // Allow unauthenticated users to see posts
-  });
+  const { searchQuery } = useSearchSafe();
+  
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+  } = useNewsFeedInfinite();
+
   const { data: profileResponse } = useGetCurrentUserProfileQuery(undefined, {
     skip: !token, // Skip if no token
   });
   const profile = profileResponse?.data;
-  const { searchQuery } = useSearchSafe();
 
+  // Get all posts from all pages
   const allPosts = useMemo((): PostItem[] => {
-    if (!postsResponse) return [];
-    
-    // Handle different response structures
-    if (Array.isArray(postsResponse.data)) {
-      return postsResponse.data;
+    return data?.posts || [];
+  }, [data]);
+
+  // Track if initial load is complete
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  
+  // Mark initial load as complete once we have data and are not loading
+  useEffect(() => {
+    if (!isLoading && data && data.pages && data.pages.length > 0 && !isInitialLoadComplete) {
+      // Small delay to ensure initial render is complete
+      const timer = setTimeout(() => {
+        setIsInitialLoadComplete(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
-    if (Array.isArray(postsResponse.posts)) {
-      return postsResponse.posts;
+  }, [isLoading, data, isInitialLoadComplete]);
+
+  // Only set up intersection observer if we have posts loaded and more pages available
+  // Also ensure initial load is complete before enabling observer
+  const hasInitialData = data && data.pages && data.pages.length > 0;
+  const shouldObserve = hasNextPage && !isLoading && allPosts.length > 0 && hasInitialData && isInitialLoadComplete;
+  
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: "100px", // Small margin to start loading before reaching exact bottom
+    triggerOnce: false,
+  });
+
+  // Load more when scrolled to bottom - only if initial load is complete
+  useEffect(() => {
+    if (inView && shouldObserve && !isFetchingNextPage && isInitialLoadComplete) {
+      fetchNextPage();
     }
-    if (postsResponse.results) {
-      if (Array.isArray(postsResponse.results)) {
-        return postsResponse.results;
-      }
-      if (postsResponse.results.data && Array.isArray(postsResponse.results.data)) {
-        return postsResponse.results.data;
-      }
-    }
-    
-    return [];
-  }, [postsResponse]);
+  }, [inView, shouldObserve, isFetchingNextPage, isInitialLoadComplete, fetchNextPage]);
 
   // Filter posts based on search query
   const posts = useMemo((): PostItem[] => {
@@ -103,18 +129,44 @@ const ExploreHome = () => {
 
     if (!posts.length) {
       return (
-        <p className="text-gray-300 mt-[20vh] text-sm text-center min-h-[47.4vh]">
-          No posts available yet.
-        </p>
+        <div className="min-h-[47.4vh] flex items-center justify-center">
+          <EmptyPostsState
+            message="No posts available yet"
+            showCreateButton={!!token}
+            onCreateClick={token ? handleCreatePostClick : undefined}
+          />
+        </div>
       );
     }
 
     return (
-      <div className="space-y-6 min-h-[60.7vh] max-h-[calc(100vh-110px)] overflow-y-auto custom-scroll">
-        {posts.map((post) => (
-          <Post key={post.id} post={post} profile={profile} />
-        ))}
-      </div>
+      <>
+        <div className="space-y-6 min-h-[60.7vh]  overflow-y-auto custom-scroll">
+          {posts.map((post) => (
+            <Post key={post.id} post={post} profile={profile} />
+          ))}
+        </div>
+        {/* Infinite scroll trigger - Only render when initial load is complete */}
+        {hasNextPage && allPosts.length > 0 && isInitialLoadComplete && (
+          <div 
+            ref={ref} 
+            className="h-20 flex flex-col items-center justify-center py-4 w-full gap-2"
+            style={{ minHeight: '80px' }}
+          >
+            {isFetchingNextPage && (
+              <>
+                <Loader2 className="animate-spin text-white/60" size={24} />
+                <div className="text-white/60 text-sm">Loading more posts...</div>
+              </>
+            )}
+          </div>
+        )}
+        {!hasNextPage && posts.length > 0 && (
+          <div className="text-center text-white/40 text-sm py-4">
+            No more posts to load
+          </div>
+        )}
+      </>
     );
   };
 
