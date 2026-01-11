@@ -485,6 +485,36 @@ export const chatApi = baseApi.injectEndpoints({
       },
       providesTags: (result, error, arg) => [{ type: "Messages", id: arg.type === 'direct' ? `${arg.user1_id}_${arg.user2_id}` : arg.room_id }],
     }),
+    deleteAdminConversation: builder.mutation<
+      { success?: boolean; message?: string; error?: string; deleted_count?: number },
+      { type: 'direct' | 'room'; user1_id?: number | string; user2_id?: number | string; room_id?: number | string }
+    >({
+      query: ({ type, user1_id, user2_id, room_id }) => {
+        const params = new URLSearchParams();
+        params.append('type', type);
+        if (type === 'direct' && user1_id && user2_id) {
+          params.append('user1_id', user1_id.toString());
+          params.append('user2_id', user2_id.toString());
+        } else if (type === 'room' && room_id) {
+          params.append('room_id', room_id.toString());
+        }
+        return {
+          url: `/api/chat/admin/conversation/delete/?${params.toString()}`,
+          method: "DELETE",
+        };
+      },
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate conversations list to refresh
+          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+          dispatch(chatApi.util.invalidateTags(["ChatRooms"]));
+          dispatch(chatApi.util.invalidateTags(["Messages"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
   }),
 });
 
@@ -513,4 +543,5 @@ export const {
   useDeleteRoomMessageMutation,
   useGetAdminAllConversationsQuery,
   useGetAdminConversationMessagesQuery,
+  useDeleteAdminConversationMutation,
 } = chatApi;

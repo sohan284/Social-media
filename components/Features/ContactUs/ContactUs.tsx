@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { FaPhone, FaEnvelope, FaTwitter, FaFacebook, FaInstagram, FaTelegramPlane } from "react-icons/fa";
+import { FiMail } from "react-icons/fi";
 import { useSubmitContactMutation } from "@/store/authApi";
 import { toast } from "sonner";
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 
 type Inputs = {
   firstName: string;
@@ -50,14 +52,14 @@ export default function ContactUs() {
 
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-      <div className="page-container">
+      <div className="p-4 sm:p-6 md:p-8">
         {/* Header Section */}
-        <div className='text-center mb-12'>
-          <h4 className="text-2xl font-semibold text-purple-400">Contact US</h4>
-          <h1 className="text-4xl font-bold my-4 text-white">Get in Touch</h1>
-          <h5 className="text-gray-300 max-w-2xl mx-auto">
-            Have a question in mind or any Feedback? Feel free to contact us using the form below or through our contact details.
-          </h5>
+        <div className="mb-12">
+          <PageHeader
+            icon={<FiMail className="w-8 h-8 text-white" />}
+            title="Get in Touch"
+            description="Have a question in mind or any Feedback? Feel free to contact us using the form below or through our contact details."
+          />
         </div>
         {/* Form Section */}
         <div className="mb-16">

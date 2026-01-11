@@ -15,6 +15,7 @@ import { FiSearch, FiFilter, FiUserPlus, FiUserMinus, FiCheck, FiX } from 'react
 import FriendsIcon from '../../Icons/FriendsIcon';
 import { toast } from 'sonner';
 import CommunityCard from '../../Shared/CommunityCard/CommunityCard';
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 
 const Communities = () => {
   const router = useRouter();
@@ -335,21 +336,15 @@ const Communities = () => {
         <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
           <div className="page-container">
             {/* Header Section */}
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <div className="w-8 h-8">
-                    <FriendsIcon />
-                  </div>
+            <PageHeader
+              icon={
+                <div className="w-8 h-8">
+                  <FriendsIcon />
                 </div>
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-                  Explore Communities
-                </h1>
-              </div>
-              <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                Discover and join communities that match your interests. Connect with like-minded people and share your passions.
-              </p>
-            </div>
+              }
+              title="Explore Communities"
+              description="Discover and join communities that match your interests. Connect with like-minded people and share your passions."
+            />
 
             {/* Search and Filter Bar */}
             <div className="mb-8 flex flex-col md:flex-row gap-4">

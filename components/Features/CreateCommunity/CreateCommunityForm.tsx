@@ -5,8 +5,10 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { FaGlobe, FaEyeSlash, FaLock } from "react-icons/fa";
+import { FiPlus } from "react-icons/fi";
 import { useCreateCommunityMutation } from "@/store/communityApi";
 import { toast } from "sonner";
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 
 type FormValues = {
   name: string;
@@ -142,9 +144,15 @@ const CreateCommunityForm = () => {
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
      <div className="page-container">
+        {/* Header Section */}
+        <PageHeader
+          icon={<FiPlus className="w-8 h-8 text-white" />}
+          title="Create Community"
+          description="Build your own community and connect with people who share your interests. Fill out the form below to get started."
+        />
      <form
         onSubmit={handleSubmit(onSubmit)}
-        className="relative w-full flex flex-col md:flex-row gap-8"
+        className="relative w-full flex flex-col md:flex-row gap-8 mt-8"
       >
         {/* Mobile Preview - Shows at top on mobile */}
         <div className="md:hidden mb-6 bg-white/10 border border-white/20 rounded-xl p-4 text-center backdrop-blur-sm">

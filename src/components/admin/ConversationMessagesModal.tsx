@@ -78,10 +78,28 @@ const ConversationMessagesModal: React.FC<ConversationMessagesModalProps> = ({
       maxWidth="4xl"
       footer={null}
     >
-      <div className="max-h-[70vh] overflow-y-auto pr-2">
+      <div className="max-h-[70vh] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-pulse text-white/60">Loading messages...</div>
+          <div className="space-y-4 py-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={`skeleton-${index}`} className="flex gap-3">
+                {/* Avatar Skeleton */}
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+                </div>
+                {/* Message Content Skeleton */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-4 bg-white/10 rounded w-24 animate-pulse" />
+                    <div className="h-3 bg-white/10 rounded w-20 animate-pulse" />
+                  </div>
+                  <div className="bg-white/10 rounded-lg px-4 py-2">
+                    <div className="h-4 bg-white/20 rounded w-full mb-2 animate-pulse" />
+                    <div className="h-4 bg-white/20 rounded w-3/4 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center py-12">

@@ -47,11 +47,11 @@ export default function UserManagementTable() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "2-digit",
-      });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -209,7 +209,71 @@ export default function UserManagementTable() {
     },
     {
       header: "Interests",
-      accessor: (row) => <span>{(row as { interests_count?: number }).interests_count ?? 0}</span>,
+      accessor: (row) => {
+        const interests = (row as { interests?: Record<string, Array<{ id: number; name: string }>> }).interests;
+        
+        if (!interests || Object.keys(interests).length === 0) {
+          return <span className="text-white/60">No interests</span>;
+        }
+        
+        // Color palette for different categories
+        const categoryColors = [
+          { bg: "bg-blue-500/20", text: "text-blue-300" },
+          { bg: "bg-purple-500/20", text: "text-purple-300" },
+          { bg: "bg-yellow-500/20", text: "text-yellow-300" },
+          { bg: "bg-pink-500/20", text: "text-pink-300" },
+          { bg: "bg-red-500/20", text: "text-red-300" },
+          { bg: "bg-indigo-500/20", text: "text-indigo-300" },
+          { bg: "bg-orange-500/20", text: "text-orange-300" },
+          { bg: "bg-teal-500/20", text: "text-teal-300" },
+          { bg: "bg-cyan-500/20", text: "text-cyan-300" },
+          { bg: "bg-green-500/20", text: "text-green-300" },
+        ];
+        
+        // Create array of interests with their category and color
+        const interestsWithCategory: Array<{
+          id: number;
+          name: string;
+          category: string;
+          colorIndex: number;
+        }> = [];
+        
+        const categoryNames = Object.keys(interests);
+        categoryNames.forEach((categoryName, categoryIdx) => {
+          const categoryInterests = interests[categoryName];
+          const colorIndex = categoryIdx % categoryColors.length;
+          categoryInterests.forEach((interest) => {
+            interestsWithCategory.push({
+              ...interest,
+              category: categoryName,
+              colorIndex,
+            });
+          });
+        });
+        
+        if (interestsWithCategory.length === 0) {
+          return <span className="text-white/60">No interests</span>;
+        }
+        
+        return (
+          <div className="max-w-xs">
+            <div className="grid grid-cols-3 gap-1">
+              {interestsWithCategory.map((interest, idx) => {
+                const color = categoryColors[interest.colorIndex];
+                return (
+                  <span
+                    key={interest.id || idx}
+                    className={`px-2 py-0.5 ${color.bg} ${color.text} rounded text-xs truncate`}
+                    title={`${interest.category}: ${interest.name}`}
+                  >
+                    {interest.name}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      },
     },
     {
       header: "Actions",

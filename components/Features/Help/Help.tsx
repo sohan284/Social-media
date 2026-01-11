@@ -1,8 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import { FiHelpCircle, FiSearch, FiBook, FiMessageCircle, FiMail, FiChevronDown, FiChevronRight, FiVideo, FiFileText, FiUsers } from 'react-icons/fi';
+import { FiHelpCircle, FiSearch, FiBook, FiMessageCircle, FiMail, FiChevronDown, FiChevronRight, FiFileText, FiUsers } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 
 const Help = () => {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -62,12 +65,6 @@ const Help = () => {
             color: 'from-blue-500 to-cyan-600',
         },
         {
-            icon: <FiVideo className="w-6 h-6" />,
-            title: 'Video Tutorials',
-            description: 'Watch step-by-step video guides',
-            color: 'from-purple-500 to-pink-600',
-        },
-        {
             icon: <FiMessageCircle className="w-6 h-6" />,
             title: 'Community Forum',
             description: 'Get help from other users',
@@ -91,20 +88,14 @@ const Help = () => {
 
     return (
         <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-            <div className="page-container">
+            <div className="p-4 sm:p-6 md:p-8">
                 {/* Header Section */}
-                <div className="text-center mb-12">
-                    <div className="flex items-center justify-center gap-4 mb-6">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                            <FiHelpCircle className="w-8 h-8 text-white" />
-                        </div>
-                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-                            Help Center
-                        </h1>
-                    </div>
-                    <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                        Find answers to common questions, learn how to use our platform, and get the support you need.
-                    </p>
+                <div className="mb-12">
+                    <PageHeader
+                        icon={<FiHelpCircle className="w-8 h-8 text-white" />}
+                        title="Help Center"
+                        description="Find answers to common questions, learn how to use our platform, and get the support you need."
+                    />
                 </div>
 
                 {/* Search Bar */}
@@ -124,13 +115,13 @@ const Help = () => {
                 {/* Help Resources */}
                 <div className="mb-12">
                     <h2 className="text-2xl font-semibold mb-6 text-white">Help Resources</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {helpResources.map((resource, index) => (
                             <div
                                 key={index}
                                 className="bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 transition-all cursor-pointer"
                             >
-                                <div className={`w-12 h-12 bg-gradient-to-br ${resource.color} rounded-xl flex items-center justify-center mb-4 text-white`}>
+                                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 text-white">
                                     {resource.icon}
                                 </div>
                                 <h3 className="text-lg font-semibold text-white mb-2">{resource.title}</h3>
@@ -202,10 +193,16 @@ const Help = () => {
                         Can&apos;t find what you&apos;re looking for? Our support team is here to help you 24/7. Reach out to us and we&apos;ll get back to you as soon as possible.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-lg">
+                        <button 
+                            onClick={() => router.push('/help-support')}
+                            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all hover:scale-105 shadow-lg"
+                        >
                             Contact Support
                         </button>
-                        <button className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 transition-all">
+                        <button 
+                            onClick={() => router.push('/main/communities')}
+                            className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 transition-all"
+                        >
                             Visit Community Forum
                         </button>
                     </div>

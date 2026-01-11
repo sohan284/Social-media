@@ -121,48 +121,48 @@ const MessageBubble = ({ message, isCurrentUser, onEdit, onDelete, isEditing = f
 
   return (
     <div 
-      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group`}
+      className={`flex items-start gap-2 ${isCurrentUser ? 'justify-end' : 'justify-start'} group`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className={`max-w-[80%] ${isCurrentUser ? 'order-2' : 'order-1'} relative`}>
-        {isCurrentUser && isHovered && !editMode && (
-          <div 
-            className="absolute -top-8 right-0 flex items-center gap-2 bg-gray-800 rounded-lg px-2 py-1 z-10"
-            onMouseEnter={handleMenuMouseEnter}
-            onMouseLeave={handleMenuMouseLeave}
+      {isCurrentUser && isHovered && !editMode && (
+        <div 
+          className="flex items-center gap-1 rounded-lg pt-2 z-10 order-1"
+          onMouseEnter={handleMenuMouseEnter}
+          onMouseLeave={handleMenuMouseLeave}
+        >
+          <button
+            onClick={() => {
+              setIsHovered(false);
+              // Measure text element dimensions before switching to edit mode
+              if (textRef.current) {
+                const textElement = textRef.current;
+                setTextareaDimensions({
+                  width: textElement.offsetWidth,
+                  height: textElement.offsetHeight,
+                });
+              }
+              setEditMode(true);
+            }}
+            className="p-1 hover:bg-gray-700 rounded transition-colors"
+            title="Edit message"
           >
-            <button
-              onClick={() => {
-                setIsHovered(false);
-                // Measure text element dimensions before switching to edit mode
-                if (textRef.current) {
-                  const textElement = textRef.current;
-                  setTextareaDimensions({
-                    width: textElement.offsetWidth,
-                    height: textElement.offsetHeight,
-                  });
-                }
-                setEditMode(true);
-              }}
-              className="p-1 hover:bg-gray-700 rounded transition-colors"
-              title="Edit message"
-            >
-              <FiEdit2 size={14} className="text-white" />
-            </button>
-            <button
-              onClick={() => {
-                setIsHovered(false);
-                handleDelete();
-              }}
-              disabled={isDeleting}
-              className="p-1 hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
-              title="Delete message"
-            >
-              <FiTrash2 size={14} className="text-red-400" />
-            </button>
-          </div>
-        )}
+            <FiEdit2 size={14} className="text-white" />
+          </button>
+          <button
+            onClick={() => {
+              setIsHovered(false);
+              handleDelete();
+            }}
+            disabled={isDeleting}
+            className="p-1 hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+            title="Delete message"
+          >
+            <FiTrash2 size={14} className="text-red-400" />
+          </button>
+        </div>
+      )}
+      <div className={`max-w-[80%] ${isCurrentUser ? 'order-2' : 'order-1'} relative`}>
         <ConfirmDialog
           open={showDeleteConfirm}
           title="Delete Message"

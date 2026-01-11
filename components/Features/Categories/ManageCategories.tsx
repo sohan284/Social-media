@@ -8,6 +8,7 @@ import {
   FiChevronDown, 
   FiChevronRight
 } from 'react-icons/fi';
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 import {
   useGetCategoriesQuery,
 } from '@/store/categoryApi';
@@ -137,19 +138,11 @@ const ManageCategories = () => {
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
       <div className="page-container">
         {/* Header Section */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <FiTag className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-              Manage Categories
-            </h1>
-          </div>
-          <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            View and manage your joined categories and interests. Remove any interest you no longer want.
-          </p>
-        </div>
+        <PageHeader
+          icon={<FiTag className="w-8 h-8 text-white" />}
+          title="Manage Categories"
+          description="View and manage your joined categories and interests. Remove any interest you no longer want."
+        />
 
         {/* Search Bar */}
         <div className="mb-8">
@@ -197,10 +190,12 @@ const ManageCategories = () => {
                       <FiChevronRight className="w-5 h-5" />
                     )}
                   </button>
-                  <h3 className="text-xl font-semibold text-white">{category.name}</h3>
-                  <span className="text-white/40 text-sm">
+                <div >
+                <h3 className="text-xl font-semibold text-white">{category.name}</h3>
+                  <p className="text-white/40 text-sm">
                     ({category.subcategories.length} {category.subcategories.length === 1 ? 'interest' : 'interests'})
-                  </span>
+                  </p>
+                  </div>
                 </div>
 
                 {/* Subcategories */}

@@ -472,6 +472,20 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["UserProfile"],
     }),
+    getPublicStats: builder.query<{
+      success: boolean;
+      message?: string;
+      data: {
+        total_users: number;
+        total_posts: number;
+        total_communities: number;
+      };
+    }, void>({
+      query: () => ({
+        url: "/auth/public/stats/",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -496,6 +510,7 @@ export const {
   useDeleteUserMutation,
   useGetCommunitiesQuery,
   useDeleteCommunityMutation,
+  useGetPublicStatsQuery,
 } = authApi;
 
 export const   useGetCurrentUserProfileQuery = (

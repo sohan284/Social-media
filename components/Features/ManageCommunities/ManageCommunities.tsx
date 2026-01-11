@@ -4,7 +4,7 @@ import React, { useMemo, useState } from "react";
 import { useGetMyCommunitiesQuery, useDeleteCommunityMutation, useJoinCommunityMutation, useLeaveCommunityMutation, CommunityItem } from "@/store/communityApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { FaUsers } from "react-icons/fa";
-import { FiTrash2, FiUserPlus, FiUsers as FiUsersIcon, FiUserMinus } from "react-icons/fi";
+import { FiTrash2, FiUserPlus, FiUsers as FiUsersIcon, FiUserMinus, FiSettings } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import CommunityCard from "../../Shared/CommunityCard/CommunityCard";
@@ -12,6 +12,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import JoinRequestsModal from "./JoinRequestsModal";
 import CommunityMembersModal from "./CommunityMembersModal";
 import InviteMemberModal from "./InviteMemberModal";
+import PageHeader from '../../Shared/PageHeader/PageHeader';
 
 const ManageCommunities = () => {
   const router = useRouter();
@@ -366,12 +367,12 @@ const ManageCommunities = () => {
   return (
     <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
       <div className="page-container">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Manage Communities</h1>
-          <p className="text-white/60 text-sm">
-            View and manage all communities you&apos;ve created
-          </p>
-        </div>
+        {/* Header Section */}
+        <PageHeader
+          icon={<FiSettings className="w-8 h-8 text-white" />}
+          title="Manage Communities"
+          description="View and manage all communities you've created"
+        />
 
         {isLoading && renderLoadingState()}
         {isError && renderErrorState()}

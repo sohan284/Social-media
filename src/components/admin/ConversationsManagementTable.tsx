@@ -3,13 +3,14 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
-import { useGetAdminAllConversationsQuery, useGetAdminConversationMessagesQuery, AdminConversation } from "@/store/chatApi";
+import { useGetAdminAllConversationsQuery, useGetAdminConversationMessagesQuery, useDeleteAdminConversationMutation, AdminConversation } from "@/store/chatApi";
 import { getApiBaseUrl } from "@/lib/utils";
-import { IoPersonOutline } from "react-icons/io5";
 import { MessageSquare, Users } from "lucide-react";
 import ConversationMessagesModal from "./ConversationMessagesModal";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { SearchFilter } from "@/components/admin/SearchFilter";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 
 export default function ConversationsManagementTable() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,8 +19,10 @@ export default function ConversationsManagementTable() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedConversation, setSelectedConversation] = useState<AdminConversation | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<AdminConversation | null>(null);
 
-  const { data, isLoading, isError } = useGetAdminAllConversationsQuery({
+  const { data, isLoading, isError, refetch } = useGetAdminAllConversationsQuery({
     page: currentPage,
     limit: pageSize,
     type: conversationTypeFilter === "all" ? undefined : conversationTypeFilter,
@@ -36,6 +39,8 @@ export default function ConversationsManagementTable() {
     },
     { skip: !selectedConversation || !isModalOpen }
   );
+
+  const [deleteConversation, { isLoading: isDeleting }] = useDeleteAdminConversationMutation();
 
   const conversations = useMemo(() => {
     if (!data) return [];
@@ -78,13 +83,11 @@ export default function ConversationsManagementTable() {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const day = date.getDate();
+      const month = date.toLocaleDateString("en-GB", { month: "short" });
+      const year = date.getFullYear();
+      
+      return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
     }
@@ -98,6 +101,65 @@ export default function ConversationsManagementTable() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedConversation(null);
+  };
+
+  const handleDeleteClick = (conversation: AdminConversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConversationToDelete(conversation);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!conversationToDelete) return;
+
+    try {
+      const result = await deleteConversation({
+        type: conversationToDelete.type,
+        user1_id: conversationToDelete.type === 'direct' ? conversationToDelete.user1?.id : undefined,
+        user2_id: conversationToDelete.type === 'direct' ? conversationToDelete.user2?.id : undefined,
+        room_id: conversationToDelete.type === 'room' ? conversationToDelete.room_id : undefined,
+      }).unwrap();
+
+      if (result.success) {
+        toast.success(result.message || "Conversation deleted successfully");
+        setDeleteDialogOpen(false);
+        setConversationToDelete(null);
+        refetch();
+      }
+    } catch (error: unknown) {
+      const errorMessage = 
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        (error as { data?: { error?: string; message?: string } })?.data?.message ||
+        (error as { message?: string })?.message ||
+        "Failed to delete conversation";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setConversationToDelete(null);
+  };
+
+  const getDeleteDialogTitle = () => {
+    if (!conversationToDelete) return "Delete Conversation";
+    if (conversationToDelete.type === "direct") {
+      return "Delete Direct Conversation";
+    } else {
+      return "Delete Room Conversation";
+    }
+  };
+
+  const getDeleteDialogDescription = () => {
+    if (!conversationToDelete) return "";
+    if (conversationToDelete.type === "direct") {
+      const user1Name = conversationToDelete.user1?.display_name || conversationToDelete.user1?.username || "User 1";
+      const user2Name = conversationToDelete.user2?.display_name || conversationToDelete.user2?.username || "User 2";
+      return `Are you sure you want to delete the conversation between ${user1Name} and ${user2Name}? This will permanently delete all messages in this conversation. This action cannot be undone.`;
+    } else {
+      const roomName = conversationToDelete.name || "Unnamed Room";
+      return `Are you sure you want to delete the room "${roomName}"? This will permanently delete the room and all messages in it. This action cannot be undone.`;
+    }
   };
 
   const getMessages = () => {
@@ -189,12 +251,53 @@ export default function ConversationsManagementTable() {
           );
         } else {
           const participantCount = row.participants?.length || 0;
+          const participants = row.participants || [];
           return (
-            <div className="flex items-center gap-2">
+            <div className="relative group flex items-center gap-2">
               <Users className="w-4 h-4 text-white/60" />
               <span className="text-sm text-white">
                 {row.name || "Unnamed Room"} ({participantCount} {participantCount === 1 ? "member" : "members"})
               </span>
+              {participants.length > 0 && (
+                <div className="absolute left-0 top-full mt-2 z-50 hidden group-hover:block">
+                  <div className="bg-black/95 border border-white/20 rounded-lg p-4 shadow-xl min-w-[250px] max-w-[400px]">
+                    <div className="text-xs font-semibold text-white/80 mb-2 pb-2 border-b border-white/10">
+                      Room Members ({participantCount})
+                    </div>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                      {participants.map((participant, idx) => {
+                        const participantName = participant.display_name || participant.username || "Unknown";
+                        const participantAvatar = getImageUrl(participant.avatar);
+                        return (
+                          <div key={participant.id || idx} className="flex items-center gap-2">
+                            {participantAvatar ? (
+                              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 bg-slate-800 flex-shrink-0">
+                                <Image
+                                  src={participantAvatar}
+                                  alt={participantName}
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-[#6B83FA] flex items-center justify-center text-white font-semibold text-xs border border-white/20 flex-shrink-0">
+                                {getUserInitials(participantName)}
+                              </div>
+                            )}
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm text-white truncate">{participantName}</span>
+                              {participant.username && participant.username !== participantName && (
+                                <span className="text-xs text-white/60 truncate">@{participant.username}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         }
@@ -231,6 +334,33 @@ export default function ConversationsManagementTable() {
       accessor: (row) => (
         <span className="text-white/70 text-sm">{formatDate(row.created_at)}</span>
       ),
+    },
+    {
+      header: "Actions",
+      accessor: (row) => (
+        <div className="flex items-center justify-center">
+          <button
+            onClick={(e) => handleDeleteClick(row, e)}
+            disabled={isDeleting}
+            className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${
+              isDeleting
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
+            title="Delete conversation"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+            </svg>
+          </button>
+        </div>
+      ),
+      className: "text-center",
     },
   ];
 
@@ -358,6 +488,18 @@ export default function ConversationsManagementTable() {
         conversationType={selectedConversation?.type || "direct"}
         title={getModalTitle()}
         isLoading={isLoadingMessages}
+      />
+
+      {/* Delete Conversation Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title={getDeleteDialogTitle()}
+        description={getDeleteDialogDescription()}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
     </div>
   );

@@ -28,15 +28,15 @@ import { toast } from "sonner";
 
 const menu = [
   { name: "Home", icon: Home, path: "/dashboard" },
-  { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
-  { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "Users", icon: Users, path: "/dashboard/user-management" },
+  { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
   { name: "Communities", icon: UsersRound, path: "/dashboard/communities" },
+  { name: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
+  { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
+  { name: "All Products", icon: Package, path: "/dashboard/all-products" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
-  { name: "All Products", icon: Package, path: "/dashboard/all-products" },
   { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },
-  { name: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

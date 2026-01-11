@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useGetFollowingQuery, useGetFollowersQuery, useGetSuggestionsQuery, useFollowUserMutation, useUnfollowUserMutation, FollowItem, UserSuggestion } from "@/store/postApi";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
 import { IoPersonOutline } from "react-icons/io5";
+import { FiUsers } from "react-icons/fi";
 import { toast } from "sonner";
 import Image from "next/image";
 import { getApiBaseUrl } from "@/lib/utils";
+import PageHeader from "../../Shared/PageHeader/PageHeader";
 
 
 const USERS_PER_PAGE = 20;
@@ -501,9 +503,16 @@ const Friends = () => {
   };
 
   return (
-    <div className=" max-w-[1220px] mx-auto px-4 pt-8 text-white">
-      <div className="page-container">
-        <h1 className="text-2xl font-bold text-white mb-6">Friends</h1>
+    <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
+      <div className="p-4 page-container sm:p-6 md:p-8">
+        {/* Header Section */}
+        <div className="mb-12">
+          <PageHeader
+            icon={<FiUsers className="w-8 h-8 text-white" />}
+            title="Friends"
+            description="Connect with friends, see who's following you, and discover new people to follow."
+          />
+        </div>
 
         {/* Tabs */}
         <div className="flex items-center gap-4 mb-6 border-b border-white/10">
