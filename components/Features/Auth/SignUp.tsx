@@ -290,7 +290,7 @@ const SignUp = () => {
           <input
             name="email"
             type="email"
-            placeholder="Email or User Name"
+            placeholder="Enter your email address"
             required
             className="w-full rounded-full border border-gray-300 bg-transparent px-4 py-3 text-sm placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
