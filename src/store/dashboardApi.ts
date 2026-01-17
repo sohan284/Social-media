@@ -86,12 +86,11 @@ export interface DashboardAnalyticsResponse {
       draft: number;
       sold: number;
       unpublished: number;
-      price_stats: {
-        avg_price: number;
-        max_price: number;
-        min_price: number;
-        total_value: number;
-      };
+      services_with_links?: number;
+      top_categories?: Array<{
+        category: string;
+        count: number;
+      }>;
     };
     
     // Activity timeline (30 days)
@@ -169,6 +168,22 @@ export interface UserAnalyticsResponse {
   };
 }
 
+export interface ServiceAnalyticsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    service_analytics: Array<{
+      date: string;
+      new: number;
+    }>;
+    date_range: {
+      start_date: string;
+      end_date: string;
+      days: number;
+    };
+  };
+}
+
 export const dashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDashboardAnalytics: builder.query<DashboardAnalyticsResponse, void>({
@@ -199,8 +214,19 @@ export const dashboardApi = baseApi.injectEndpoints({
         };
       },
     }),
+    getServiceAnalytics: builder.query<ServiceAnalyticsResponse, { start_date?: string; end_date?: string }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params.start_date) searchParams.append('start_date', params.start_date);
+        if (params.end_date) searchParams.append('end_date', params.end_date);
+        return {
+          url: `/auth/admin/service-analytics/?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
   }),
 });
 
-export const { useGetDashboardAnalyticsQuery, useGetPostAnalyticsQuery, useGetUserAnalyticsQuery } = dashboardApi;
+export const { useGetDashboardAnalyticsQuery, useGetPostAnalyticsQuery, useGetUserAnalyticsQuery, useGetServiceAnalyticsQuery } = dashboardApi;
 

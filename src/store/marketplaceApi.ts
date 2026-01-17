@@ -25,7 +25,6 @@ export interface MarketplaceItem {
   id: number | string;
   title?: string;
   description?: string;
-  price?: number | string;
   image?: string;
   images?: string[];
   category?: string;
@@ -41,7 +40,6 @@ export interface MarketplaceItem {
   };
   created_at?: string;
   updated_at?: string;
-  condition?: string;
   location?: string;
   link?: string;
   status?: "draft" | "published" | "sold" | "unpublished";
@@ -70,21 +68,17 @@ export interface GetProductsResponse {
 export interface CreateProductRequest {
   name: string;
   image: File;
-  price: string;
-  condition: string;
   status: "draft" | "published";
   sub_category: number;
   description?: string;
   location?: string;
-  link?: string;
+  link: string;
 }
 
 export interface UpdateProductRequest {
   id: number | string;
   name?: string;
   image?: File;
-  price?: string;
-  condition?: string;
   status?: "draft" | "published";
   sub_category?: number;
   description?: string;
@@ -157,18 +151,14 @@ export const marketplaceApi = baseApi.injectEndpoints({
         const formData = new FormData();
         formData.append("name", data.name);
         formData.append("image", data.image);
-        formData.append("price", data.price);
-        formData.append("condition", data.condition);
         formData.append("status", data.status);
         formData.append("sub_category", data.sub_category.toString());
+        formData.append("link", data.link);
         if (data.description) {
           formData.append("description", data.description);
         }
         if (data.location) {
           formData.append("location", data.location);
-        }
-        if (data.link) {
-          formData.append("link", data.link);
         }
         return {
           url: "/api/marketplace/items/",
@@ -266,8 +256,6 @@ export const marketplaceApi = baseApi.injectEndpoints({
         const formData = new FormData();
         // Always send required fields
         if (data.name !== undefined) formData.append("name", data.name);
-        if (data.price !== undefined) formData.append("price", data.price);
-        if (data.condition !== undefined) formData.append("condition", data.condition);
         if (data.status !== undefined) formData.append("status", data.status);
         if (data.sub_category !== undefined) formData.append("sub_category", data.sub_category.toString());
         // Image is required - always send it (either new or existing)

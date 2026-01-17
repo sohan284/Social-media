@@ -10,7 +10,7 @@ import MarketplaceSidebar from "../Features/Marketplace/Sidebar/MarketplaceSideb
 const topNavLinks = [
   { label: "Browse", href: "/marketplace" },
   { label: "Categories", href: "/marketplace/categories" },
-  { label: "Sell", href: "/marketplace/sell" },
+  { label: "Promote Service", href: "/marketplace/promote" },
 ];
 
 export default function MarketPlaceLayout({ children }: { children: React.ReactNode }) {

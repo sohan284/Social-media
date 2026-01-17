@@ -33,9 +33,9 @@ const menu = [
   { name: "Communities", icon: UsersRound, path: "/dashboard/communities" },
   { name: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
   { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
-  { name: "All Products", icon: Package, path: "/dashboard/all-products" },
+  { name: "All Services", icon: Package, path: "/dashboard/all-services" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
-  { name: "Marketplace Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
+  { name: "Service Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
   { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },
 ];
 

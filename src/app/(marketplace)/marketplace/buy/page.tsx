@@ -15,7 +15,6 @@ const BuyPage = () => {
         status?: string;
         name?: string;
         user_name?: string;
-        condition?: string;
         location?: string;
         description?: string;
         link?: string;
@@ -122,7 +121,6 @@ const BuyPage = () => {
             status?: string;
             name?: string;
             user_name?: string;
-            condition?: string;
             location?: string;
             description?: string;
             link?: string;
@@ -139,7 +137,7 @@ const BuyPage = () => {
                         {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                     </div>
                 )}
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-2 md:px-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 px-2 md:px-4'>
                     {Array.from({ length: 12 }).map((_, index) => (
                         <div
                             key={index}
@@ -164,7 +162,7 @@ const BuyPage = () => {
                 )}
                 <div className="px-2 md:px-4 py-8 text-center">
                     <p className="text-red-400 text-sm">
-                        Failed to load products. Please try again later.
+                        Failed to load services. Please try again later.
                     </p>
                 </div>
             </div>
@@ -183,8 +181,8 @@ const BuyPage = () => {
                 <div className="px-2 md:px-4 py-8 text-center">
                     <p className="text-white/60 text-sm">
                         {selectedCategoryName || selectedSubcategoryName
-                            ? "No products found for the selected filters."
-                            : "No products available at the moment."}
+                            ? "No services found for the selected filters."
+                            : "No services available at the moment."}
                     </p>
                 </div>
             </div>
@@ -199,16 +197,14 @@ const BuyPage = () => {
                     {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                 </div>
             )}
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-2 md:px-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 px-2 md:px-4'>
                 {items.map((item) => (
                     <ProductCard
                         key={item.id}
                         id={item.id}
                         title={(item.title || (item as { name?: string }).name) as string | undefined}
-                        price={item.price}
                         image={item.image || item.images?.[0]}
                         description={item.description}
-                        condition={item.condition}
                         location={item.location}
                         link={item.link}
                         seller={item.seller}
@@ -218,7 +214,7 @@ const BuyPage = () => {
                 ))}
             </div>
 
-            {/* Product Details Modal */}
+            {/* Service Details Modal */}
             <ProductDetailsModal
                 isOpen={isDetailsModalOpen}
                 onClose={() => {

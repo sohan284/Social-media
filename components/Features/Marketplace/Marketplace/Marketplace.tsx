@@ -9,14 +9,12 @@ import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EditProductModal from '@/components/admin/EditProductModal';
 import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
-import { useRouter } from 'next/navigation';
 
 const Marketplace = () => {
     const { data: itemsResponse, isLoading, isError, refetch } = useGetMarketplaceItemsQuery();
     const { data: userProfile } = useGetCurrentUserProfileQuery();
     const [deleteProduct] = useDeleteProductMutation();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const router = useRouter();
     const [productToDelete, setProductToDelete] = useState<{
         id: number | string;
         name: string;
@@ -27,7 +25,6 @@ const Marketplace = () => {
         status?: string;
         name?: string;
         user_name?: string;
-        condition?: string;
         location?: string;
         description?: string;
     } | null>(null);
@@ -35,7 +32,6 @@ const Marketplace = () => {
         status?: string;
         name?: string;
         user_name?: string;
-        condition?: string;
         location?: string;
         description?: string;
         link?: string;
@@ -71,7 +67,6 @@ const Marketplace = () => {
             status?: string;
             name?: string;
             user_name?: string;
-            condition?: string;
             location?: string;
             description?: string;
         });
@@ -79,21 +74,17 @@ const Marketplace = () => {
     };
 
     const handleDeleteClick = (item: MarketplaceItem) => {
-        const productName = (item.name || item.title || "Product") as string;
+        const productName = (item.name || item.title || "Service") as string;
         setProductToDelete({ id: item.id, name: productName });
         setDeleteDialogOpen(true);
     };
 
-    const handleCardClick = (item: MarketplaceItem) => {
-        router.push(`/marketplace/product/${item.id}`);
-    };
 
     const handleViewDetails = (item: MarketplaceItem) => {
         setProductToView(item as MarketplaceItem & {
             status?: string;
             name?: string;
             user_name?: string;
-            condition?: string;
             location?: string;
             description?: string;
             link?: string;
@@ -106,7 +97,7 @@ const Marketplace = () => {
 
         try {
             await deleteProduct(productToDelete.id).unwrap();
-            toast.success("Product deleted successfully!");
+            toast.success("Service deleted successfully!");
             setDeleteDialogOpen(false);
             setProductToDelete(null);
             refetch();
@@ -146,17 +137,17 @@ const Marketplace = () => {
             ) : isError ? (
                 <div className="px-2 md:px-4 py-8 text-center">
                     <p className="text-red-400 text-sm">
-                        Failed to load products. Please try again later.
+                        Failed to load services. Please try again later.
                     </p>
                 </div>
             ) : !items.length ? (
                 <div className="px-2 md:px-4 py-8 text-center">
                     <p className="text-white/60 text-sm">
-                        No published products available at the moment.
+                        No published services available at the moment.
                     </p>
                 </div>
             ) : (
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-2 md:px-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 px-2 md:px-4'>
                     {items.map((item) => {
                         const isOwner = isProductOwner(item);
                         return (
@@ -164,10 +155,8 @@ const Marketplace = () => {
                                 key={item.id}
                                 id={item.id}
                                 title={(item.title || (item as { name?: string }).name) as string | undefined}
-                                price={item.price}
                                 image={item.image || item.images?.[0]}
                                 description={item.description}
-                                condition={item.condition}
                                 location={item.location}
                                 link={item.link}
                                 seller={item.seller}
@@ -175,7 +164,6 @@ const Marketplace = () => {
                                 isOwner={isOwner}
                                 onEdit={isOwner ? () => handleEditClick(item) : undefined}
                                 onDelete={isOwner ? () => handleDeleteClick(item) : undefined}
-                                onCardClick={isOwner ? () => handleCardClick(item) : undefined}
                                 onViewDetails={() => handleViewDetails(item)}
                             />
                         );
@@ -211,7 +199,7 @@ const Marketplace = () => {
             {/* Delete Confirmation Dialog */}
             <ConfirmDialog
                 open={deleteDialogOpen}
-                title="Delete Product?"
+                title="Delete Service?"
                 description={`Are you sure you want to delete "${productToDelete?.name}"? This action cannot be undone.`}
                 confirmLabel="Delete"
                 cancelLabel="Cancel"

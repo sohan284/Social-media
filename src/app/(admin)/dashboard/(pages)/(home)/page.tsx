@@ -6,9 +6,10 @@ import { PieChart } from "@/components/PieChart";
 import { LineChart } from "@/components/LineChart";
 import { PostAnalyticsChart } from "@/components/PostAnalyticsChart";
 import { UserAnalyticsChart } from "@/components/UserAnalyticsChart";
+import { ServiceAnalyticsChart } from "@/components/ServiceAnalyticsChart";
 import { Column, DataTable } from "@/components/DataTable";
 import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
-import { useGetDashboardAnalyticsQuery, useGetPostAnalyticsQuery, useGetUserAnalyticsQuery } from "@/store/dashboardApi";
+import { useGetDashboardAnalyticsQuery, useGetPostAnalyticsQuery, useGetUserAnalyticsQuery, useGetServiceAnalyticsQuery } from "@/store/dashboardApi";
 import { getApiBaseUrl } from "@/lib/utils";
 
 interface PostData {
@@ -105,6 +106,8 @@ export default function AdminDashboardHome() {
   const [postDateRange, setPostDateRange] = useState<DateRange | undefined>(() => getDateRangeForPreset("this-month"));
   const [userDatePreset, setUserDatePreset] = useState<DateRangePreset>("this-month");
   const [userDateRange, setUserDateRange] = useState<DateRange | undefined>(() => getDateRangeForPreset("this-month"));
+  const [serviceDatePreset, setServiceDatePreset] = useState<DateRangePreset>("this-month");
+  const [serviceDateRange, setServiceDateRange] = useState<DateRange | undefined>(() => getDateRangeForPreset("this-month"));
   
   // Initialize date ranges when presets change
   useEffect(() => {
@@ -119,6 +122,12 @@ export default function AdminDashboardHome() {
     }
   }, [userDatePreset]);
   
+  useEffect(() => {
+    if (serviceDatePreset !== "custom") {
+      setServiceDateRange(getDateRangeForPreset(serviceDatePreset));
+    }
+  }, [serviceDatePreset]);
+  
   const { data: postAnalyticsData, isLoading: isLoadingPostAnalytics } = useGetPostAnalyticsQuery({
     start_date: postDateRange?.start_date,
     end_date: postDateRange?.end_date,
@@ -127,6 +136,11 @@ export default function AdminDashboardHome() {
   const { data: userAnalyticsData, isLoading: isLoadingUserAnalytics } = useGetUserAnalyticsQuery({
     start_date: userDateRange?.start_date,
     end_date: userDateRange?.end_date,
+  });
+  
+  const { data: serviceAnalyticsData, isLoading: isLoadingServiceAnalytics } = useGetServiceAnalyticsQuery({
+    start_date: serviceDateRange?.start_date,
+    end_date: serviceDateRange?.end_date,
   });
   
   // Format date helper
@@ -443,7 +457,7 @@ export default function AdminDashboardHome() {
           { title: "Total Likes", value: formatNumber(data.total_likes), color: "#EF4444" },
           { title: "Total Comments", value: formatNumber(data.total_comments), color: "#3B82F6" },
           { title: "Total Shares", value: formatNumber(data.total_shares), color: "#10B981" },
-          { title: "Total Products", value: formatNumber(data.total_products), color: "#F59E0B" },
+          { title: "Total Services", value: formatNumber(data.total_products), color: "#F59E0B" },
          { title: "Active (7d)", value: formatNumber(data.user_activity.active_users_7d), color: "#EC4899" },
         ].map((item) => (
           <div key={item.title} className="rounded-lg border border-white/10 bg-black/20 backdrop-blur-sm p-4">
@@ -452,7 +466,7 @@ export default function AdminDashboardHome() {
               {item.title === "Total Likes" && "All likes received on posts"}
               {item.title === "Total Comments" && "All comments made on posts"}
               {item.title === "Total Shares" && "All posts shared by users"}
-              {item.title === "Total Products" && "Total products listed in marketplace"}
+              {item.title === "Total Services" && "Total services promoted in marketplace"}
              {item.title === "Active (7d)" && "Users active in the last 7 days"}
             </p>
             <p className="text-xl font-semibold text-white">{item.value}</p>
@@ -579,6 +593,36 @@ export default function AdminDashboardHome() {
         )}
       </div>
 
+      {/* SERVICE ANALYTICS CHART WITH FILTERS */}
+      <div className="w-full border border-[#9BD4F0] rounded-xl p-6 bg-black/30 backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-1">Service Promotion Analytics</h2>
+            <p className="text-sm text-white/50">Time-series analysis of new service promotions posted over time. Use the date filter to analyze specific time periods and see day-wise service promotion trends.</p>
+          </div>
+          <DateFilter
+            value={serviceDatePreset}
+            dateRange={serviceDateRange}
+            onChange={(preset, range) => {
+              setServiceDatePreset(preset);
+              setServiceDateRange(range);
+            }}
+            label="Date"
+          />
+        </div>
+        {isLoadingServiceAnalytics ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="animate-pulse text-white/60">Loading service analytics...</div>
+          </div>
+        ) : serviceAnalyticsData?.data?.service_analytics ? (
+          <ServiceAnalyticsChart data={serviceAnalyticsData.data.service_analytics} />
+        ) : (
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="text-white/60">No data available</div>
+          </div>
+        )}
+      </div>
+
       {/* ENGAGEMENT METRICS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
@@ -657,45 +701,6 @@ export default function AdminDashboardHome() {
           </div>
         </div>
       </div>
-
-      {/* MARKETPLACE ANALYTICS */}
-      {data.marketplace_analytics && (
-        <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
-          <div className="relative">
-            <h3 className="text-xl font-semibold text-white mb-1">Marketplace Analytics</h3>
-            <div className="absolute right-0 top-0 flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-white/70 text-xs mb-0.5">Published</p>
-                <p className="text-lg font-semibold text-white">{formatNumber(data.marketplace_analytics.published)}</p>
-              </div>
-              <span className="text-white/50">|</span>
-              <div className="text-right">
-                <p className="text-white/70 text-xs mb-0.5">Draft</p>
-                <p className="text-lg font-semibold text-white">{formatNumber(data.marketplace_analytics.draft)}</p>
-              </div>
-            </div>
-            <p className="text-sm text-white/50 mb-4 mt-2">Overview of marketplace product statuses, pricing statistics, and sales performance. Includes published and draft products.</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-white/10">
-            <div>
-              <p className="text-white/70 text-sm mb-1">Avg Price</p>
-              <p className="text-xl font-semibold text-white">{formatCurrency(data.marketplace_analytics.price_stats.avg_price)}</p>
-            </div>
-            <div>
-              <p className="text-white/70 text-sm mb-1">Max Price</p>
-              <p className="text-xl font-semibold text-white">{formatCurrency(data.marketplace_analytics.price_stats.max_price)}</p>
-            </div>
-            <div>
-              <p className="text-white/70 text-sm mb-1">Min Price</p>
-              <p className="text-xl font-semibold text-white">{formatCurrency(data.marketplace_analytics.price_stats.min_price)}</p>
-            </div>
-            <div>
-              <p className="text-white/70 text-sm mb-1">Total Value</p>
-              <p className="text-xl font-semibold text-white">{formatCurrency(data.marketplace_analytics.price_stats.total_value)}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* TOP POSTS TABLES */}
       <div className="space-y-6">
