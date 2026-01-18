@@ -11,8 +11,12 @@ import {
   useUnblockUserMutation,
   useGetBlockedUsersQuery,
   useReportUserMutation,
+  useAcceptMessageRequestMutation,
+  useRejectMessageRequestMutation,
+  useCancelMessageRequestMutation,
   type ChatUser,
   type ConversationItem,
+  type MessageRequest,
 } from "@/store/chatApi";
 import { getApiBaseUrl } from "@/lib/utils";
 import ReportUserModal from "./ReportUserModal";
@@ -41,10 +45,11 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
   const apiBase = getApiBaseUrl();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState<{ userId: string; username: string } | null>(null);
+  const [viewingRequestId, setViewingRequestId] = useState<string | null>(null);
   
   // Use search if query exists, otherwise get conversations list
   const shouldSearch = searchQuery.trim().length >= 2;
-  const { data: conversationsResponse, isLoading: isLoadingConversations } = useGetConversationsListQuery(undefined, {
+  const { data: conversationsResponse, isLoading: isLoadingConversations, refetch: refetchConversations } = useGetConversationsListQuery(undefined, {
     skip: shouldSearch,
     refetchOnMountOrArgChange: true,
   });
@@ -55,6 +60,9 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
   const [blockUser, { isLoading: isBlocking }] = useBlockUserMutation();
   const [unblockUser, { isLoading: isUnblocking }] = useUnblockUserMutation();
   const { data: blockedUsersResponse } = useGetBlockedUsersQuery();
+  const [acceptRequest, { isLoading: isAccepting }] = useAcceptMessageRequestMutation();
+  const [rejectRequest, { isLoading: isRejecting }] = useRejectMessageRequestMutation();
+  const [cancelRequest, { isLoading: isCancelling }] = useCancelMessageRequestMutation();
 
   const isLoading = isLoadingConversations || isLoadingSearch;
 
@@ -128,13 +136,28 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
         unreadCount: conversation.unread_count || 0,
         iBlockedThem: conversation.i_blocked_them || false,
         theyBlockedMe: conversation.they_blocked_me || false,
+        pendingRequest: conversation.pending_request,
+        hasPendingRequest: conversation.has_pending_request || false,
+        isRequestReceiver: conversation.is_request_receiver || false,
       };
     });
   }, [shouldSearch, conversationsResponse, searchResponse]);
 
   const handleUserClick = async (conversation: typeof conversations[0], e?: React.MouseEvent) => {
-    // Don't trigger user selection if clicking on menu button
-    if ((e?.target as HTMLElement)?.closest('.user-menu-button') || (e?.target as HTMLElement)?.closest('.user-menu-dropdown')) {
+    // Don't trigger user selection if clicking on menu button, accept/reject buttons
+    if ((e?.target as HTMLElement)?.closest('.user-menu-button') || 
+        (e?.target as HTMLElement)?.closest('.user-menu-dropdown') ||
+        (e?.target as HTMLElement)?.closest('.request-action-button')) {
+      return;
+    }
+    
+    // If it's a pending request (received or sent), toggle view
+    if (conversation.hasPendingRequest) {
+      if (viewingRequestId === String(conversation.pendingRequest?.id || '')) {
+        setViewingRequestId(null);
+      } else {
+        setViewingRequestId(String(conversation.pendingRequest?.id || ''));
+      }
       return;
     }
     
@@ -149,6 +172,45 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
       lastSeen: conversation.lastSeen,
       timestamp: conversation.timestamp,
     });
+  };
+
+  const handleAcceptRequest = async (requestId: number | string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await acceptRequest({ request_id: requestId }).unwrap();
+      toast.success("Message request accepted! You can now message each other.");
+      refetchConversations();
+      setViewingRequestId(null);
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || "Failed to accept message request");
+    }
+  };
+
+  const handleRejectRequest = async (requestId: number | string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await rejectRequest({ request_id: requestId }).unwrap();
+      toast.success("Message request rejected.");
+      refetchConversations();
+      setViewingRequestId(null);
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || "Failed to reject message request");
+    }
+  };
+
+  const handleCancelRequest = async (requestId: number | string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await cancelRequest({ request_id: requestId }).unwrap();
+      toast.success("Message request cancelled.");
+      refetchConversations();
+      setViewingRequestId(null);
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || "Failed to cancel message request");
+    }
   };
 
   const handleBlockUser = async (userId: string, username: string) => {
@@ -260,12 +322,93 @@ const MessageUserList = ({ searchQuery, onUserSelect }: MessageUserListProps) =>
                 )}
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 truncate flex-1">
-                  {conversation.lastMessage}
-                </p>
+                {conversation.hasPendingRequest && conversation.isRequestReceiver ? (
+                  <div className="flex-1">
+                    {viewingRequestId === String(conversation.pendingRequest?.id) ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-yellow-400 mb-2">
+                          {conversation.pendingRequest?.content || "No message content"}
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => handleAcceptRequest(conversation.pendingRequest!.id!, e)}
+                            disabled={isAccepting || isRejecting}
+                            className="request-action-button flex-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            {isAccepting ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                            ) : (
+                              "Accept"
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => handleRejectRequest(conversation.pendingRequest!.id!, e)}
+                            disabled={isAccepting || isRejecting}
+                            className="request-action-button flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            {isRejecting ? (
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                            ) : (
+                              "Reject"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-yellow-400">Message request:</span>
+                        <p className="text-sm text-gray-600 truncate flex-1">
+                          {conversation.pendingRequest?.content || conversation.lastMessage}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : conversation.hasPendingRequest && !conversation.isRequestReceiver ? (
+                  <div className="flex-1">
+                    {viewingRequestId === String(conversation.pendingRequest?.id) ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-blue-400 mb-2">
+                          {conversation.pendingRequest?.content || "No message content"}
+                        </p>
+                        <button
+                          onClick={(e) => handleCancelRequest(conversation.pendingRequest!.id!, e)}
+                          disabled={isCancelling}
+                          className="request-action-button w-full px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                        >
+                          {isCancelling ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                          ) : (
+                            "Cancel Request"
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-blue-400">Request sent</span>
+                        <p className="text-sm text-gray-600 truncate flex-1">
+                          {conversation.pendingRequest?.content || conversation.lastMessage}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600 truncate flex-1">
+                    {conversation.lastMessage}
+                  </p>
+                )}
                 {conversation.unreadCount > 0 && (
                   <div className="bg-[#ff4500] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2 flex-shrink-0 font-medium">
                     {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
+                  </div>
+                )}
+                {conversation.hasPendingRequest && conversation.isRequestReceiver && (
+                  <div className="bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2 flex-shrink-0 font-medium">
+                    !
+                  </div>
+                )}
+                {conversation.hasPendingRequest && !conversation.isRequestReceiver && (
+                  <div className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2 flex-shrink-0 font-medium">
+                    ⏱
                   </div>
                 )}
               </div>

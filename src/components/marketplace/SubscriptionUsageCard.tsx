@@ -3,18 +3,15 @@
 import React from "react";
 import { useGetSubscriptionUsageQuery } from "@/store/paymentApi";
 import { Loader2, CreditCard, Zap, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
 
 interface SubscriptionUsageCardProps {
   onUpgrade?: () => void;
-  onBuyPost?: () => void;
 }
 
 export default function SubscriptionUsageCard({
   onUpgrade,
-  onBuyPost,
 }: SubscriptionUsageCardProps) {
-  const { data, isLoading, error, refetch } = useGetSubscriptionUsageQuery();
+  const { data, isLoading, error } = useGetSubscriptionUsageQuery();
 
   if (isLoading) {
     return (
@@ -53,7 +50,7 @@ export default function SubscriptionUsageCard({
         <h3 className="text-xl font-semibold text-white">Subscription Status</h3>
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-purple-400" />
-          <span className="text-sm font-medium text-white/80">{usage.plan_name}</span>
+          <span className="text-sm font-medium text-white/80">{usage.plan_display_name || usage.plan_name}</span>
         </div>
       </div>
 
@@ -102,50 +99,18 @@ export default function SubscriptionUsageCard({
         )}
       </div>
 
-      {/* Actions */}
+      {/* Actions - Only show when user cannot post */}
       {!usage.can_post && (
         <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-4">
           <p className="text-sm text-yellow-300 mb-3">
-            You&apos;ve reached your posting limit. Upgrade your plan or purchase additional posts.
+            You&apos;ve reached your posting limit. Upgrade your plan to continue posting.
           </p>
-          <div className="flex gap-2">
-            {onUpgrade && (
-              <button
-                onClick={onUpgrade}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all duration-300"
-              >
-                Upgrade Plan
-              </button>
-            )}
-            {onBuyPost && (
-              <button
-                onClick={onBuyPost}
-                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-300"
-              >
-                Buy Post ($2.99)
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      {usage.can_post && (
-        <div className="flex gap-2">
           {onUpgrade && (
             <button
               onClick={onUpgrade}
-              className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all duration-300 border border-white/20"
+              className="w-full cursor-pointer px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-medium transition-all duration-300"
             >
-              View Plans
-            </button>
-          )}
-          {onBuyPost && (
-            <button
-              onClick={onBuyPost}
-              className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-all duration-300 border border-white/20"
-            >
-              Buy More Posts
+              Upgrade Plan
             </button>
           )}
         </div>

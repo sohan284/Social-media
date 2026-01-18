@@ -9,6 +9,7 @@ import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus, FiTag } from "react-icons/fi";
 import { usePathname, useRouter } from "next/navigation";
+import MessageRequestBadge from "@/components/message/MessageRequestBadge";
 const menuItems = [
   {
     icon: <GoHome size={24} />,
@@ -81,6 +82,10 @@ const SidebarNavLink = () => {
             {item.icon} {item.label}
           </Link>
         ))}
+        {/* Message Requests Badge */}
+        <div className="px-6 py-2.5">
+          <MessageRequestBadge />
+        </div>
       </div>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-3 px-2.5 rounded-2xl">
         <h3 className="text-base text-[#BCB3B3] px-8 my-4">Communities</h3>

@@ -9,6 +9,11 @@ export interface SubscriptionPlan {
   posts_per_month: number;
   features: string[];
   is_active: boolean;
+  is_recommended?: boolean;
+  stripe_product_id?: string | null;
+  stripe_price_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface UserSubscription {
@@ -24,7 +29,8 @@ export interface UserSubscription {
 
 export interface SubscriptionUsage {
   has_subscription: boolean;
-  plan_name: string;
+  plan_name: string; // Plan slug/name for matching
+  plan_display_name?: string; // Plan display name for UI
   posts_used: number;
   posts_limit: number | null; // null means unlimited
   remaining_posts: number | null;
@@ -100,6 +106,44 @@ export const paymentApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["SubscriptionPlans"],
+    }),
+
+    // Admin: Create subscription plan
+    createSubscriptionPlan: builder.mutation<
+      { success: boolean; message: string; data: SubscriptionPlan },
+      Partial<SubscriptionPlan>
+    >({
+      query: (data) => ({
+        url: "/api/marketplace/subscription-plans/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["SubscriptionPlans"],
+    }),
+
+    // Admin: Update subscription plan
+    updateSubscriptionPlan: builder.mutation<
+      { success: boolean; message: string; data: SubscriptionPlan },
+      { id: number; data: Partial<SubscriptionPlan> }
+    >({
+      query: ({ id, data }) => ({
+        url: `/api/marketplace/subscription-plans/${id}/`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["SubscriptionPlans"],
+    }),
+
+    // Admin: Delete subscription plan
+    deleteSubscriptionPlan: builder.mutation<
+      { success: boolean; message: string },
+      number
+    >({
+      query: (id) => ({
+        url: `/api/marketplace/subscription-plans/${id}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SubscriptionPlans"],
     }),
 
     // Get user subscription
@@ -212,5 +256,9 @@ export const {
   useCancelSubscriptionMutation,
   useGetPaymentsQuery,
   useGetPostCreditsQuery,
+  // Admin mutations
+  useCreateSubscriptionPlanMutation,
+  useUpdateSubscriptionPlanMutation,
+  useDeleteSubscriptionPlanMutation,
 } = paymentApi;
 

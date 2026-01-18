@@ -37,6 +37,7 @@ const menu = [
   { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "All Services", icon: Package, path: "/dashboard/all-services" },
   { name: "Payments", icon: CreditCard, path: "/dashboard/payments" },
+  { name: "Subscription Plans", icon: CreditCard, path: "/dashboard/subscription-plans" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Service Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
   { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },

@@ -40,6 +40,43 @@ export interface ChatMessage {
   [key: string]: unknown;
 }
 
+export interface MessageRequest {
+  id: number | string;
+  sender?: ChatUser;
+  sender_id?: number | string;
+  sender_username?: string;
+  receiver?: ChatUser;
+  receiver_id?: number | string;
+  content?: string;
+  status?: 'pending' | 'accepted' | 'rejected';
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface GetMessageRequestsResponse {
+  success?: boolean;
+  data?: MessageRequest[];
+  [key: string]: unknown;
+}
+
+export interface AcceptMessageRequestResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    request?: MessageRequest;
+    message?: ChatMessage;
+  };
+  [key: string]: unknown;
+}
+
+export interface RejectMessageRequestResponse {
+  success?: boolean;
+  message?: string;
+  data?: MessageRequest;
+  [key: string]: unknown;
+}
+
 export interface GetChatRoomsResponse {
   data?: ChatRoom[];
   results?: ChatRoom[];
@@ -101,6 +138,9 @@ export interface ConversationItem {
   last_message_time?: string;
   i_blocked_them?: boolean;
   they_blocked_me?: boolean;
+  pending_request?: MessageRequest;
+  has_pending_request?: boolean;
+  is_request_receiver?: boolean;
 }
 
 export interface GetConversationsListResponse {
@@ -272,15 +312,29 @@ export const chatApi = baseApi.injectEndpoints({
       }),
       async onQueryStarted({ receiver_id }, { dispatch, queryFulfilled }) {
         try {
-          await queryFulfilled;
-          // Invalidate conversation messages to refetch
-          dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: receiver_id }]));
-          // Invalidate conversations list so the new conversation appears
-          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+          const result = await queryFulfilled;
+          // Check if it's a message request (is_request flag)
+          if (result.data.data && typeof result.data.data === 'object' && 'is_request' in result.data.data && result.data.data.is_request) {
+            // Invalidate message requests to show the new request
+            dispatch(chatApi.util.invalidateTags(["MessageRequests"]));
+          } else {
+            // Invalidate conversation messages to refetch
+            dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: receiver_id }]));
+            // Invalidate conversations list so the new conversation appears
+            dispatch(chatApi.util.invalidateTags(["Conversations"]));
+          }
           // Also invalidate chat users to refresh the list
           dispatch(chatApi.util.invalidateTags(["ChatUsers"]));
-        } catch {
-          // Error handling
+        } catch (error: unknown) {
+          // Check if error is about message request
+          const errorData = error && typeof error === 'object' && 'data' in error 
+            ? error.data as { error?: string; message?: string; request_id?: number | string }
+            : null;
+          
+          if (errorData?.error?.includes('message request') || errorData?.request_id) {
+            // Invalidate message requests to refresh the list
+            dispatch(chatApi.util.invalidateTags(["MessageRequests"]));
+          }
         }
       },
     }),
@@ -515,6 +569,68 @@ export const chatApi = baseApi.injectEndpoints({
         }
       },
     }),
+    // Message request endpoints
+    getMessageRequests: builder.query<GetMessageRequestsResponse, void>({
+      query: () => ({
+        url: "/api/chat/message-requests/",
+        method: "GET",
+      }),
+      providesTags: ["MessageRequests"],
+    }),
+    acceptMessageRequest: builder.mutation<AcceptMessageRequestResponse, { request_id: number | string }>({
+      query: (data) => ({
+        url: "/api/chat/message-requests/accept/",
+        method: "POST",
+        body: data,
+      }),
+      async onQueryStarted({ request_id }, { dispatch, queryFulfilled }) {
+        try {
+          const result = await queryFulfilled;
+          // Invalidate message requests to remove the accepted one
+          dispatch(chatApi.util.invalidateTags(["MessageRequests"]));
+          // Invalidate conversations to show the new conversation
+          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+          // If there's a message in the response, invalidate that conversation
+          if (result.data.data?.message?.receiver_id) {
+            dispatch(chatApi.util.invalidateTags([{ type: "Messages", id: result.data.data.message.receiver_id }]));
+          }
+        } catch {
+          // Error handling
+        }
+      },
+    }),
+    rejectMessageRequest: builder.mutation<RejectMessageRequestResponse, { request_id: number | string }>({
+      query: (data) => ({
+        url: "/api/chat/message-requests/reject/",
+        method: "POST",
+        body: data,
+      }),
+      async onQueryStarted({ request_id }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate message requests to remove the rejected one
+          dispatch(chatApi.util.invalidateTags(["MessageRequests"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
+    cancelMessageRequest: builder.mutation<{ success?: boolean; message?: string }, { request_id: number | string }>({
+      query: (data) => ({
+        url: `/api/chat/message-requests/cancel/?request_id=${data.request_id}`,
+        method: "DELETE",
+      }),
+      async onQueryStarted({ request_id }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Invalidate message requests and conversations to refresh the list
+          dispatch(chatApi.util.invalidateTags(["MessageRequests"]));
+          dispatch(chatApi.util.invalidateTags(["Conversations"]));
+        } catch {
+          // Error handling
+        }
+      },
+    }),
   }),
 });
 
@@ -528,6 +644,10 @@ export const {
   useSendDirectMessageMutation,
   useGetConversationQuery,
   useGetConversationsListQuery,
+  useGetMessageRequestsQuery,
+  useAcceptMessageRequestMutation,
+  useRejectMessageRequestMutation,
+  useCancelMessageRequestMutation,
   useUpdateChatRoomMutation,
   useDeleteChatRoomMutation,
   useMakeRoomAdminMutation,

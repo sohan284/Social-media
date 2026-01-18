@@ -306,33 +306,13 @@ export default function PromoteServicePage() {
     <div className="text-white flex flex-col gap-6">
       {/* Subscription Usage Card */}
       <SubscriptionUsageCard
-        onUpgrade={() => setIsSubscriptionModalOpen(true)}
-        onBuyPost={() => {
-          setIsSubscriptionModalOpen(true);
+        onUpgrade={() => {
+          // Only show modal if user has no remaining posts
+          if (!usageData?.data?.can_post) {
+            setIsSubscriptionModalOpen(true);
+          }
         }}
       />
-      
-      {/* Posting Limit Warning */}
-      {usageData?.data && !usageData.data.can_post && (
-        <div className="w-full backdrop-blur-[17px] rounded-2xl p-4 border border-red-500/50 bg-red-500/10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-1">
-                Posting Limit Reached
-              </h3>
-              <p className="text-sm text-white/70">
-                Upgrade your plan or purchase additional posts to continue promoting your services.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsSubscriptionModalOpen(true)}
-              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all"
-            >
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      )}
       
       {/* Form Section */}
       <div className="flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6">
@@ -367,7 +347,7 @@ export default function PromoteServicePage() {
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-40 h-32 bg-black/30 border border-gray-400/40 rounded-md cursor-pointer hover:bg-black/40 transition">
+            <label className="flex flex-col items-center justify-center w-full h-32 bg-black/30 border border-gray-400/40 rounded-md cursor-pointer hover:bg-black/40 transition">
               <FaUpload className="text-2xl text-gray-300 mb-2" />
               <span className="text-sm text-gray-300">Add Photo</span>
               <input
@@ -617,7 +597,6 @@ export default function PromoteServicePage() {
       <SubscriptionPlansModal
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
-        showOneTimePost={true}
         onPaymentSuccess={async () => {
           // Refetch subscription usage and items after payment
           await Promise.all([refetchUsage(), refetchItems()]);

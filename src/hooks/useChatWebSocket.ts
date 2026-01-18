@@ -167,6 +167,42 @@ export const useChatWebSocket = (options: UseChatWebSocketOptions = {}) => {
             store.dispatch(chatApi.util.invalidateTags(['Conversations']));
           }
 
+          // Handle message request events
+          if (data.type === 'message_request') {
+            const requestData = (data as { request?: unknown }).request;
+            console.log('WebSocket message request received:', requestData);
+            // Invalidate message requests to show the new request
+            store.dispatch(chatApi.util.invalidateTags(['MessageRequests']));
+          }
+
+          if (data.type === 'message_request_accepted') {
+            const requestData = (data as { request?: { message_id?: number | string; receiver_id?: number | string } }).request;
+            console.log('WebSocket message request accepted:', requestData);
+            // Invalidate message requests to remove the accepted one
+            store.dispatch(chatApi.util.invalidateTags(['MessageRequests']));
+            // Invalidate conversations to show the new conversation
+            store.dispatch(chatApi.util.invalidateTags(['Conversations']));
+            // Invalidate messages if we have a receiver_id
+            if (requestData?.receiver_id) {
+              store.dispatch(chatApi.util.invalidateTags([{ type: 'Messages', id: requestData.receiver_id }]));
+            }
+          }
+
+          if (data.type === 'message_request_rejected') {
+            const requestData = (data as { request?: unknown }).request;
+            console.log('WebSocket message request rejected:', requestData);
+            // Invalidate message requests to remove the rejected one
+            store.dispatch(chatApi.util.invalidateTags(['MessageRequests']));
+          }
+
+          if (data.type === 'message_request_cancelled') {
+            const requestData = (data as { request?: unknown }).request;
+            console.log('WebSocket message request cancelled:', requestData);
+            // Invalidate message requests and conversations to refresh the list
+            store.dispatch(chatApi.util.invalidateTags(['MessageRequests']));
+            store.dispatch(chatApi.util.invalidateTags(['Conversations']));
+          }
+
           // Call custom onMessage handler if provided
           if (onMessageRef.current) {
             onMessageRef.current(data);

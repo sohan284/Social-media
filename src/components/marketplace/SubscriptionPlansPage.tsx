@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import {
   useGetSubscriptionPlansQuery,
-  useCreateSubscriptionCheckoutMutation,
-  useCreatePostPaymentCheckoutMutation,
+  useGetSubscriptionUsageQuery,
   SubscriptionPlan,
 } from "@/store/paymentApi";
 import { Loader2, Check, Zap, Crown, Rocket } from "lucide-react";
@@ -15,11 +14,16 @@ import PaymentModal from "./PaymentModal";
 export default function SubscriptionPlansPage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<SubscriptionPlan | null>(null);
-  const [paymentType, setPaymentType] = useState<"subscription" | "one_time">("subscription");
   const searchParams = useSearchParams();
   const { data, isLoading } = useGetSubscriptionPlansQuery();
+  const { data: usageData } = useGetSubscriptionUsageQuery();
 
   const plans = data?.data || [];
+  const usage = usageData?.data;
+  const hasActiveSubscription = usage?.has_subscription && usage?.remaining_posts !== null && usage?.remaining_posts > 0;
+  const currentPlanName = usage?.plan_name?.toLowerCase();
+  // Only show "Your Plan" if user has remaining posts
+  const hasRemainingPosts = (usage?.remaining_posts ?? 0) > 0;
 
   // Handle success/cancel from Stripe redirect
   useEffect(() => {
@@ -35,13 +39,6 @@ export default function SubscriptionPlansPage() {
 
   const handleSubscribe = (plan: SubscriptionPlan) => {
     setSelectedPlanForPayment(plan);
-    setPaymentType("subscription");
-    setPaymentModalOpen(true);
-  };
-
-  const handleBuyPost = () => {
-    setSelectedPlanForPayment(null);
-    setPaymentType("one_time");
     setPaymentModalOpen(true);
   };
 
@@ -87,19 +84,32 @@ export default function SubscriptionPlansPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {plans.map((plan) => {
-                  const isRecommended = plan.name.toLowerCase() === "basic";
+                  const isRecommended = plan.is_recommended || false;
+                  // Only show "Your Plan" if it's the current plan AND user has remaining posts
+                  const isCurrentPlan = currentPlanName === plan.name.toLowerCase() && hasRemainingPosts;
+                  // Disable button only if user has active subscription with remaining posts for a different plan
+                  const shouldDisableButton = hasActiveSubscription && !isCurrentPlan;
                   return (
                     <div
                       key={plan.id}
                       className={`relative p-6  rounded-xl border-2 transition-all duration-300 flex flex-col ${
-                        isRecommended
+                        isCurrentPlan
+                          ? "border-green-500 bg-green-500/10"
+                          : isRecommended
                           ? "border-purple-500 bg-purple-500/10"
                           : "border-white/20 bg-white/5 hover:border-white/40"
                       }`}
                     >
-                      {isRecommended && (
+                      {isCurrentPlan && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <span className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-semibold rounded-full">
+                            YOUR PLAN
+                          </span>
+                        </div>
+                      )}
+                      {isRecommended && !isCurrentPlan && (
                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                           <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-full">
                             RECOMMENDED
@@ -150,49 +160,28 @@ export default function SubscriptionPlansPage() {
 
                       <button
                         onClick={() => handleSubscribe(plan)}
-                        className={`w-full cursor-pointer px-4 py-2 text-white rounded-lg font-medium transition-all duration-300 ${
-                          isRecommended
-                            ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                            : "bg-white/10 hover:bg-white/20 border border-white/20"
+                        disabled={shouldDisableButton}
+                        className={`w-full px-4 py-2 text-white rounded-lg font-medium transition-all duration-300 ${
+                          isCurrentPlan
+                            ? "bg-green-600 cursor-default"
+                            : shouldDisableButton
+                            ? "bg-gray-600 cursor-not-allowed opacity-50"
+                            : isRecommended
+                            ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 cursor-pointer"
+                            : "bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer"
                         }`}
                       >
-                        Subscribe
+                        {isCurrentPlan ? "Current Plan" : shouldDisableButton ? "Use Current Plan First" : "Subscribe"}
                       </button>
                     </div>
                   );
                 })}
               </div>
 
-              {/* One-Time Post Purchase */}
-              <div className="pt-6 border-t border-white/10">
-                <div className="p-6 rounded-xl border-2 border-blue-500/30 bg-blue-500/5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        Need Just One Post?
-                      </h3>
-                      <p className="text-sm text-white/70">
-                        Purchase a single promotion post without a subscription
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-white">$2.99</p>
-                      <p className="text-sm text-white/60">per post</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleBuyPost}
-                    className="w-full cursor-pointer px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all duration-300"
-                  >
-                    Buy One Post
-                  </button>
-                </div>
-              </div>
 
               {/* Footer Info */}
               <div className="text-center space-y-2 text-white/60 text-sm pt-6">
-                <p>Subscriptions automatically renew. Cancel anytime.</p>
-                <p>All features are subject to availability and may vary by region.</p>
+              <p>All features are subject to availability and may vary by region.</p>
               </div>
             </div>
           )}
@@ -200,7 +189,7 @@ export default function SubscriptionPlansPage() {
       </div>
 
       {/* Embedded Payment Modal */}
-      {selectedPlanForPayment && paymentType === "subscription" && (
+      {selectedPlanForPayment && (
         <PaymentModal
           isOpen={paymentModalOpen}
           onClose={() => {
@@ -211,21 +200,6 @@ export default function SubscriptionPlansPage() {
           planName={selectedPlanForPayment.display_name}
           amount={selectedPlanForPayment.price}
           paymentType="subscription"
-          onSuccess={handlePaymentSuccess}
-        />
-      )}
-
-      {paymentType === "one_time" && (
-        <PaymentModal
-          isOpen={paymentModalOpen}
-          onClose={() => {
-            setPaymentModalOpen(false);
-            setSelectedPlanForPayment(null);
-          }}
-          planId={0}
-          planName="One-Time Post"
-          amount={2.99}
-          paymentType="one_time"
           onSuccess={handlePaymentSuccess}
         />
       )}
