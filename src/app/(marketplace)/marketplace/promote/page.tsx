@@ -81,7 +81,7 @@ export default function PromoteServicePage() {
     name: string;
   } | null>(null);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
-  const { data: usageData } = useGetSubscriptionUsageQuery();
+  const { data: usageData, refetch: refetchUsage } = useGetSubscriptionUsageQuery();
 
   const categories = categoriesResponse?.data || categoriesResponse?.results?.data || [];
   const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId);
@@ -618,6 +618,10 @@ export default function PromoteServicePage() {
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
         showOneTimePost={true}
+        onPaymentSuccess={async () => {
+          // Refetch subscription usage and items after payment
+          await Promise.all([refetchUsage(), refetchItems()]);
+        }}
       />
     </div>
   );

@@ -107,19 +107,30 @@ export default function EmbeddedPaymentForm({
           setIsProcessing(false);
           return;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         setPaymentStatus("error");
         // Extract error message from RTK Query error format
-        const errorMessage = error?.data?.message || 
-                           error?.data?.error || 
-                           error?.message || 
-                           error?.error || 
-                           "Payment failed. Please check your payment details and try again.";
+        const errorMessage = 
+          (error && typeof error === 'object' && 'data' in error && 
+           error.data && typeof error.data === 'object' && 'message' in error.data
+           ? String(error.data.message)
+           : null) ||
+          (error && typeof error === 'object' && 'data' in error && 
+           error.data && typeof error.data === 'object' && 'error' in error.data
+           ? String(error.data.error)
+           : null) ||
+          (error && typeof error === 'object' && 'message' in error
+           ? String(error.message)
+           : null) ||
+          (error && typeof error === 'object' && 'error' in error
+           ? String(error.error)
+           : null) ||
+          "Payment failed. Please check your payment details and try again.";
         toast.error(errorMessage);
         console.error("Payment error details:", {
           error,
-          data: error?.data,
-          status: error?.status,
+          data: error && typeof error === 'object' && 'data' in error ? error.data : undefined,
+          status: error && typeof error === 'object' && 'status' in error ? error.status : undefined,
           message: errorMessage
         });
         setIsProcessing(false);
@@ -151,9 +162,14 @@ export default function EmbeddedPaymentForm({
       setTimeout(() => {
         onSuccess();
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPaymentStatus("error");
-      toast.error(error.message || "An error occurred during payment");
+      const errorMessage = 
+        (error && typeof error === 'object' && 'message' in error
+         ? String(error.message)
+         : null) ||
+        "An error occurred during payment";
+      toast.error(errorMessage);
       setIsProcessing(false);
     }
   };

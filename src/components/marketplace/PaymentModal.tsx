@@ -37,8 +37,8 @@ export default function PaymentModal({
       onSuccess();
     }
     onClose();
-    // Refresh the page or update state as needed
-    window.location.reload();
+    // Note: onSuccess callback should handle refetching data
+    // No need to reload the entire page
   };
 
   return (

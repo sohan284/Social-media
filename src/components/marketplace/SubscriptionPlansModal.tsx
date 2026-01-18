@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import {
   useGetSubscriptionPlansQuery,
+  useGetSubscriptionUsageQuery,
   SubscriptionPlan,
 } from "@/store/paymentApi";
 import { Loader2, Check, Zap, Crown, Rocket } from "lucide-react";
@@ -14,17 +15,20 @@ interface SubscriptionPlansModalProps {
   isOpen: boolean;
   onClose: () => void;
   showOneTimePost?: boolean;
+  onPaymentSuccess?: () => void | Promise<void>;
 }
 
 export default function SubscriptionPlansModal({
   isOpen,
   onClose,
   showOneTimePost = true,
+  onPaymentSuccess,
 }: SubscriptionPlansModalProps) {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<SubscriptionPlan | null>(null);
   const [paymentType, setPaymentType] = useState<"subscription" | "one_time">("subscription");
   const { data, isLoading } = useGetSubscriptionPlansQuery();
+  const { refetch: refetchUsage } = useGetSubscriptionUsageQuery();
 
   const plans = data?.data || [];
 
@@ -44,11 +48,20 @@ export default function SubscriptionPlansModal({
     setPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setPaymentModalOpen(false);
     setSelectedPlanForPayment(null);
     toast.success("Payment successful!");
-    // Optionally refresh subscription usage
+    // Refetch subscription usage to update immediately
+    try {
+      await refetchUsage();
+      // Call parent callback if provided
+      if (onPaymentSuccess) {
+        await onPaymentSuccess();
+      }
+    } catch (error) {
+      console.error("Failed to refetch subscription usage:", error);
+    }
   };
 
   const getPlanIcon = (planName: string) => {

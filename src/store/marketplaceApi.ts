@@ -166,7 +166,7 @@ export const marketplaceApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: ["MarketplaceItems"],
+      invalidatesTags: ["MarketplaceItems", "SubscriptionUsage"],
     }),
     getMarketplaceCategories: builder.query<GetMarketplaceCategoriesResponse, void>({
       query: () => ({
@@ -284,7 +284,7 @@ export const marketplaceApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: ["MarketplaceItems"],
+      invalidatesTags: ["MarketplaceItems", "SubscriptionUsage"],
     }),
     // Payment/Subscription endpoints
     getSubscriptionPlans: builder.query<{ success: boolean; data: SubscriptionPlan[] }, void>({
