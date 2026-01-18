@@ -12,6 +12,9 @@ import ProductCard from "../../../../../components/Cards/ProductCard";
 import EditProductModal from "@/components/admin/EditProductModal";
 import ProductDetailsModal from "@/components/admin/ProductDetailsModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import SubscriptionUsageCard from "@/components/marketplace/SubscriptionUsageCard";
+import SubscriptionPlansModal from "@/components/marketplace/SubscriptionPlansModal";
+import { useGetSubscriptionUsageQuery } from "@/store/paymentApi";
 import {
   Select,
   SelectContent,
@@ -77,6 +80,8 @@ export default function PromoteServicePage() {
     id: number | string;
     name: string;
   } | null>(null);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const { data: usageData } = useGetSubscriptionUsageQuery();
 
   const categories = categoriesResponse?.data || categoriesResponse?.results?.data || [];
   const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId);
@@ -283,8 +288,51 @@ export default function PromoteServicePage() {
   const watchFields = watch();
   const previewImage = imagePreviews[0] || null;
 
+  // Check for payment success/cancel in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      toast.success("Payment successful! Your subscription has been activated.");
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (urlParams.get('canceled') === 'true') {
+      toast.error("Payment was canceled.");
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   return (
     <div className="text-white flex flex-col gap-6">
+      {/* Subscription Usage Card */}
+      <SubscriptionUsageCard
+        onUpgrade={() => setIsSubscriptionModalOpen(true)}
+        onBuyPost={() => {
+          setIsSubscriptionModalOpen(true);
+        }}
+      />
+      
+      {/* Posting Limit Warning */}
+      {usageData?.data && !usageData.data.can_post && (
+        <div className="w-full backdrop-blur-[17px] rounded-2xl p-4 border border-red-500/50 bg-red-500/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-1">
+                Posting Limit Reached
+              </h3>
+              <p className="text-sm text-white/70">
+                Upgrade your plan or purchase additional posts to continue promoting your services.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsSubscriptionModalOpen(true)}
+              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-lg transition-all"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Form Section */}
       <div className="flex flex-col lg:flex-row items-start justify-center gap-4 lg:gap-6">
@@ -563,6 +611,13 @@ export default function PromoteServicePage() {
           setDeleteDialogOpen(false);
           setServiceToDelete(null);
         }}
+      />
+
+      {/* Subscription Plans Modal */}
+      <SubscriptionPlansModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        showOneTimePost={true}
       />
     </div>
   );

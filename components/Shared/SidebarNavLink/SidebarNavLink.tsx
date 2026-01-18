@@ -4,6 +4,7 @@ import { FaRegQuestionCircle } from "react-icons/fa";
 import { FiHeadphones, FiUsers, FiShield } from "react-icons/fi";
 import FriendsIcon from "../../Icons/FriendsIcon";
 import StoreIcon from "../../Icons/StoreIcon";
+import SubscriptionIcon from "../../Icons/SubscriptionIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus, FiTag } from "react-icons/fi";
@@ -28,6 +29,11 @@ const menuItems = [
     icon: <StoreIcon />,
     label: "Virtual Store",
     href: "/marketplace",
+  },
+  {
+    icon: <SubscriptionIcon />,
+    label: "Subscription",
+    href: "/main/subscription",
   },
 ];
 const menuItemsTwo = [
@@ -56,16 +62,6 @@ const menuItemsTwo = [
     label: "Privacy",
     href: "/privacy",
   },
-  // {
-  //   icon: <SubscriptionIcon />,
-  //   label: "Subscription",
-  //   href: "/main/subscription",
-  // },
-  // {
-  //   icon: <DatabaseIcon />,
-  //   label: "Storage",
-  //   href: "/main/storage",
-  // },
 ];
 
 const SidebarNavLink = () => {

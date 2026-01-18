@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Home,
   Users,
+  LayoutDashboard,
   FileText,
   LogOut,
   BarChart2,
@@ -18,6 +19,7 @@ import {
   Mail,
   UsersRound,
   MessageSquare,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -27,13 +29,14 @@ import { baseApi } from "@/store/baseApi";
 import { toast } from "sonner";
 
 const menu = [
-  { name: "Home", icon: Home, path: "/dashboard" },
+  { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { name: "Users", icon: Users, path: "/dashboard/user-management" },
   { name: "All Posts", icon: FileText, path: "/dashboard/all-posts" },
   { name: "Communities", icon: UsersRound, path: "/dashboard/communities" },
   { name: "Conversations", icon: MessageSquare, path: "/dashboard/conversations" },
   { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "All Services", icon: Package, path: "/dashboard/all-services" },
+  { name: "Payments", icon: CreditCard, path: "/dashboard/payments" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Service Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
   { name: "Contacts", icon: Mail, path: "/dashboard/contacts" },

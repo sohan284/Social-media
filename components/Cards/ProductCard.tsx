@@ -115,8 +115,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </div>
 
             {/* Service Info */}
-            <div className="p-4 flex flex-col gap-2">
-                <h3 className="text-lg font-semibold text-white line-clamp-2 min-h-[2rem]">{title}</h3>
+            <div className="p-4 flex flex-col justify-between gap-2">
+              <div>
+              <h3 className="text-lg font-semibold text-white line-clamp-2 min-h-[2rem]">{title}</h3>
                 
                 {/* Description */}
                 {description && (
@@ -133,6 +134,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                         )}
                     </div>
                 )}
+              </div>
 
                 {/* Visit Platform Button - Show if link exists and user is not the owner */}
                 {link && !isOwner && (

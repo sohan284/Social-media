@@ -1,10 +1,17 @@
-import React from 'react'
-import Subscription from '../../../../../../components/Features/Subscription/Subscription'
+import React, { Suspense } from 'react'
+import SubscriptionPlansPage from '@/components/marketplace/SubscriptionPlansPage'
+import { Loader2 } from 'lucide-react'
 
 export default function SubscriptionPage() {
     return (
         <div>
-            <Subscription />
+            <Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-white" />
+                </div>
+            }>
+                <SubscriptionPlansPage />
+            </Suspense>
         </div>
     )
 }
