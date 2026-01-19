@@ -19,6 +19,7 @@ import { useGetConversationsListQuery, useGetChatRoomsQuery } from "@/store/chat
 import { useSearch } from "@/contexts/SearchContext";
 import { useMessage } from "@/contexts/MessageContext";
 import { getStoredAccessToken } from "@/lib/auth";
+import bg from "../../../public/navigation.webp";
 
 // Fallback hook for when SearchContext is not available
 const useSearchSafe = () => {
@@ -26,7 +27,7 @@ const useSearchSafe = () => {
     return useSearch();
   } catch {
     // Return default values if context is not available
-    return { searchQuery: "", setSearchQuery: () => {} };
+    return { searchQuery: "", setSearchQuery: () => { } };
   }
 };
 
@@ -43,7 +44,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const router = useRouter();
   const token = getStoredAccessToken();
   const isAuthenticated = !!token;
-  
+
   const {
     data: profileData,
     isLoading: isProfileLoading,
@@ -70,10 +71,10 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   // Calculate unread message count (direct messages + rooms)
   const unreadMessageCount = useMemo(() => {
     let totalUnread = 0;
-    
+
     // Count unread from direct message conversations
     if (conversationsData) {
-      const conversations = 
+      const conversations =
         conversationsData.data ??
         conversationsData.results?.data ??
         conversationsData.conversations ??
@@ -82,10 +83,10 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
         return sum + (conv.unread_count || 0);
       }, 0);
     }
-    
+
     // Count unread from rooms
     if (roomsData) {
-      const rooms = 
+      const rooms =
         roomsData.data ??
         roomsData.results ??
         roomsData.rooms ??
@@ -94,7 +95,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
         return sum + (room.unread_count || 0);
       }, 0);
     }
-    
+
     return totalUnread;
   }, [conversationsData, roomsData]);
 
@@ -111,11 +112,17 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
   const isHomePage = pathname === '/' || pathname === '/main/' || pathname === '/explore';
 
   return (
-    <nav className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-40 border-b border-white/10">
+    <nav style={{
+      backgroundImage: `linear-gradient(to right, rgba(6, 19, 63, 1), rgba(6, 19, 63, 0.1), rgba(6, 19, 63, 0.9)), url(${bg.src})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      scrollbarGutter: "stable both-edges",
+    }} className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-40 border-b border-white/10">
       <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}
-          <button 
+          <button
             onClick={onMenuToggle}
             className={`${pathname.startsWith('/main') ? 'lg:hidden' : 'xl:hidden'} text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200`}
           >
@@ -123,7 +130,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           </button>
           <div className="flex-shrink-0">
             <Link href="/">
-              <Image src="/logo.png" alt="logo" width={180} height={100} />
+              <Image src="/logo.png" alt="logo" width={280} height={200} />
             </Link>
           </div>
         </div>
@@ -148,22 +155,22 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
         {isAuthenticated ? (
           <div className="relative flex items-center gap-2 md:gap-4 text-white">
-            <button 
-              onClick={() => router.push("/main/create-post")} 
+            <button
+              onClick={() => router.push("/main/create-post")}
               className="hidden md:flex items-center gap-3 text-sm cursor-pointer"
             >
               <FiPlus size={24} /> Create Post
             </button>
-            
+
             {/* Mobile Create Post Button */}
-            <button 
-              onClick={() => router.push("/main/create-post")} 
+            <button
+              onClick={() => router.push("/main/create-post")}
               className="md:hidden cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
             >
               <FiPlus size={20} />
             </button>
-            
-            <button 
+
+            <button
               onClick={() => {
                 if (isMessagePopupOpen) {
                   closeMessagePopup();
@@ -255,12 +262,12 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           isError={isProfileError}
         />
       )}
-      
+
       {/* Message Popup - Only show for authenticated users */}
       {isAuthenticated && (
-        <MessagePopup 
-          isOpen={isMessagePopupOpen} 
-          onClose={closeMessagePopup} 
+        <MessagePopup
+          isOpen={isMessagePopupOpen}
+          onClose={closeMessagePopup}
         />
       )}
     </nav>
