@@ -239,9 +239,9 @@ const Profile = () => {
 
   return (
     <>
-      <div className="mx-auto flex gap-10 pt-6 lg:p-4">
-        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
-          <div className="max-w-[47vw] mx-auto">
+      <div className="mx-auto  flex gap-10 pt-6 lg:p-4">
+        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10 lg:mt-3">
+          <div className="xl:max-w-[47vw] mx-auto">
           <div className="border-b border-white/10 pb-4">
             <div className="flex items-center justify-between mb-4 lg:mb-0">
               <div className="flex-1">
@@ -346,7 +346,7 @@ const Profile = () => {
         {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
-          className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
+          className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-31 hover:overflow-y-auto overflow-y-hidden custom-scroll mt-3"
         >
           <ProfileSidebar />
         </div>

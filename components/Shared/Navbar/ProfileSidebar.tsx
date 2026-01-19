@@ -131,8 +131,8 @@ const ProfileSidebar = ({
     const timeoutId =
       expiryTime && expiryTime > Date.now()
         ? window.setTimeout(() => {
-            handleLogout();
-          }, expiryTime - Date.now())
+          handleLogout();
+        }, expiryTime - Date.now())
         : null;
 
     const intervalId = window.setInterval(() => {

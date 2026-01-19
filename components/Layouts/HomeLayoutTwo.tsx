@@ -61,7 +61,7 @@ export default function HomeLayoutTwo({
         backgroundImage: `url(${bg.src})`,
         scrollbarGutter: "stable both-edges",
       }}
-      className="bg-cover bg-center bg-no-repeat h-screen flex"
+      className="bg-cover bg-center bg-no-repeat h-screen flex scrollbar-hide"
     >
       {isSidebarOpen && (
         <div
@@ -73,7 +73,7 @@ export default function HomeLayoutTwo({
             style={{
               scrollbarGutter: "stable both-edges",
             }}
-            className={`fixed top-0 left-0 hover:overflow-y-auto overflow-y-hidden custom-scroll  lg:w-[370px] h-full bg-slate-900 bg-cover bg-center bg-no-repeat shadow-md transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "-translate-x-full"
+            className={`fixed top-0 left-0 hover:overflow-y-auto overflow-y-hidden custom-scroll  lg:w-[370px] h-full bg-[#1D283E]  bg-cover bg-center bg-no-repeat shadow-md transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "-translate-x-full"
               }`}
             onClick={(e) => e.stopPropagation()}
           >

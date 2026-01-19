@@ -130,7 +130,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           </button>
           <div className="flex-shrink-0">
             <Link href="/">
-              <Image src="/logo.png" alt="logo" width={280} height={200} />
+              <Image src="/logo.png" alt="logo" width={280} height={90} />
             </Link>
           </div>
         </div>
