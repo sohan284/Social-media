@@ -6,7 +6,7 @@ import { MdBlock, MdReport } from 'react-icons/md';
 import Image from 'next/image';
 import MessageBubble from './MessageBubble';
 import { PiPaperPlaneRightFill } from 'react-icons/pi';
-import { useGetConversationQuery, useSendDirectMessageMutation, useBlockUserMutation, useUnblockUserMutation, useGetBlockedUsersQuery, useUpdateDirectMessageMutation, useDeleteDirectMessageMutation, chatApi } from '@/store/chatApi';
+import { useGetConversationQuery, useSendDirectMessageMutation, useBlockUserMutation, useUnblockUserMutation, useGetBlockedUsersQuery, useUpdateDirectMessageMutation, useDeleteDirectMessageMutation, useAcceptMessageRequestMutation, useRejectMessageRequestMutation, useCancelMessageRequestMutation, chatApi, type MessageRequest } from '@/store/chatApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { store } from '@/store/store';
@@ -82,6 +82,9 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
   const [sendDirectMessage, { isLoading: isSending }] = useSendDirectMessageMutation();
   const [updateMessage, { isLoading: isUpdatingMessage }] = useUpdateDirectMessageMutation();
   const [deleteMessage, { isLoading: isDeletingMessage }] = useDeleteDirectMessageMutation();
+  const [acceptRequest, { isLoading: isAccepting }] = useAcceptMessageRequestMutation();
+  const [rejectRequest, { isLoading: isRejecting }] = useRejectMessageRequestMutation();
+  const [cancelRequest, { isLoading: isCancelling }] = useCancelMessageRequestMutation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const currentUserId = useMemo(() => {
@@ -97,6 +100,23 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
   const blockStatus = useMemo(() => {
     if (!messagesResponse) return { i_blocked_them: false, they_blocked_me: false };
     return (messagesResponse as { block_status?: { i_blocked_them?: boolean; they_blocked_me?: boolean } }).block_status || { i_blocked_them: false, they_blocked_me: false };
+  }, [messagesResponse]);
+
+  // Get message request info from response
+  const messageRequestInfo = useMemo(() => {
+    if (!messagesResponse) return null;
+    const response = messagesResponse as {
+      pending_request?: MessageRequest;
+      has_pending_request?: boolean;
+      is_request_receiver?: boolean;
+    };
+    if (response.has_pending_request) {
+      return {
+        request: response.pending_request,
+        isReceiver: response.is_request_receiver || false,
+      };
+    }
+    return null;
   }, [messagesResponse]);
   
   // Update user online status and last seen from API response
@@ -244,10 +264,19 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
     
     try {
       // Send direct message via REST API
-      await sendDirectMessage({
+      const result = await sendDirectMessage({
         receiver_id: userId,
         content: messageContent,
       }).unwrap();
+      
+      // Check if it was a message request (not a direct message)
+      if (result.data && typeof result.data === 'object' && 'is_request' in result.data && result.data.is_request) {
+        // It's a message request, refetch conversation to show the request
+        await refetchConversation();
+        toast.success("Message request sent. Waiting for response...");
+      } else {
+        // Regular message sent
+      }
       
       // The backend will broadcast via WebSocket automatically
       // Scroll to bottom after sending
@@ -257,6 +286,42 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
       const errorMessage = err?.data?.error || err?.data?.message || 'Failed to send message';
       toast.error(errorMessage);
       setNewMessage(messageContent); // Restore message on error
+    }
+  };
+
+  const handleAcceptRequest = async () => {
+    if (!messageRequestInfo?.request?.id || isAccepting || isRejecting) return;
+    try {
+      await acceptRequest({ request_id: messageRequestInfo.request.id }).unwrap();
+      toast.success("Message request accepted! You can now message each other.");
+      await refetchConversation();
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || "Failed to accept message request");
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!messageRequestInfo?.request?.id || isAccepting || isRejecting) return;
+    try {
+      await rejectRequest({ request_id: messageRequestInfo.request.id }).unwrap();
+      toast.success("Message request rejected.");
+      await refetchConversation();
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || "Failed to reject message request");
+    }
+  };
+
+  const handleCancelRequest = async () => {
+    if (!messageRequestInfo?.request?.id || isCancelling) return;
+    try {
+      await cancelRequest({ request_id: messageRequestInfo.request.id }).unwrap();
+      toast.success("Message request cancelled.");
+      await refetchConversation();
+    } catch (error: unknown) {
+      const err = error as { data?: { error?: string; message?: string } };
+      toast.error(err?.data?.error || err?.data?.message || "Failed to cancel message request");
     }
   };
 
@@ -383,6 +448,64 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+        {/* Message Request Banner */}
+        {messageRequestInfo && (
+          <div className={`mb-4 p-4 rounded-lg border ${
+            messageRequestInfo.isReceiver 
+              ? 'bg-yellow-500/10 border-yellow-500/30' 
+              : 'bg-blue-500/10 border-blue-500/30'
+          }`}>
+            <div className="flex items-start gap-3">
+              <div className={`flex-1 ${messageRequestInfo.isReceiver ? 'text-yellow-400' : 'text-blue-400'}`}>
+                <p className="text-sm font-medium mb-1">
+                  {messageRequestInfo.isReceiver ? '📩 Message Request Received' : '⏱ Message Request Sent'}
+                </p>
+                <p className="text-sm text-gray-300 mb-3">
+                  {messageRequestInfo.request?.content || "No message content"}
+                </p>
+                {messageRequestInfo.isReceiver ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAcceptRequest}
+                      disabled={isAccepting || isRejecting}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isAccepting ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      ) : (
+                        "✓ Accept"
+                      )}
+                    </button>
+                    <button
+                      onClick={handleRejectRequest}
+                      disabled={isAccepting || isRejecting}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isRejecting ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      ) : (
+                        "✗ Reject"
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleCancelRequest}
+                    disabled={isCancelling}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isCancelling ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    ) : (
+                      "Cancel Request"
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoadingMessages ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
@@ -390,7 +513,7 @@ const ConversationView = ({ user, onBack }: ConversationViewProps) => {
               <p className="text-sm text-gray-500">Loading messages...</p>
             </div>
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && !messageRequestInfo ? (
           <div className="flex items-center justify-center py-8">
             <p className="text-sm text-gray-500">No messages yet. Start the conversation!</p>
           </div>

@@ -19,7 +19,7 @@ interface CustomDialogProps {
   description?: string;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "70vw" | "80vw" | "90vw" | "full";
   maxHeight?: string;
   showCloseButton?: boolean;
   className?: string;
@@ -36,7 +36,10 @@ const maxWidthClasses = {
   "2xl": "max-w-2xl",
   "3xl": "max-w-3xl",
   "4xl": "max-w-4xl",
-  full: "max-w-full",
+  "70vw": "max-w-[70vw]",
+  "80vw": "max-w-[80vw]",
+  "90vw": "max-w-[90vw]",
+  "full": "max-w-full",
 };
 
 const CustomDialog: React.FC<CustomDialogProps> = ({

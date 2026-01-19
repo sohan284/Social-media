@@ -86,12 +86,11 @@ export interface DashboardAnalyticsResponse {
       draft: number;
       sold: number;
       unpublished: number;
-      price_stats: {
-        avg_price: number;
-        max_price: number;
-        min_price: number;
-        total_value: number;
-      };
+      services_with_links?: number;
+      top_categories?: Array<{
+        category: string;
+        count: number;
+      }>;
     };
     
     // Activity timeline (30 days)
@@ -169,6 +168,82 @@ export interface UserAnalyticsResponse {
   };
 }
 
+export interface ServiceAnalyticsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    service_analytics: Array<{
+      date: string;
+      new: number;
+    }>;
+    date_range: {
+      start_date: string;
+      end_date: string;
+      days: number;
+    };
+  };
+}
+
+export interface SubscriptionAnalyticsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    subscription_analytics: Array<{
+      date: string;
+      new: number;
+    }>;
+    date_range: {
+      start_date: string;
+      end_date: string;
+      days: number;
+    };
+  };
+}
+
+export interface Payment {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+  };
+  subscription: {
+    id: number;
+    plan: {
+      id: number;
+      name: string;
+      display_name: string;
+    };
+  } | null;
+  payment_type: 'subscription' | 'one_time';
+  amount: string;
+  currency: string;
+  status: 'pending' | 'succeeded' | 'failed' | 'refunded';
+  stripe_payment_intent_id: string | null;
+  stripe_charge_id: string | null;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminPaymentsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    payments: Payment[];
+    pagination: {
+      page: number;
+      page_size: number;
+      total_count: number;
+      total_pages: number;
+    };
+    summary: {
+      total_revenue: number;
+      total_payments: number;
+    };
+  };
+}
+
 export const dashboardApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDashboardAnalytics: builder.query<DashboardAnalyticsResponse, void>({
@@ -199,8 +274,51 @@ export const dashboardApi = baseApi.injectEndpoints({
         };
       },
     }),
+    getServiceAnalytics: builder.query<ServiceAnalyticsResponse, { start_date?: string; end_date?: string }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params.start_date) searchParams.append('start_date', params.start_date);
+        if (params.end_date) searchParams.append('end_date', params.end_date);
+        return {
+          url: `/auth/admin/service-analytics/?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
+    getSubscriptionAnalytics: builder.query<SubscriptionAnalyticsResponse, { start_date?: string; end_date?: string }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params.start_date) searchParams.append('start_date', params.start_date);
+        if (params.end_date) searchParams.append('end_date', params.end_date);
+        return {
+          url: `/auth/admin/subscription-analytics/?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
+    getAdminPayments: builder.query<AdminPaymentsResponse, { page?: number; page_size?: number; status?: string; payment_type?: string; user_id?: number }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params.page) searchParams.append('page', params.page.toString());
+        if (params.page_size) searchParams.append('page_size', params.page_size.toString());
+        if (params.status) searchParams.append('status', params.status);
+        if (params.payment_type) searchParams.append('payment_type', params.payment_type);
+        if (params.user_id) searchParams.append('user_id', params.user_id.toString());
+        return {
+          url: `/auth/admin/payments/?${searchParams.toString()}`,
+          method: "GET",
+        };
+      },
+    }),
   }),
 });
 
-export const { useGetDashboardAnalyticsQuery, useGetPostAnalyticsQuery, useGetUserAnalyticsQuery } = dashboardApi;
+export const { 
+  useGetDashboardAnalyticsQuery, 
+  useGetPostAnalyticsQuery, 
+  useGetUserAnalyticsQuery, 
+  useGetServiceAnalyticsQuery,
+  useGetSubscriptionAnalyticsQuery,
+  useGetAdminPaymentsQuery
+} = dashboardApi;
 

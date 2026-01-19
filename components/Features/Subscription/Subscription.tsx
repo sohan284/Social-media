@@ -106,8 +106,7 @@ const Subscription = () => {
                     </div>
 
                     <div className="text-center space-y-2 text-white/60 text-sm">
-                        <p>Subscriptions automatically renew. Cancel anytime.</p>
-                        <p>All features are subject to availability and may vary by region.</p>
+                       <p>All features are subject to availability and may vary by region.</p>
                     </div>
                 </div>
             </div>

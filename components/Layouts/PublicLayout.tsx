@@ -48,7 +48,7 @@ export default function PublicLayout({
                 </button>
               </div>
 
-              <nav className="space-y-3 text-gray-700 mt-16">
+              <nav className="space-y-3 text-gray-700 mt-18">
                 <SidebarNavLink />
               </nav>
             </aside>
@@ -79,7 +79,7 @@ export default function PublicLayout({
                     <FiMenu size={24} />
                   </button>
                 )}
-                
+
                 <div className="xl:max-w-[47vw] mx-auto pt-20 pb-4">
                   {children}
                 </div>
@@ -97,7 +97,7 @@ export default function PublicLayout({
                   }}
                   className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
                 >
-                  <div className="mt-16 ">
+                  <div className="mt-20 ">
                     <RightSidebar />
                   </div>
                 </aside>
@@ -111,7 +111,7 @@ export default function PublicLayout({
                       onClick={() => setIsRightSidebarOpen(false)}
                     />
                   )}
-                  
+
                   {/* Drawer */}
                   <aside
                     style={{
@@ -126,7 +126,7 @@ export default function PublicLayout({
                       {/* Header with close button */}
                       <div className="flex justify-between items-center mb-6">
                         <h2 className="font-semibold text-lg text-white">Explore</h2>
-                        <button 
+                        <button
                           onClick={() => setIsRightSidebarOpen(false)}
                           className="p-2 rounded-full hover:bg-white/10 transition text-white"
                           aria-label="Close sidebar"
@@ -134,7 +134,7 @@ export default function PublicLayout({
                           <FiX size={24} />
                         </button>
                       </div>
-                      
+
                       {/* Right Sidebar Content */}
                       <div className="mt-4">
                         <RightSidebar />

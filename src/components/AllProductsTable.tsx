@@ -34,7 +34,6 @@ export default function AllProductsTable() {
     status?: string;
     name?: string;
     user_name?: string;
-    condition?: string;
     location?: string;
   } & MarketplaceItem | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -43,7 +42,6 @@ export default function AllProductsTable() {
     status?: string;
     name?: string;
     user_name?: string;
-    condition?: string;
     location?: string;
   } & MarketplaceItem | null>(null);
 
@@ -62,11 +60,6 @@ export default function AllProductsTable() {
     return `${cleanBase}/${cleanPath}`;
   };
 
-  const formatPrice = (price: number | string | undefined) => {
-    if (!price) return "N/A";
-    if (typeof price === "number") return `$${price.toFixed(2)}`;
-    return price;
-  };
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -87,7 +80,6 @@ export default function AllProductsTable() {
     status?: string;
     name?: string;
     user_name?: string;
-    condition?: string;
     location?: string;
   };
 
@@ -102,7 +94,7 @@ export default function AllProductsTable() {
         <div className="relative w-16 h-16 rounded-lg overflow-hidden">
           <Image
             src={getImageUrl(row.image || row.images?.[0])}
-            alt={(row.name || row.title || "Product") as string}
+            alt={(row.name || row.title || "Service") as string}
             fill
             className="object-cover"
             unoptimized
@@ -111,7 +103,7 @@ export default function AllProductsTable() {
       ),
     },
     {
-      header: "Product Name",
+      header: "Service Name",
       accessor: (row) => {
         const productName = (row.name || row.title || "N/A") as string;
         return (
@@ -122,14 +114,18 @@ export default function AllProductsTable() {
       },
     },
     {
-      header: "Price",
-      accessor: (row) => {
-        const price = row.price;
-        if (typeof price === "string" && price.includes(".")) {
-          return <span>${parseFloat(price).toFixed(2)}</span>;
-        }
-        return <span>{formatPrice(price)}</span>;
-      },
+      header: "Platform Link",
+      accessor: (row) => (
+        <span className="max-w-xs truncate" title={row.link}>
+          {row.link ? (
+            <a href={row.link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+              {row.link.length > 30 ? `${row.link.substring(0, 30)}...` : row.link}
+            </a>
+          ) : (
+            "N/A"
+          )}
+        </span>
+      ),
     },
     {
       header: "Category",
@@ -137,12 +133,6 @@ export default function AllProductsTable() {
         <span>
           {row.category_name || row.subcategory_name || row.sub_category_name || "N/A"}
         </span>
-      ),
-    },
-    {
-      header: "Condition",
-      accessor: (row) => (
-        <span className="capitalize">{row.condition || "N/A"}</span>
       ),
     },
     {
@@ -209,7 +199,7 @@ export default function AllProductsTable() {
               setIsEditModalOpen(true);
             }}
             className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
-            title="Edit product"
+            title="Edit service"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -223,11 +213,11 @@ export default function AllProductsTable() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              const productName = (row.name || row.title || "Product") as string;
+              const productName = (row.name || row.title || "Service") as string;
               handleDeleteClick(row.id, productName);
             }}
             className="p-2 cursor-pointer rounded-lg bg-white/10 hover:bg-white/20 transition"
-            title="Delete product"
+            title="Delete service"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -254,7 +244,7 @@ export default function AllProductsTable() {
 
     try {
       await deleteProduct(productToDelete.id).unwrap();
-      toast.success("Product deleted successfully!");
+      toast.success("Service deleted successfully!");
       setDeleteDialogOpen(false);
       setProductToDelete(null);
     } catch (error: unknown) {
@@ -280,8 +270,8 @@ export default function AllProductsTable() {
     <>
       <div>
         <CustomTable
-          title="All Products"
-          description="View and manage all products in the marketplace"
+          title="All Services"
+          description="View and manage all services in the marketplace"
           columns={columns}
           data={products}
           isLoading={isLoading}
@@ -323,14 +313,14 @@ export default function AllProductsTable() {
               />
             </>
           }
-          emptyMessage="No products found"
+          emptyMessage="No services found"
           isError={isError}
-          errorMessage="Failed to load products. Please try again later"
+          errorMessage="Failed to load services. Please try again later"
           onRowClick={handleRowClick}
         />
       </div>
 
-      {/* PRODUCT DETAILS MODAL */}
+      {/* SERVICE DETAILS MODAL */}
       <ProductDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => {
@@ -340,7 +330,7 @@ export default function AllProductsTable() {
         product={selectedProduct}
       />
 
-      {/* EDIT PRODUCT MODAL */}
+      {/* EDIT SERVICE MODAL */}
       <EditProductModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -358,7 +348,7 @@ export default function AllProductsTable() {
       {/* DELETE CONFIRMATION DIALOG */}
       <ConfirmDialog
         open={deleteDialogOpen}
-        title="Delete Product?"
+        title="Delete Service?"
         description={`Are you sure you want to delete "${productToDelete?.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"

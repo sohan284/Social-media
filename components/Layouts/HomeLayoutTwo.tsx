@@ -104,7 +104,7 @@ export default function HomeLayoutTwo({
           hidden lg:block
         `}
       >
-        <nav className="space-y-3 text-gray-700 pt-4 mt-16">
+        <nav className="space-y-3 text-gray-700 pt-4 mt-24">
           <SidebarNavLink />
         </nav>
       </aside>
@@ -117,7 +117,7 @@ export default function HomeLayoutTwo({
       >
         <SearchProvider>
           <MessageProvider>
-            <div className=" mx-auto mt-16">
+            <div className=" mx-auto mt-24">
               <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
               {children}
             </div>

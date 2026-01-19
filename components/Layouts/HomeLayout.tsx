@@ -24,72 +24,72 @@ export default function HomeLayout({
     <SearchProvider>
       <MessageProvider>
         <div className="flex flex-col">
-        <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
+          <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
 
-      <div className="flex flex-1">
-        {/* LEFT SIDEBAR */}
-        <aside
-          style={{
-            backgroundImage: `url(${bg.src})`,
-            scrollbarGutter: "stable both-edges",
-          }}
-          className={`fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
+          <div className="flex flex-1">
+            {/* LEFT SIDEBAR */}
+            <aside
+              style={{
+                backgroundImage: `url(${bg.src})`,
+                scrollbarGutter: "stable both-edges",
+              }}
+              className={`fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
             ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
             hover:overflow-y-auto overflow-y-hidden custom-scroll
           `}
-        >
-          <div className="flex justify-between items-center mb-4 lg:hidden">
-            <h2 className="font-semibold text-lg text-[#022735]">Menu</h2>
-            <button onClick={() => setIsSidebarOpen(false)}>
-              <FiX size={24} />
-            </button>
+            >
+              <div className="flex justify-between items-center mb-4 lg:hidden">
+                <h2 className="font-semibold text-lg text-[#022735]">Menu</h2>
+                <button onClick={() => setIsSidebarOpen(false)}>
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              <nav className="space-y-3 text-gray-700 mt-20">
+                <SidebarNavLink />
+              </nav>
+            </aside>
+
+            {isSidebarOpen && (
+              <div
+                className="fixed inset-0 bg-black/40 z-20 xl:hidden"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+            )}
+
+            {/* MAIN CONTENT */}
+            <main
+              style={{
+                backgroundImage: `url(${bg.src})`,
+                scrollbarGutter: "stable both-edges",
+              }}
+              className="flex-1 h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative scrollbar-hide"
+            >
+              <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
+                <div className="xl:max-w-[47vw] mx-auto pt-28 pb-4">
+                  {children}
+                </div>
+              </div>
+            </main>
+
+
+
+            {/* RIGHT SIDEBAR */}
+            {pathname === "/create-post" ? null : (
+              <aside
+                style={{
+                  backgroundImage: `url(${bg.src})`,
+                  scrollbarGutter: "stable both-edges",
+                }}
+                className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
+              >
+                <div className="mt-20 ">
+                  <RightSidebar />
+                </div>
+              </aside>
+            )}
           </div>
-
-          <nav className="space-y-3 text-gray-700 mt-16">
-            <SidebarNavLink />
-          </nav>
-        </aside>
-
-        {isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/40 z-20 xl:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
-
-        {/* MAIN CONTENT */}
-        <main
-          style={{
-            backgroundImage: `url(${bg.src})`,
-            scrollbarGutter: "stable both-edges",
-          }}
-          className="flex-1 h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
-        >
-          <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
-            <div className="lg:max-w-[47vw] mx-auto pt-20 pb-4">
-              {children}
-            </div>
-          </div>
-        </main>
-
-       
-
-        {/* RIGHT SIDEBAR */}
-        {pathname === "/create-post" ? null : (
-          <aside
-            style={{
-              backgroundImage: `url(${bg.src})`,
-              scrollbarGutter: "stable both-edges",
-            }}
-            className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
-          >
-            <div className="mt-16 ">
-              <RightSidebar />
-            </div>
-          </aside>
-        )}
-      </div>
-      </div>
+        </div>
       </MessageProvider>
     </SearchProvider>
   );

@@ -25,7 +25,6 @@ export interface MarketplaceItem {
   id: number | string;
   title?: string;
   description?: string;
-  price?: number | string;
   image?: string;
   images?: string[];
   category?: string;
@@ -41,7 +40,6 @@ export interface MarketplaceItem {
   };
   created_at?: string;
   updated_at?: string;
-  condition?: string;
   location?: string;
   link?: string;
   status?: "draft" | "published" | "sold" | "unpublished";
@@ -70,21 +68,17 @@ export interface GetProductsResponse {
 export interface CreateProductRequest {
   name: string;
   image: File;
-  price: string;
-  condition: string;
   status: "draft" | "published";
   sub_category: number;
   description?: string;
   location?: string;
-  link?: string;
+  link: string;
 }
 
 export interface UpdateProductRequest {
   id: number | string;
   name?: string;
   image?: File;
-  price?: string;
-  condition?: string;
   status?: "draft" | "published";
   sub_category?: number;
   description?: string;
@@ -157,18 +151,14 @@ export const marketplaceApi = baseApi.injectEndpoints({
         const formData = new FormData();
         formData.append("name", data.name);
         formData.append("image", data.image);
-        formData.append("price", data.price);
-        formData.append("condition", data.condition);
         formData.append("status", data.status);
         formData.append("sub_category", data.sub_category.toString());
+        formData.append("link", data.link);
         if (data.description) {
           formData.append("description", data.description);
         }
         if (data.location) {
           formData.append("location", data.location);
-        }
-        if (data.link) {
-          formData.append("link", data.link);
         }
         return {
           url: "/api/marketplace/items/",
@@ -176,7 +166,7 @@ export const marketplaceApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: ["MarketplaceItems"],
+      invalidatesTags: ["MarketplaceItems", "SubscriptionUsage"],
     }),
     getMarketplaceCategories: builder.query<GetMarketplaceCategoriesResponse, void>({
       query: () => ({
@@ -266,8 +256,6 @@ export const marketplaceApi = baseApi.injectEndpoints({
         const formData = new FormData();
         // Always send required fields
         if (data.name !== undefined) formData.append("name", data.name);
-        if (data.price !== undefined) formData.append("price", data.price);
-        if (data.condition !== undefined) formData.append("condition", data.condition);
         if (data.status !== undefined) formData.append("status", data.status);
         if (data.sub_category !== undefined) formData.append("sub_category", data.sub_category.toString());
         // Image is required - always send it (either new or existing)
@@ -296,10 +284,128 @@ export const marketplaceApi = baseApi.injectEndpoints({
           body: formData,
         };
       },
-      invalidatesTags: ["MarketplaceItems"],
+      invalidatesTags: ["MarketplaceItems", "SubscriptionUsage"],
+    }),
+    // Payment/Subscription endpoints
+    getSubscriptionPlans: builder.query<{ success: boolean; data: SubscriptionPlan[] }, void>({
+      query: () => ({
+        url: "/api/marketplace/subscription-plans/",
+        method: "GET",
+      }),
+      providesTags: ["SubscriptionPlans"],
+    }),
+    getSubscriptionUsage: builder.query<{ success: boolean; data: SubscriptionUsage }, void>({
+      query: () => ({
+        url: "/api/marketplace/subscription/usage/",
+        method: "GET",
+      }),
+      providesTags: ["SubscriptionUsage"],
+    }),
+    getSubscription: builder.query<{ success: boolean; data: UserSubscription }, void>({
+      query: () => ({
+        url: "/api/marketplace/subscription/",
+        method: "GET",
+      }),
+      providesTags: ["UserSubscription"],
+    }),
+    createSubscriptionCheckout: builder.mutation<
+      { success: boolean; data: { session_id: string; url: string } },
+      { plan_id: number; success_url?: string; cancel_url?: string }
+    >({
+      query: (data) => ({
+        url: "/api/marketplace/subscription/create_checkout_session/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["UserSubscription", "SubscriptionUsage"],
+    }),
+    createPostPaymentCheckout: builder.mutation<
+      { success: boolean; data: { session_id: string; url: string } },
+      { success_url?: string; cancel_url?: string }
+    >({
+      query: (data) => ({
+        url: "/api/marketplace/subscription/create_post_payment/",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["SubscriptionUsage", "PostCredits"],
+    }),
+    cancelSubscription: builder.mutation<{ success: boolean; message: string }, void>({
+      query: () => ({
+        url: "/api/marketplace/subscription/cancel_subscription/",
+        method: "POST",
+      }),
+      invalidatesTags: ["UserSubscription", "SubscriptionUsage"],
+    }),
+    getPayments: builder.query<{ success: boolean; data: Payment[] }, void>({
+      query: () => ({
+        url: "/api/marketplace/payments/",
+        method: "GET",
+      }),
+      providesTags: ["Payments"],
+    }),
+    getCredits: builder.query<{ success: boolean; data: PostCredit[] }, void>({
+      query: () => ({
+        url: "/api/marketplace/credits/",
+        method: "GET",
+      }),
+      providesTags: ["PostCredits"],
     }),
   }),
 });
+
+// Payment/Subscription Types
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  display_name: string;
+  price: number;
+  posts_per_month: number;
+  features: string[];
+  is_active: boolean;
+  stripe_price_id: string | null;
+}
+
+export interface UserSubscription {
+  id: number;
+  plan: SubscriptionPlan | null;
+  status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
+  current_period_start?: string;
+  current_period_end?: string;
+  posts_used_this_month: number;
+  remaining_posts: number;
+  cancel_at_period_end: boolean;
+}
+
+export interface SubscriptionUsage {
+  has_subscription: boolean;
+  plan_name: string;
+  posts_used: number;
+  posts_limit: number | null; // null means unlimited
+  remaining_posts: number | null;
+  can_post: boolean;
+  has_credits: boolean;
+  credit_count: number;
+}
+
+export interface Payment {
+  id: number;
+  payment_type: 'subscription' | 'one_time';
+  amount: number;
+  currency: string;
+  status: 'pending' | 'succeeded' | 'failed' | 'refunded';
+  description: string;
+  created_at: string;
+}
+
+export interface PostCredit {
+  id: number;
+  amount: number;
+  used: number;
+  remaining: number;
+  expires_at: string | null;
+  created_at: string;
+}
 
 export const { 
   useGetMarketplaceItemsQuery, 
@@ -315,5 +421,14 @@ export const {
   useDeleteProductMutation,
   useUpdateProductMutation,
   usePatchProductStatusMutation,
+  // Payment/Subscription hooks
+  useGetSubscriptionPlansQuery,
+  useGetSubscriptionUsageQuery,
+  useGetSubscriptionQuery,
+  useCreateSubscriptionCheckoutMutation,
+  useCreatePostPaymentCheckoutMutation,
+  useCancelSubscriptionMutation,
+  useGetPaymentsQuery,
+  useGetCreditsQuery,
 } = marketplaceApi;
 

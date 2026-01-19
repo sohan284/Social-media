@@ -11,7 +11,6 @@ interface ProductDetailsModalProps {
     status?: string;
     name?: string;
     user_name?: string;
-    condition?: string;
     location?: string;
     description?: string;
     link?: string;
@@ -37,14 +36,6 @@ export default function ProductDetailsModal({
     return `${cleanBase}/${cleanPath}`;
   };
 
-  const formatPrice = (price: number | string | undefined) => {
-    if (!price) return "N/A";
-    if (typeof price === "number") return `$${price.toFixed(2)}`;
-    if (typeof price === "string" && price.includes(".")) {
-      return `$${parseFloat(price).toFixed(2)}`;
-    }
-    return price;
-  };
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -70,13 +61,13 @@ export default function ProductDetailsModal({
     <CustomDialog
       open={isOpen}
       onOpenChange={onClose}
-      title="Product Details"
+      title="Service Details"
       maxWidth="4xl"
       maxHeight="80vh"
       contentClassName="overflow-y-auto custom-scroll"
     >
       <div className="space-y-6">
-          {/* Product Image */}
+          {/* Service Image */}
           <div className="relative w-full h-96 rounded-xl overflow-hidden border border-white/10">
             <Image
               src={getImageUrl(product.image || product.images?.[0])}
@@ -87,23 +78,13 @@ export default function ProductDetailsModal({
             />
           </div>
 
-          {/* Product Information Grid */}
+          {/* Service Information Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
               <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                <h3 className="text-sm font-medium text-white/60 mb-1">Product Name</h3>
+                <h3 className="text-sm font-medium text-white/60 mb-1">Service Name</h3>
                 <p className="text-lg font-semibold text-white">{productName}</p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                <h3 className="text-sm font-medium text-white/60 mb-1">Price</h3>
-                <p className="text-xl font-bold text-green-400">{formatPrice(product.price)}</p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                <h3 className="text-sm font-medium text-white/60 mb-1">Condition</h3>
-                <p className="text-lg font-medium text-white capitalize">{product.condition || "N/A"}</p>
               </div>
 
               <div className="p-4 rounded-lg bg-white/5 border border-white/10">
@@ -156,10 +137,10 @@ export default function ProductDetailsModal({
             </div>
           )}
 
-          {/* Product Link */}
+          {/* Platform Link */}
           {product.link && (
             <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-              <h3 className="text-sm font-medium text-white/60 mb-2">Product Link</h3>
+              <h3 className="text-sm font-medium text-white/60 mb-2">Platform Link</h3>
               <a
                 href={product.link}
                 target="_blank"
@@ -175,7 +156,7 @@ export default function ProductDetailsModal({
                   rel="noopener noreferrer"
                   className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors"
                 >
-                  Buy Now
+                  Visit Platform
                 </a>
               </div>
             </div>
@@ -184,7 +165,7 @@ export default function ProductDetailsModal({
           {/* Additional Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/10">
             <div>
-              <h3 className="text-sm font-medium text-white/60 mb-1">Product ID</h3>
+              <h3 className="text-sm font-medium text-white/60 mb-1">Service ID</h3>
               <p className="text-white/80">#{product.id}</p>
             </div>
             <div>

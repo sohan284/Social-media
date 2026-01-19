@@ -18,7 +18,6 @@ interface EditProductModalProps {
     status?: string;
     name?: string;
     user_name?: string;
-    condition?: string;
     location?: string;
     description?: string;
   }) | null;
@@ -35,8 +34,6 @@ export default function EditProductModal({
   const { data: categoriesResponse } = useGetMarketplaceCategoriesQuery();
   
   const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [condition, setCondition] = useState("new");
   const [status, setStatus] = useState<"draft" | "published">("published");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
@@ -63,8 +60,6 @@ export default function EditProductModal({
   useEffect(() => {
     if (product && isOpen) {
       setName((product.name || product.title || "") as string);
-      setPrice(product.price?.toString() || "");
-      setCondition(product.condition || "new");
       setStatus((product.status as "draft" | "published") || "published");
       setDescription((product.description as string) || "");
       setLocation((product.location as string) || "");
@@ -109,17 +104,17 @@ export default function EditProductModal({
     e.preventDefault();
     
     if (!product || !product.id) {
-      toast.error("Product ID is missing");
+      toast.error("Service ID is missing");
       return;
     }
 
     if (!name.trim()) {
-      toast.error("Product name is required");
+      toast.error("Service name is required");
       return;
     }
 
-    if (!price.trim()) {
-      toast.error("Price is required");
+    if (!link.trim()) {
+      toast.error("Platform link is required");
       return;
     }
 
@@ -147,28 +142,25 @@ export default function EditProductModal({
           return;
         }
       } else {
-        toast.error("Product image is required");
+        toast.error("Service image is required");
         return;
       }
 
       const updateData: {
         id: number | string;
         name: string;
-        price: string;
-        condition: string;
         status: "draft" | "published";
         sub_category: number;
         description?: string;
         location?: string;
-        link?: string;
+        link: string;
         image: File;
       } = {
         id: product.id,
         name: name.trim(),
-        price: price.trim(),
-        condition,
         status,
         sub_category: subCategory,
+        link: link.trim(),
         image: imageToSend,
       };
 
@@ -185,22 +177,20 @@ export default function EditProductModal({
       }
 
       await updateProduct(updateData).unwrap();
-      toast.success("Product updated successfully!");
+      toast.success("Service updated successfully!");
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
       const errorMessage =
         (error as { data?: { error?: string; message?: string } })?.data?.error ||
         (error as { data?: { error?: string; message?: string } })?.data?.message ||
-        "Failed to update product";
-      toast.error("Failed to update product", { description: errorMessage });
+        "Failed to update service";
+      toast.error("Failed to update service", { description: errorMessage });
     }
   };
 
   const handleClose = () => {
     setName("");
-    setPrice("");
-    setCondition("new");
     setStatus("published");
     setDescription("");
     setLocation("");
@@ -218,17 +208,17 @@ export default function EditProductModal({
     <CustomDialog
       open={isOpen}
       onOpenChange={(open) => !open && handleClose()}
-      title="Edit Product"
+      title="Edit Service"
       maxWidth="4xl"
       maxHeight="80vh"
       contentClassName="overflow-y-auto custom-scroll"
     >
       <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-6">
-            {/* Product Image - Full Width */}
+            {/* Service Image - Full Width */}
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
-                Product Image
+                Service Image
               </label>
               <div className="flex items-center gap-4">
                 {imagePreview && (
@@ -261,50 +251,19 @@ export default function EditProductModal({
 
             {/* Two Column Grid for Main Fields */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Product Name */}
+              {/* Service Name */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Product Name <span className="text-red-400">*</span>
+                  Service Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter product name"
+                  placeholder="Enter service name"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
                   required
                 />
-              </div>
-
-              {/* Price */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Price <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="Enter price (e.g., 1200.00)"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
-                  required
-                />
-              </div>
-
-              {/* Condition */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Condition
-                </label>
-                <select
-                  value={condition}
-                  onChange={(e) => setCondition(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white"
-                >
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="refurbished">Refurbished</option>
-                </select>
               </div>
 
               {/* Status */}
@@ -356,17 +315,18 @@ export default function EditProductModal({
                 />
               </div>
 
-              {/* Product Link */}
+              {/* Platform Link */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
-                  Product Link
+                  Platform Link <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="url"
                   value={link}
                   onChange={(e) => setLink(e.target.value)}
-                  placeholder="https://example.com/product"
+                  placeholder="https://example.com/platform"
                   className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40"
+                  required
                 />
               </div>
             </div>
@@ -379,7 +339,7 @@ export default function EditProductModal({
               <textarea
                 value={description || ""}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter product description"
+                placeholder="Enter service description"
                 rows={5}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6B83FA] text-white placeholder-white/40 resize-y min-h-[120px] leading-relaxed"
               />
@@ -400,7 +360,7 @@ export default function EditProductModal({
                 className="flex-1 px-6 py-3 bg-[#6B83FA] hover:bg-[#5a70e8] text-white font-medium rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 disabled={isLoading}
               >
-                {isLoading ? "Updating..." : "Update Product"}
+                {isLoading ? "Updating..." : "Update Service"}
               </button>
             </div>
           </div>

@@ -4,10 +4,12 @@ import { FaRegQuestionCircle } from "react-icons/fa";
 import { FiHeadphones, FiUsers, FiShield } from "react-icons/fi";
 import FriendsIcon from "../../Icons/FriendsIcon";
 import StoreIcon from "../../Icons/StoreIcon";
+import SubscriptionIcon from "../../Icons/SubscriptionIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus, FiTag } from "react-icons/fi";
 import { usePathname, useRouter } from "next/navigation";
+import MessageRequestBadge from "@/components/message/MessageRequestBadge";
 const menuItems = [
   {
     icon: <GoHome size={24} />,
@@ -28,6 +30,11 @@ const menuItems = [
     icon: <StoreIcon />,
     label: "Virtual Store",
     href: "/marketplace",
+  },
+  {
+    icon: <SubscriptionIcon />,
+    label: "Subscription",
+    href: "/main/subscription",
   },
 ];
 const menuItemsTwo = [
@@ -56,16 +63,6 @@ const menuItemsTwo = [
     label: "Privacy",
     href: "/privacy",
   },
-  // {
-  //   icon: <SubscriptionIcon />,
-  //   label: "Subscription",
-  //   href: "/main/subscription",
-  // },
-  // {
-  //   icon: <DatabaseIcon />,
-  //   label: "Storage",
-  //   href: "/main/storage",
-  // },
 ];
 
 const SidebarNavLink = () => {
@@ -85,6 +82,10 @@ const SidebarNavLink = () => {
             {item.icon} {item.label}
           </Link>
         ))}
+        {/* Message Requests Badge */}
+        <div className="px-6 py-2.5">
+          <MessageRequestBadge />
+        </div>
       </div>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-3 px-2.5 rounded-2xl">
         <h3 className="text-base text-[#BCB3B3] px-8 my-4">Communities</h3>
