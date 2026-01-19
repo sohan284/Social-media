@@ -36,7 +36,7 @@ export default function PublicLayout({
                 backgroundImage: `url(${bg.src})`,
                 scrollbarGutter: "stable both-edges",
               }}
-              className={`fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
+              className={`fixed left-0 h-[100vh] scrollbar-hide bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
                 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
                 hover:overflow-y-auto overflow-y-hidden custom-scroll
               `}
@@ -66,7 +66,7 @@ export default function PublicLayout({
                 backgroundImage: `url(${bg.src})`,
                 scrollbarGutter: "stable both-edges",
               }}
-              className="flex-1 h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
+              className="flex-1 scrollbar-hide h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
             >
               <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
                 {/* Mobile Right Sidebar Toggle Button */}
