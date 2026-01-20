@@ -256,9 +256,29 @@ const CreatePost = ({
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
-      toast.error("Failed to submit post. Please try again.");
+      
+      // Handle media limit error specifically
+      const apiError = error as { data?: { media_limit?: string; content_moderation?: string; non_field_errors?: string | string[]; [key: string]: unknown } };
+      
+      if (apiError?.data?.media_limit) {
+        toast.error(apiError.data.media_limit);
+      } else if (apiError?.data?.content_moderation) {
+        toast.error(apiError.data.content_moderation);
+      } else if (apiError?.data?.non_field_errors) {
+        // Handle non-field errors
+        const errorMessage = Array.isArray(apiError.data.non_field_errors) 
+          ? apiError.data.non_field_errors[0] 
+          : apiError.data.non_field_errors;
+        toast.error(errorMessage || "Failed to submit post. Please try again.");
+      } else if (apiError?.data) {
+        // Handle field-specific errors
+        const errorMessages = Object.values(apiError.data).flat() as string[];
+        toast.error(errorMessages[0] || "Failed to submit post. Please try again.");
+      } else {
+        toast.error("Failed to submit post. Please try again.");
+      }
     }
   };
 
