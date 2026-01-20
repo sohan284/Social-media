@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { FiX, FiMenu } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
@@ -31,27 +31,10 @@ export default function PublicLayout({
 
           <div className="flex flex-1">
             {/* LEFT SIDEBAR */}
-            <aside
-              style={{
-                backgroundImage: `url(${bg.src})`,
-                scrollbarGutter: "stable both-edges",
-              }}
-              className={`fixed left-0 h-[100vh] scrollbar-hide bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
-                ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-                hover:overflow-y-auto overflow-y-hidden custom-scroll
-              `}
-            >
-              <div className="flex justify-between items-center mb-4 lg:hidden">
-                <h2 className="font-semibold text-lg text-[#022735]">Menu</h2>
-                <button onClick={() => setIsSidebarOpen(false)}>
-                  <FiX size={24} />
-                </button>
-              </div>
-
-              <nav className="space-y-3 text-gray-700 mt-18">
-                <SidebarNavLink />
-              </nav>
-            </aside>
+            <SidebarNavLink 
+              isSidebarOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
 
             {isSidebarOpen && (
               <div

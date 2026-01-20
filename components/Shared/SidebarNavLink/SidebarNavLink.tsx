@@ -1,7 +1,7 @@
 import { GoHome } from "react-icons/go";
 import { BsExclamationCircle } from "react-icons/bs";
 import { FaRegQuestionCircle } from "react-icons/fa";
-import { FiHeadphones, FiUsers, FiShield } from "react-icons/fi";
+import { FiHeadphones, FiUsers, FiShield, FiX } from "react-icons/fi";
 import FriendsIcon from "../../Icons/FriendsIcon";
 import StoreIcon from "../../Icons/StoreIcon";
 import SubscriptionIcon from "../../Icons/SubscriptionIcon";
@@ -10,6 +10,16 @@ import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus, FiTag } from "react-icons/fi";
 import { usePathname, useRouter } from "next/navigation";
 import MessageRequestBadge from "@/components/message/MessageRequestBadge";
+import bg from "../../../public/main-bg.jpg";
+
+interface SidebarNavLinkProps {
+  isSidebarOpen?: boolean;
+  onClose?: () => void;
+  variant?: "default" | "homeLayoutTwo";
+  className?: string;
+  showMobileHeader?: boolean;
+  navClassName?: string;
+}
 const menuItems = [
   {
     icon: <GoHome size={24} />,
@@ -65,13 +75,12 @@ const menuItemsTwo = [
   },
 ];
 
-const SidebarNavLink = () => {
-  const pathname =  usePathname()
-  const router  = useRouter()
+const SidebarNavLinkContent = ({ className = "" }: { className?: string }) => {
+  const router = useRouter();
 
   const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
   return (
-    <nav className={`space-y-3 text-gray-700 ${pathname === '/' ? 'mt-16' : 'py-3'}`}>
+    <nav className={`space-y-3 text-gray-700 mt-20 ${className}`}>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2 rounded-2xl">
         {menuItems.map((item) => (
           <Link
@@ -132,6 +141,43 @@ const SidebarNavLink = () => {
         ))}
       </div>
     </nav>
+  );
+};
+
+const SidebarNavLink = ({
+  isSidebarOpen,
+  onClose,
+  variant = "default",
+  className = "",
+  showMobileHeader = true,
+  navClassName = "",
+}: SidebarNavLinkProps) => {
+  const baseClasses = "fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-50 lg:z-30 xl:w-[370px] p-10 hover:overflow-y-auto overflow-y-hidden custom-scroll";
+  const mobileClasses = isSidebarOpen ? "translate-x-0" : "-translate-x-full";
+  
+  const asideClasses =  `${baseClasses} ${mobileClasses} ${className}`;
+
+  return (
+    <aside
+      style={{
+        backgroundImage: `url(${bg.src})`,
+        scrollbarGutter: "stable both-edges",
+      }}
+      className={asideClasses}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {showMobileHeader && (
+        <div className="flex justify-between items-center mb-4 lg:hidden">
+          <h2 className="font-semibold text-lg text-white">Menu</h2>
+          {onClose && (
+            <button onClick={onClose}>
+              <FiX size={24} className="text-white cursor-pointer" />
+            </button>
+          )}
+        </div>
+      )}
+      <SidebarNavLinkContent className={navClassName} />
+    </aside>
   );
 };
 
