@@ -283,7 +283,7 @@ const Friends = () => {
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-4">
         {users.map((user) => {
           const userId = user.id;
           const userName = user.display_name || user.username || "Unknown User";
@@ -405,7 +405,7 @@ const Friends = () => {
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
         {users.map((item) => {
           const userId = isFollowingTab ? item.following : item.follower;
           const userName = isFollowingTab ? item.following_name : item.follower_name;

@@ -381,33 +381,35 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
                  (community.visibility === 'public' && isMember);
 
   return (
-    <div className="mx-auto flex gap-10 pt-6 lg:p-4 text-white">
-      {/* Center - Posts */}
-      <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
-        <div className="border-b border-white/10 pb-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/main/communities')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-all"
-              >
-                <FiArrowLeft className="w-5 h-5 text-white" />
-              </button>
-              <h2 className="text-2xl font-semibold text-white">
-                {community.title || communityName}
-              </h2>
+    <>
+      <div className="mx-auto flex gap-10">
+        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] min-h-[calc(100vh-80px)] pt-10 p-4 xl:p-10">
+          <div className="xl:max-w-[47vw] mx-auto">
+            <div className="border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between mb-4 lg:mb-0">
+                <div className="flex items-center gap-4 flex-1">
+                  <button
+                    onClick={() => router.push('/main/communities')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                  >
+                    <FiArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <h2 className="text-2xl font-semibold text-white">
+                    {community.title || communityName}
+                  </h2>
+                </div>
+                {/* Mobile Right Sidebar Toggle Button */}
+                <button
+                  onClick={() => setIsRightSidebarOpen(true)}
+                  className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Open sidebar"
+                >
+                  <FiMenu size={24} className="text-white" />
+                </button>
+              </div>
             </div>
-            {/* Mobile Right Sidebar Toggle Button */}
-            <button
-              onClick={() => setIsRightSidebarOpen(true)}
-              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-              aria-label="Open sidebar"
-            >
-              <FiMenu size={24} className="text-white" />
-            </button>
-          </div>
-        </div>
-        <div className="space-y-6">
+
+            <div className="space-y-6 mt-6">
           {community.id && isMember && (
             <>
               {!canPost ? (
@@ -429,15 +431,16 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
               )}
             </>
           )}
-          {renderPosts()}
+              {renderPosts()}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Right Sidebar - Community Details & Popular Communities */}
-      <div
-        style={{ scrollbarGutter: "stable both-edges" }}
-        className="h-[90vh] hidden lg:block rounded-lg w-[370px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
-      >
+        {/* Desktop Sidebar */}
+        <div
+          style={{ scrollbarGutter: "stable both-edges" }}
+          className="hidden lg:block rounded-lg w-[370px] sticky top-32 hover:overflow-y-auto overflow-y-hidden custom-scroll mr-5 mt-9 h-[calc(100vh-100px)]"
+        >
         <div className="space-y-4">
           {/* Community Details */}
           <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-2xl'>
@@ -584,6 +587,7 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
               );
             })}
           </div>
+        </div>
         </div>
       </div>
 
@@ -770,7 +774,7 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

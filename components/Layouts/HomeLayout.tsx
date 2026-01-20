@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
-import { usePathname } from "next/navigation";
 import RightSidebar from "../Shared/SidebarNavLink/RightSidebar";
 import { SearchProvider } from "@/contexts/SearchContext";
 import { MessageProvider } from "@/contexts/MessageContext";
@@ -14,10 +13,6 @@ export default function HomeLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const pathname = usePathname();
-
-
 
   return (
     <SearchProvider>
@@ -57,19 +52,17 @@ export default function HomeLayout({
 
 
             {/* RIGHT SIDEBAR */}
-            {pathname === "/create-post" ? null : (
-              <aside
-                style={{
-                  backgroundImage: `url(${bg.src})`,
-                  scrollbarGutter: "stable both-edges",
-                }}
-                className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
-              >
-                <div className="mt-20 ">
-                  <RightSidebar />
-                </div>
-              </aside>
-            )}
+            <aside
+              style={{
+                backgroundImage: `url(${bg.src})`,
+                scrollbarGutter: "stable both-edges",
+              }}
+              className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
+            >
+              <div className="mt-20 ">
+                <RightSidebar />
+              </div>
+            </aside>
           </div>
         </div>
       </MessageProvider>
