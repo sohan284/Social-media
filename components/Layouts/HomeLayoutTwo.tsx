@@ -69,7 +69,6 @@ export default function HomeLayoutTwo({
           onClick={handleCloseSidebar}
         >
           <SidebarNavLink 
-            variant="homeLayoutTwo"
             isSidebarOpen={isOpen && !isClosing}
             onClose={handleCloseSidebar}
             className={`${isOpen && !isClosing ? "translate-x-0" : "-translate-x-full"} px-6`}
@@ -78,7 +77,6 @@ export default function HomeLayoutTwo({
       )}
 
       <SidebarNavLink 
-        variant="homeLayoutTwo"
         isSidebarOpen={true}
         className="hidden lg:block px-6"
         showMobileHeader={false}

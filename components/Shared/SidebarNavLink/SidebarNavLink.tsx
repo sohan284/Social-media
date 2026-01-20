@@ -8,14 +8,13 @@ import SubscriptionIcon from "../../Icons/SubscriptionIcon";
 import Link from "next/link";
 import HexagonIcon from "../../Icons/HexagonIcon";
 import { FiPlus, FiTag } from "react-icons/fi";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import MessageRequestBadge from "@/components/message/MessageRequestBadge";
 import bg from "../../../public/main-bg.jpg";
 
 interface SidebarNavLinkProps {
   isSidebarOpen?: boolean;
   onClose?: () => void;
-  variant?: "default" | "homeLayoutTwo";
   className?: string;
   showMobileHeader?: boolean;
   navClassName?: string;
@@ -147,12 +146,11 @@ const SidebarNavLinkContent = ({ className = "" }: { className?: string }) => {
 const SidebarNavLink = ({
   isSidebarOpen,
   onClose,
-  variant = "default",
   className = "",
   showMobileHeader = true,
   navClassName = "",
 }: SidebarNavLinkProps) => {
-  const baseClasses = "fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-50 lg:z-30 xl:w-[370px] p-10 hover:overflow-y-auto overflow-y-hidden custom-scroll";
+  const baseClasses = "fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-50 lg:z-30 w-[370px] p-10 hover:overflow-y-auto overflow-y-hidden custom-scroll";
   const mobileClasses = isSidebarOpen ? "translate-x-0" : "-translate-x-full";
   
   const asideClasses =  `${baseClasses} ${mobileClasses} ${className}`;

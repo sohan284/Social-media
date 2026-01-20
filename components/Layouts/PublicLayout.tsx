@@ -52,22 +52,22 @@ export default function PublicLayout({
               className="flex-1 scrollbar-hide h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
             >
               <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
-                {/* Mobile Right Sidebar Toggle Button */}
-                {pathname !== "/create-post" && (
-                  <button
-                    onClick={() => setIsRightSidebarOpen(true)}
-                    className="xl:hidden fixed bottom-6 right-6 z-40 bg-[#6B83FA] hover:bg-[#517EE0] text-white p-4 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
-                    aria-label="Open right sidebar"
-                  >
-                    <FiMenu size={24} />
-                  </button>
-                )}
-
                 <div className="xl:max-w-[47vw] mx-auto pt-28 pb-4">
                   {children}
                 </div>
               </div>
             </main>
+
+            {/* Mobile Right Sidebar Toggle Button */}
+            {pathname !== "/create-post" && (
+              <button
+                onClick={() => setIsRightSidebarOpen(true)}
+                className="xl:hidden fixed bottom-6 right-6 z-40 bg-[#6B83FA] hover:bg-[#517EE0] text-white p-4 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+                aria-label="Open right sidebar"
+              >
+                <FiMenu size={24} />
+              </button>
+            )}
 
             {/* RIGHT SIDEBAR - Desktop */}
             {pathname === "/create-post" ? null : (
@@ -101,7 +101,7 @@ export default function PublicLayout({
                       backgroundImage: `url(${bg.src})`,
                       scrollbarGutter: "stable both-edges",
                     }}
-                    className={`fixed right-0 top-0 h-full max-w-sm w-[70vw] bg-cover bg-center bg-no-repeat shadow-2xl transform transition-transform duration-300 ease-in-out z-50 xl:hidden overflow-y-auto custom-scroll
+                    className={`fixed right-0 top-0 h-full w-[370px] bg-cover bg-center bg-no-repeat shadow-2xl transform transition-transform duration-300 ease-in-out z-50 xl:hidden overflow-y-auto custom-scroll
                       ${isRightSidebarOpen ? "translate-x-0" : "translate-x-full"}
                     `}
                   >
