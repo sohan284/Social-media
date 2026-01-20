@@ -1,10 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import { FiX } from "react-icons/fi";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
-import { usePathname } from "next/navigation";
 import RightSidebar from "../Shared/SidebarNavLink/RightSidebar";
 import { SearchProvider } from "@/contexts/SearchContext";
 import { MessageProvider } from "@/contexts/MessageContext";
@@ -16,10 +14,6 @@ export default function HomeLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const pathname = usePathname();
-
-
-
   return (
     <SearchProvider>
       <MessageProvider>
@@ -28,27 +22,10 @@ export default function HomeLayout({
 
           <div className="flex flex-1">
             {/* LEFT SIDEBAR */}
-            <aside
-              style={{
-                backgroundImage: `url(${bg.src})`,
-                scrollbarGutter: "stable both-edges",
-              }}
-              className={`fixed left-0 h-[100vh] bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
-            ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-            hover:overflow-y-auto overflow-y-hidden custom-scroll
-          `}
-            >
-              <div className="flex justify-between items-center mb-4 lg:hidden">
-                <h2 className="font-semibold text-lg text-[#022735]">Menu</h2>
-                <button onClick={() => setIsSidebarOpen(false)}>
-                  <FiX size={24} />
-                </button>
-              </div>
-
-              <nav className="space-y-3 text-gray-700 mt-20">
-                <SidebarNavLink />
-              </nav>
-            </aside>
+            <SidebarNavLink 
+              isSidebarOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
 
             {isSidebarOpen && (
               <div
@@ -75,19 +52,17 @@ export default function HomeLayout({
 
 
             {/* RIGHT SIDEBAR */}
-            {pathname === "/create-post" ? null : (
-              <aside
-                style={{
-                  backgroundImage: `url(${bg.src})`,
-                  scrollbarGutter: "stable both-edges",
-                }}
-                className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
-              >
-                <div className="mt-20 ">
-                  <RightSidebar />
-                </div>
-              </aside>
-            )}
+            <aside
+              style={{
+                backgroundImage: `url(${bg.src})`,
+                scrollbarGutter: "stable both-edges",
+              }}
+              className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
+            >
+              <div className="mt-20 ">
+                <RightSidebar />
+              </div>
+            </aside>
           </div>
         </div>
       </MessageProvider>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { FiX, FiMenu } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 import Navbar from "../Shared/Navbar/Navbar";
 import bg from "../../public/main-bg.jpg";
 import SidebarNavLink from "../Shared/SidebarNavLink/SidebarNavLink";
@@ -31,27 +31,10 @@ export default function PublicLayout({
 
           <div className="flex flex-1">
             {/* LEFT SIDEBAR */}
-            <aside
-              style={{
-                backgroundImage: `url(${bg.src})`,
-                scrollbarGutter: "stable both-edges",
-              }}
-              className={`fixed left-0 h-[100vh] scrollbar-hide bg-cover bg-center bg-no-repeat shadow-md transform transition-transform duration-300 xl:translate-x-0 z-30 xl:w-[370px] p-10 
-                ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-                hover:overflow-y-auto overflow-y-hidden custom-scroll
-              `}
-            >
-              <div className="flex justify-between items-center mb-4 lg:hidden">
-                <h2 className="font-semibold text-lg text-[#022735]">Menu</h2>
-                <button onClick={() => setIsSidebarOpen(false)}>
-                  <FiX size={24} />
-                </button>
-              </div>
-
-              <nav className="space-y-3 text-gray-700 mt-18">
-                <SidebarNavLink />
-              </nav>
-            </aside>
+            <SidebarNavLink 
+              isSidebarOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
 
             {isSidebarOpen && (
               <div
@@ -69,22 +52,22 @@ export default function PublicLayout({
               className="flex-1 scrollbar-hide h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
             >
               <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
-                {/* Mobile Right Sidebar Toggle Button */}
-                {pathname !== "/create-post" && (
-                  <button
-                    onClick={() => setIsRightSidebarOpen(true)}
-                    className="xl:hidden fixed bottom-6 right-6 z-40 bg-[#6B83FA] hover:bg-[#517EE0] text-white p-4 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
-                    aria-label="Open right sidebar"
-                  >
-                    <FiMenu size={24} />
-                  </button>
-                )}
-
                 <div className="xl:max-w-[47vw] mx-auto pt-28 pb-4">
                   {children}
                 </div>
               </div>
             </main>
+
+            {/* Mobile Right Sidebar Toggle Button */}
+            {pathname !== "/create-post" && (
+              <button
+                onClick={() => setIsRightSidebarOpen(true)}
+                className="xl:hidden fixed bottom-6 right-6 z-40 bg-[#6B83FA] hover:bg-[#517EE0] text-white p-4 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+                aria-label="Open right sidebar"
+              >
+                <FiMenu size={24} />
+              </button>
+            )}
 
             {/* RIGHT SIDEBAR - Desktop */}
             {pathname === "/create-post" ? null : (
@@ -118,7 +101,7 @@ export default function PublicLayout({
                       backgroundImage: `url(${bg.src})`,
                       scrollbarGutter: "stable both-edges",
                     }}
-                    className={`fixed right-0 top-0 h-full max-w-sm w-[70vw] bg-cover bg-center bg-no-repeat shadow-2xl transform transition-transform duration-300 ease-in-out z-50 xl:hidden overflow-y-auto custom-scroll
+                    className={`fixed right-0 top-0 h-full w-[370px] bg-cover bg-center bg-no-repeat shadow-2xl transform transition-transform duration-300 ease-in-out z-50 xl:hidden overflow-y-auto custom-scroll
                       ${isRightSidebarOpen ? "translate-x-0" : "translate-x-full"}
                     `}
                   >

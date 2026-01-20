@@ -11,12 +11,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FiMenu, FiX } from "react-icons/fi";
 import EmptyPostsState from "../../Shared/EmptyPostsState";
+import bg from "../../../public/main-bg.jpg";
 
 const Profile = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"overview" | "posts">("overview");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [allLoadedPosts, setAllLoadedPosts] = useState<PostItem[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -162,8 +164,25 @@ const Profile = () => {
     router.push('/main/edit-profile');
   };
 
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 10);
+    } else {
+      document.body.style.overflow = "unset";
+      setIsOpen(false);
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isSidebarOpen]);
+
   const handleCloseSidebar = () => {
     setIsClosing(true);
+    setIsOpen(false);
     setTimeout(() => {
       setIsSidebarOpen(false);
       setIsClosing(false);
@@ -239,8 +258,8 @@ const Profile = () => {
 
   return (
     <>
-      <div className="mx-auto  flex gap-10 pt-6 lg:p-4">
-        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10 lg:mt-3">
+      <div className="mx-auto  flex gap-10">
+        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] min-h-[calc(100vh-80px)] pt-10 p-4 xl:p-10 ">
           <div className="xl:max-w-[47vw] mx-auto">
           <div className="border-b border-white/10 pb-4">
             <div className="flex items-center justify-between mb-4 lg:mb-0">
@@ -346,7 +365,7 @@ const Profile = () => {
         {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
-          className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-31 hover:overflow-y-auto overflow-y-hidden custom-scroll mt-3"
+          className=" hidden lg:block rounded-lg w-[370px] sticky top-32 hover:overflow-y-auto overflow-y-hidden custom-scroll  mr-5 mt-9 h-[calc(100vh-100px)]"
         >
           <ProfileSidebar />
         </div>
@@ -361,11 +380,14 @@ const Profile = () => {
           onClick={handleCloseSidebar}
         >
           <div
-            className={`fixed top-0 right-0 h-full w-full max-w-sm bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
-              isClosing ? "translate-x-full" : "translate-x-0"
+            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
+              isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
             }`}
             onClick={(e) => e.stopPropagation()}
-            style={{ scrollbarGutter: "stable both-edges" }}
+            style={{
+              backgroundImage: `url(${bg.src})`,
+              scrollbarGutter: "stable both-edges",
+            }}
           >
             {/* Header with Close Button */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">

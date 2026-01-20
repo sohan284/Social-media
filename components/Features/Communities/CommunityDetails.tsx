@@ -15,13 +15,14 @@ import {
 } from '@/store/communityApi';
 import { PostItem } from '@/store/postApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
-import { FiUsers, FiUserPlus, FiUserMinus, FiFileText, FiArrowLeft, FiCheck, FiX } from 'react-icons/fi';
+import { FiUsers, FiUserPlus, FiUserMinus, FiFileText, FiArrowLeft, FiCheck, FiX, FiMenu } from 'react-icons/fi';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Post from '../Main/Post/Post';
 import CreatePost from '../CreatePost/CreatePost';
 import EmptyPostsState from '../../Shared/EmptyPostsState';
 import { useCommunityPostsInfinite } from '@/hooks/useCommunityPostsInfinite';
+import bg from '../../../public/main-bg.jpg';
 
 interface CommunityDetailsProps {
   communityName: string;
@@ -32,6 +33,9 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
   const { data: communitiesResponse, isLoading, refetch } = useGetPopularCommunitiesQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   
   // Use infinite query for community posts
   const {
@@ -46,6 +50,31 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
 
   // Track if initial load is complete
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+
+  useEffect(() => {
+    if (isRightSidebarOpen) {
+      document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 10);
+    } else {
+      document.body.style.overflow = "unset";
+      setIsOpen(false);
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isRightSidebarOpen]);
+
+  const handleCloseRightSidebar = () => {
+    setIsClosing(true);
+    setIsOpen(false);
+    setTimeout(() => {
+      setIsRightSidebarOpen(false);
+      setIsClosing(false);
+    }, 300);
+  };
   
   // Mark initial load as complete once we have data and are not loading
   useEffect(() => {
@@ -352,23 +381,35 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
                  (community.visibility === 'public' && isMember);
 
   return (
-    <div className="mx-auto flex gap-10 pt-6 lg:p-4 text-white">
-      {/* Center - Posts */}
-      <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10">
-        <div className="border-b border-white/10 pb-4 mb-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/main/communities')}
-              className="p-2 hover:bg-white/10 rounded-lg transition-all"
-            >
-              <FiArrowLeft className="w-5 h-5 text-white" />
-            </button>
-            <h2 className="text-2xl font-semibold text-white">
-              {community.title || communityName}
-            </h2>
-          </div>
-        </div>
-        <div className="space-y-6">
+    <>
+      <div className="mx-auto flex gap-10">
+        <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] min-h-[calc(100vh-80px)] pt-10 p-4 xl:p-10">
+          <div className="xl:max-w-[47vw] mx-auto">
+            <div className="border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between mb-4 lg:mb-0">
+                <div className="flex items-center gap-4 flex-1">
+                  <button
+                    onClick={() => router.push('/main/communities')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                  >
+                    <FiArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <h2 className="text-2xl font-semibold text-white">
+                    {community.title || communityName}
+                  </h2>
+                </div>
+                {/* Mobile Right Sidebar Toggle Button */}
+                <button
+                  onClick={() => setIsRightSidebarOpen(true)}
+                  className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Open sidebar"
+                >
+                  <FiMenu size={24} className="text-white" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6 mt-6">
           {community.id && isMember && (
             <>
               {!canPost ? (
@@ -390,15 +431,16 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
               )}
             </>
           )}
-          {renderPosts()}
+              {renderPosts()}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Right Sidebar - Community Details & Popular Communities */}
-      <div
-        style={{ scrollbarGutter: "stable both-edges" }}
-        className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
-      >
+        {/* Desktop Sidebar */}
+        <div
+          style={{ scrollbarGutter: "stable both-edges" }}
+          className="hidden lg:block rounded-lg w-[370px] sticky top-32 hover:overflow-y-auto overflow-y-hidden custom-scroll mr-5 mt-9 h-[calc(100vh-100px)]"
+        >
         <div className="space-y-4">
           {/* Community Details */}
           <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-2xl'>
@@ -546,8 +588,193 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
             })}
           </div>
         </div>
+        </div>
       </div>
-    </div>
+
+      {/* Mobile Right Sidebar Drawer */}
+      {isRightSidebarOpen && (
+        <div
+          className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${
+            isClosing ? "opacity-0" : "opacity-100"
+          }`}
+          onClick={handleCloseRightSidebar}
+        >
+          <div
+            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
+              isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundImage: `url(${bg.src})`,
+              scrollbarGutter: "stable both-edges",
+            }}
+          >
+            {/* Header with Close Button */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white">Community Info</h2>
+              <button
+                onClick={handleCloseRightSidebar}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                aria-label="Close sidebar"
+              >
+                <FiX size={24} className="text-white" />
+              </button>
+            </div>
+
+            {/* Sidebar Content */}
+            <div className="overflow-y-auto h-[calc(100vh-64px)] custom-scroll p-4">
+              <div className="space-y-4">
+                {/* Community Details */}
+                <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-2xl'>
+                  <div className='relative'>
+                    {bannerUrl ? (
+                      <div className="relative w-full h-32">
+                        <Image src={bannerUrl} alt="Cover Image" fill className='rounded-t-2xl object-cover' unoptimized />
+                      </div>
+                    ) : (
+                      <div className="w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-2xl" />
+                    )}
+                  </div>
+                  <div className='p-4'>
+                    <div className='flex items-center gap-3 mb-4'>
+                      {iconUrl ? (
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 -mt-8 bg-[#06133F]/75">
+                          <Image src={iconUrl} alt="Community icon" fill className='object-cover' unoptimized />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-2 border-white/20 -mt-8">
+                          <FiUsers className="w-8 h-8 text-white" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className='font-semibold text-white'>{community.title || community.name}</h3>
+                        <p className='text-sm text-gray-400'>{community.members_count || 0} Members</p>
+                      </div>
+                    </div>
+                    {community.description && (
+                      <p className='text-sm text-white/70 mb-4'>{community.description}</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className='text-xs text-gray-400'>Total Posts</p>
+                        <p className='text-xs font-bold text-white'>{community.posts_count || 0}</p>
+                      </div>
+                      <div>
+                        <p className='text-xs text-gray-400'>Members</p>
+                        <p className='text-xs font-bold text-white'>{community.members_count || 0}</p>
+                      </div>
+                      <div>
+                        <p className='text-xs text-gray-400'>Visibility</p>
+                        <p className='text-xs font-bold text-white'>{getVisibilityLabel(community.visibility)}</p>
+                      </div>
+                      {community.created_by_username && (
+                        <div>
+                          <p className='text-xs text-gray-400'>Created by</p>
+                          <p className='text-xs font-bold text-white truncate'>{community.created_by_username}</p>
+                        </div>
+                      )}
+                    </div>
+                    {community.name && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (community.is_member) {
+                            handleLeave(community.name!);
+                          } else {
+                            handleJoin(community.name!);
+                          }
+                        }}
+                        disabled={isJoining || isLeaving || (community as { user_has_pending_request?: boolean }).user_has_pending_request}
+                        className={`w-full py-2.5 rounded-lg font-medium transition-all ${
+                          community.is_member
+                            ? 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                            : (community as { user_has_pending_request?: boolean }).user_has_pending_request
+                            ? 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white'
+                        } ${(isJoining || isLeaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {community.is_member 
+                          ? 'Leave Community' 
+                          : (community as { user_has_pending_request?: boolean }).user_has_pending_request
+                          ? 'Request Pending'
+                          : community.visibility === 'public' 
+                          ? 'Join Community' 
+                          : 'Request to Join'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Popular Communities */}
+                <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] py-6 px-4 rounded-2xl space-y-4'>
+                  <h1 className='text-white text-lg font-semibold'>Popular Communities</h1>
+                  {communities.slice(0, 5).map((comm: CommunityItem) => {
+                    if (comm.name === communityName) return null;
+                    const iconUrl = comm.icon || comm.profile_image
+                      ? `${(comm.icon || comm.profile_image)?.startsWith("/") ? (comm.icon || comm.profile_image)?.slice(1) : (comm.icon || comm.profile_image)}`
+                      : null;
+                    
+                    const formatMembers = (members: number) => {
+                      if (members >= 100000) return '100k+';
+                      if (members >= 10000) return '10k+';
+                      if (members >= 1000) return '1k+';
+                      return members.toString();
+                    };
+
+                    return (
+                      <div key={comm.id} className='flex items-center justify-between'>
+                        <div 
+                          className='flex items-center gap-2 flex-1 cursor-pointer hover:opacity-80 transition-opacity'
+                          onClick={() => router.push(`/main/communities/${comm.name}`)}
+                        >
+                          {iconUrl ? (
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                              <Image src={iconUrl} alt={comm.title || comm.name || ''} fill className='object-cover' unoptimized />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                              <FiUsers className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className='text-white text-sm font-semibold truncate max-w-[150px]'>{comm.title || comm.name}</h3>
+                            <p className='text-gray-400 text-xs'>{formatMembers(comm.members_count || 0)} Members</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (comm.is_member) {
+                              handleLeave(comm.name!);
+                            } else {
+                              handleJoin(comm.name!);
+                            }
+                          }}
+                          disabled={isJoining || isLeaving || (comm as { user_has_pending_request?: boolean }).user_has_pending_request}
+                          className={`text-white px-4 py-2 hover:text-slate-400 duration-300 ease-in-out cursor-pointer text-sm ${
+                            (isJoining || isLeaving) ? 'opacity-50 cursor-not-allowed' : ''
+                          } ${
+                            (comm as { user_has_pending_request?: boolean }).user_has_pending_request 
+                              ? 'text-yellow-400 hover:text-yellow-300' 
+                              : ''
+                          }`}
+                        >
+                          {comm.is_member 
+                            ? 'Leave' 
+                            : (comm as { user_has_pending_request?: boolean }).user_has_pending_request
+                            ? 'Pending'
+                            : 'Join'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

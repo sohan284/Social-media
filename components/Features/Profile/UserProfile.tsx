@@ -344,7 +344,7 @@ const UserProfile = () => {
         {/* Sidebar Skeleton */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
-          className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-18"
+          className="h-[90vh] hidden lg:block rounded-lg w-[370px] sticky top-18"
         >
           <div className="space-y-4 animate-pulse">
             {/* Cover Photo Skeleton */}
@@ -436,7 +436,7 @@ const UserProfile = () => {
         {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
-          className="h-[90vh] hidden lg:block rounded-lg w-[500px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
+          className="h-[90vh] hidden lg:block rounded-lg w-[370px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
         >
           <UserProfileSidebar 
             userId={userId}
@@ -459,7 +459,7 @@ const UserProfile = () => {
           onClick={handleCloseSidebar}
         >
           <div
-            className={`fixed top-0 right-0 h-full w-full max-w-sm bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
+            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
               isClosing ? "translate-x-full" : "translate-x-0"
             }`}
             onClick={(e) => e.stopPropagation()}
