@@ -1,4 +1,4 @@
- "use client";
+"use client";
 import Image from "next/image";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ const menu = [
   { name: "Reports", icon: Flag, path: "/dashboard/reported-posts" },
   { name: "All Services", icon: Package, path: "/dashboard/all-services" },
   { name: "Payments", icon: CreditCard, path: "/dashboard/payments" },
+  { name: "Subscriptions", icon: Users, path: "/dashboard/subscriptions" },
   { name: "Subscription Plans", icon: CreditCard, path: "/dashboard/subscription-plans" },
   { name: "Interest Category", icon: Tag, path: "/dashboard/interest-categories" },
   { name: "Service Category", icon: ShoppingBag, path: "/dashboard/marketplace-categories" },
@@ -51,18 +52,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  
+
   // Fetch current user profile - MUST be called before any conditional returns
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
-  
+
   // Get username from token or profile
   const username = profile?.display_name || profile?.username || getUsernameFromToken(getStoredAccessToken()) || "User";
-  
+
   // Check admin authentication
   const token = getStoredAccessToken();
   const role = useMemo(() => getRoleFromToken(token), [token]);
-  
+
   // Sync active state with current pathname - MUST be called before any conditional returns
   useEffect(() => {
     const currentMenuItem = menu.find((item) => {
@@ -95,17 +96,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
-  
+
   // Authentication check - MUST be called before any conditional returns
   useEffect(() => {
     setIsCheckingAuth(false);
-    
+
     // Check if user is authenticated
     if (!token) {
       router.replace("/dashboard/auth");
       return;
     }
-    
+
     // Check if token is expired
     try {
       const [, payload] = token.split(".");
@@ -124,14 +125,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace("/dashboard/auth");
       return;
     }
-    
+
     // Check if user is admin
     if (role !== "admin") {
       router.replace("/dashboard/auth");
       return;
     }
   }, [token, role, router]);
-  
+
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
@@ -143,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     );
   }
-  
+
   // Don't render if not admin (will redirect)
   if (role !== "admin") {
     return null;
@@ -154,10 +155,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     try {
       // Clear tokens
       clearStoredTokens();
-      
+
       // Clear RTK Query cache
       store.dispatch(baseApi.util.resetApiState());
-      
+
       // Clear user data from storage
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("user");
@@ -165,13 +166,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         window.localStorage.removeItem("role");
         window.sessionStorage.removeItem("role");
       }
-      
+
       // Close dropdown if open
       setIsDropdownOpen(false);
-      
+
       // Show success message
       toast.success("Logged out successfully");
-      
+
       // Redirect to admin login page
       router.push("/dashboard/auth");
     } catch (error) {
@@ -204,11 +205,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           <button
             className={`flex items-center w-full px-4 py-3 rounded-xl cursor-pointer text-left text-sm font-medium transition
-            ${
-              isActive
+            ${isActive
                 ? "bg-[#6B83FA] text-white"
                 : "bg-transparent text-white"
-            }`}
+              }`}
           >
             <Icon className="w-4 h-4 mr-3" />
             {item.name}
@@ -253,7 +253,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </nav>
 
             {/* LOGOUT */}
-            <button 
+            <button
               onClick={handleLogout}
               className="flex cursor-pointer items-center text-sm text-red-600 hover:text-red-500 transition mt-4 w-full"
             >
@@ -276,7 +276,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* LOGOUT → STAYS AT BOTTOM */}
-        <button 
+        <button
           onClick={handleLogout}
           className="flex cursor-pointer items-center text-sm text-red-600 hover:text-red-500 transition mt-4 w-full"
         >
@@ -306,7 +306,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <span>Hi {username}</span>
                 <ChevronDown className={`w-5 h-5 md:w-6 md:h-6 ml-2 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
               </button>
-              
+
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-black/30 backdrop-blur-sm rounded-lg shadow-lg border border-gray-400 py-2 z-50">

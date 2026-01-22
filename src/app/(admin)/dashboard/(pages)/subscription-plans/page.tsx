@@ -6,9 +6,10 @@ import {
   useCreateSubscriptionPlanMutation,
   useUpdateSubscriptionPlanMutation,
   useDeleteSubscriptionPlanMutation,
+  useToggleSubscriptionPlanActiveMutation,
   SubscriptionPlan,
 } from "@/store/paymentApi";
-import { Loader2, Plus, Edit, Trash2, Check, X } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Check, X, Power, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
@@ -35,7 +36,7 @@ const PlanCardSkeleton = () => {
       {/* Posts per month skeleton */}
       <div className="mb-4 flex-1">
         <div className="h-4 bg-white/10 rounded w-2/3 mb-3"></div>
-        
+
         {/* Features skeleton */}
         <ul className="space-y-2">
           <li className="flex items-start gap-2">
@@ -82,6 +83,7 @@ export default function SubscriptionPlansPage() {
   const [createPlan, { isLoading: isCreating }] = useCreateSubscriptionPlanMutation();
   const [updatePlan, { isLoading: isUpdating }] = useUpdateSubscriptionPlanMutation();
   const [deletePlan] = useDeleteSubscriptionPlanMutation();
+  const [toggleActive, { isLoading: isToggling }] = useToggleSubscriptionPlanActiveMutation();
 
   const plans = data?.data || [];
 
@@ -125,7 +127,7 @@ export default function SubscriptionPlansPage() {
 
     try {
       await deletePlan(selectedPlan.id).unwrap();
-      toast.success("Plan deactivated successfully");
+      toast.success("Plan deleted permanently from database");
       setIsDeleteDialogOpen(false);
       setSelectedPlan(null);
       refetch();
@@ -135,6 +137,18 @@ export default function SubscriptionPlansPage() {
         (error as { data?: { error?: string; message?: string } })?.data?.message ||
         "Failed to delete plan";
       toast.error("Failed to delete plan", { description: errorMessage });
+    }
+  };
+
+  const handleToggleActive = async (plan: SubscriptionPlan) => {
+    try {
+      const result = await toggleActive(plan.id).unwrap();
+      toast.success(result.message || `Plan ${plan.is_active ? 'deactivated' : 'activated'} successfully`);
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string; message?: string } })?.data?.error ||
+        "Failed to toggle plan status";
+      toast.error(errorMessage);
     }
   };
 
@@ -213,13 +227,12 @@ export default function SubscriptionPlansPage() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative p-6 bg-black/30 backdrop-blur-sm border rounded-xl transition-all duration-300 flex flex-col ${
-                plan.is_recommended
-                  ? "border-purple-500 bg-purple-500/10"
-                  : plan.is_active
+              className={`relative p-6 bg-black/30 backdrop-blur-sm border rounded-xl transition-all duration-300 flex flex-col ${plan.is_recommended
+                ? "border-purple-500 bg-purple-500/10"
+                : plan.is_active
                   ? "border-white/20 hover:border-white/40"
                   : "border-gray-600/50 opacity-60"
-              }`}
+                }`}
             >
               {plan.is_recommended && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -228,11 +241,14 @@ export default function SubscriptionPlansPage() {
                   </span>
                 </div>
               )}
-              {!plan.is_active && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-gray-600 text-white text-xs rounded">
-                  Inactive
-                </div>
-              )}
+              <div className="absolute top-3 right-3 flex items-center gap-2">
+                {!plan.is_active && (
+                  <span className="px-2 py-0.5 bg-gray-600 text-white text-[10px] uppercase font-bold rounded">
+                    Inactive
+                  </span>
+                )}
+                <div className={`w-2 h-2 rounded-full ${plan.is_active ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+              </div>
 
               <div className="mb-4">
                 <h3 className="text-xl font-semibold text-white mb-1">{plan.display_name}</h3>
@@ -263,14 +279,26 @@ export default function SubscriptionPlansPage() {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleEdit(plan)}
-                  className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20  text-white rounded-lg font-medium transition-all"
+                  className="flex-1 cursor-pointer flex items-center justify-center p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all border border-white/5"
+                  title="Edit Plan"
                 >
                   <Edit className="w-4 h-4" />
-                  Edit
+                </button>
+                <button
+                  onClick={() => handleToggleActive(plan)}
+                  disabled={isToggling}
+                  className={`flex-1 cursor-pointer flex items-center justify-center p-2 rounded-lg transition-all border ${plan.is_active
+                      ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/20"
+                      : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/20"
+                    }`}
+                  title={plan.is_active ? "Deactivate Plan" : "Activate Plan"}
+                >
+                  <Power className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(plan)}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500 cursor-pointer hover:bg-red-600 text-white rounded-lg font-medium transition-all"
+                  className="flex-1 flex items-center justify-center p-2 bg-red-500/10 hover:bg-red-500 cursor-pointer text-red-500 hover:text-white border border-red-500/20 rounded-lg transition-all"
+                  title="Delete Permanently"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -470,9 +498,27 @@ export default function SubscriptionPlansPage() {
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={isDeleteDialogOpen}
-        title="Deactivate Plan?"
-        description={`Are you sure you want to deactivate "${selectedPlan?.display_name}"? This will make it unavailable for new subscriptions. Existing subscriptions will continue to work.`}
-        confirmLabel="Deactivate"
+        title={
+          <div className="flex items-center gap-2 text-red-500">
+            <AlertTriangle className="w-5 h-5" />
+            <span>Permanently Delete Plan?</span>
+          </div>
+        }
+        description={
+          <div className="space-y-3">
+            <p>Are you sure you want to delete <span className="font-bold text-white underline decoration-red-500/50">"{selectedPlan?.display_name}"</span> entirely from the system?</p>
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-xs text-red-400 font-medium uppercase tracking-wider mb-1">Danger Zone</p>
+              <ul className="text-[11px] text-red-300/80 list-disc pl-4 space-y-1">
+                <li>This action is irreversible</li>
+                <li>The plan will be removed from the database</li>
+                <li>New users will not be able to see or join this plan</li>
+              </ul>
+            </div>
+            <p className="text-[11px] text-white/50 italic">Note: If users have active subscriptions, the system will block this deletion to protect their records.</p>
+          </div>
+        }
+        confirmLabel="Yes, Delete Permanently"
         cancelLabel="Cancel"
         variant="destructive"
         onConfirm={handleDeleteConfirm}
