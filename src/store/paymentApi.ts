@@ -134,6 +134,18 @@ export const paymentApi = baseApi.injectEndpoints({
       invalidatesTags: ["SubscriptionPlans"],
     }),
 
+    // Admin: Toggle subscription plan active status
+    toggleSubscriptionPlanActive: builder.mutation<
+      { success: boolean; message: string; data: SubscriptionPlan },
+      number
+    >({
+      query: (id) => ({
+        url: `/api/marketplace/subscription-plans/${id}/toggle_active/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["SubscriptionPlans"],
+    }),
+
     // Admin: Delete subscription plan
     deleteSubscriptionPlan: builder.mutation<
       { success: boolean; message: string },
@@ -260,5 +272,6 @@ export const {
   useCreateSubscriptionPlanMutation,
   useUpdateSubscriptionPlanMutation,
   useDeleteSubscriptionPlanMutation,
+  useToggleSubscriptionPlanActiveMutation,
 } = paymentApi;
 

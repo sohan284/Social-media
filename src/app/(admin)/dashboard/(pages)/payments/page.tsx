@@ -1,21 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useGetAdminPaymentsQuery } from "@/store/dashboardApi";
-import { Loader2, CreditCard, DollarSign, CheckCircle, XCircle, Clock, RefreshCw } from "lucide-react";
+import { CreditCard, DollarSign, CheckCircle, XCircle, Clock, RefreshCw, User } from "lucide-react";
 import { Payment } from "@/store/dashboardApi";
+import { CustomTable, Column } from "@/components/admin/CustomTable";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function PaymentsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("");
-  const pageSize = 20;
 
-  const { data, isLoading, refetch } = useGetAdminPaymentsQuery({
+  const { data, isLoading, isError, refetch } = useGetAdminPaymentsQuery({
     page,
     page_size: pageSize,
-    status: statusFilter || undefined,
-    payment_type: paymentTypeFilter || undefined,
+    status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
+    payment_type: paymentTypeFilter && paymentTypeFilter !== "all" ? paymentTypeFilter : undefined,
   });
 
   const payments = data?.data?.payments || [];
@@ -39,9 +47,8 @@ export default function PaymentsPage() {
 
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-          styles[status as keyof typeof styles] || styles.pending
-        }`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${styles[status as keyof typeof styles] || styles.pending
+          }`}
       >
         {icons[status as keyof typeof icons] || <Clock className="w-4 h-4" />}
         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -64,23 +71,168 @@ export default function PaymentsPage() {
     return `$${parseFloat(amount).toFixed(2)}`;
   };
 
+  // Define table columns
+  const columns: Column<Payment>[] = useMemo(
+    () => [
+      {
+        header: "User",
+        accessor: (payment) => (
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 bg-white/5 flex-shrink-0 flex items-center justify-center">
+              {payment.user.avatar ? (
+                <img
+                  src={payment.user.avatar}
+                  alt={payment.user.username}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-5 h-5 text-white/40" />
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">{payment.user.username}</p>
+              <p className="text-xs text-white/60">{payment.user.email}</p>
+            </div>
+          </div>
+        ),
+      },
+
+      {
+        header: "Plan",
+        accessor: (payment) =>
+          payment.subscription?.plan ? (
+            <span className="text-sm text-white/80">{payment.subscription.plan.display_name}</span>
+          ) : (
+            <span className="text-sm text-white/40">N/A</span>
+          ),
+      },
+      {
+        header: "Amount",
+        accessor: (payment) => (
+          <span className="text-sm font-semibold text-white">{formatAmount(payment.amount)}</span>
+        ),
+      },
+      {
+        header: "Status",
+        accessor: (payment) => getStatusBadge(payment.status),
+      },
+      {
+        header: "Date",
+        accessor: (payment) => <span className="text-sm text-white/80">{formatDate(payment.created_at)}</span>,
+      },
+    ],
+    []
+  );
+
+  // Server pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setPageSize(newLimit);
+    setPage(1);
+  };
+
+  const handlePreviousPage = () => {
+    if (page > 1) setPage(page - 1);
+  };
+
+  const handleNextPage = () => {
+    if (pagination && page < pagination.total_pages) {
+      setPage(page + 1);
+    }
+  };
+
+  const getPageNumbers = () => {
+    if (!pagination) return [];
+
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    const totalPages = pagination.total_pages;
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+
+      if (page <= 3) {
+        for (let i = 2; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      } else if (page >= totalPages - 2) {
+        pages.push("...");
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push("...");
+        for (let i = page - 1; i <= page + 1; i++) {
+          pages.push(i);
+        }
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  // Filters component
+  const filters = (
+    <>
+      <Select
+        value={statusFilter}
+        onValueChange={(value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
+      >
+        <SelectTrigger className="w-[180px] bg-white/5 border-white/20 text-white">
+          <SelectValue placeholder="All Statuses" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="succeeded">Succeeded</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="failed">Failed</SelectItem>
+          <SelectItem value="refunded">Refunded</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={paymentTypeFilter}
+        onValueChange={(value) => {
+          setPaymentTypeFilter(value);
+          setPage(1);
+        }}
+      >
+        <SelectTrigger className="w-[180px] bg-white/5 border-white/20 text-white">
+          <SelectValue placeholder="All Types" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Types</SelectItem>
+          <SelectItem value="subscription">Subscription</SelectItem>
+          <SelectItem value="one_time">One Time Post</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <button
+        onClick={() => refetch()}
+        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+      >
+        <RefreshCw className="w-4 h-4" />
+        Refresh
+      </button>
+    </>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Payment Management</h1>
-          <p className="text-sm text-white/60 mt-1">View and track all payment transactions</p>
-        </div>
-        <button
-          onClick={() => refetch()}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
-      </div>
-
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -91,7 +243,9 @@ export default function PaymentsPage() {
               </div>
               <div>
                 <p className="text-sm text-white/60">Total Revenue</p>
-                <p className="text-2xl font-bold text-white">{formatAmount(summary.total_revenue.toString())}</p>
+                <p className="text-2xl font-bold text-white">
+                  {formatAmount(summary.total_revenue.toString())}
+                </p>
               </div>
             </div>
           </div>
@@ -109,146 +263,39 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="border border-white/20 rounded-xl p-4 bg-black/30 backdrop-blur-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-white/80 mb-2">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="succeeded">Succeeded</option>
-              <option value="pending">Pending</option>
-              <option value="failed">Failed</option>
-              <option value="refunded">Refunded</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white/80 mb-2">Payment Type</label>
-            <select
-              value={paymentTypeFilter}
-              onChange={(e) => {
-                setPaymentTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">All Types</option>
-              <option value="subscription">Subscription</option>
-              <option value="one_time">One Time Post</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       {/* Payments Table */}
-      <div className="border border-white/20 rounded-xl bg-black/30 backdrop-blur-sm overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-white" />
+      <CustomTable
+        columns={columns}
+        data={payments}
+        title="Payment Management"
+        description="View and track all payment transactions"
+        filters={filters}
+        emptyMessage="No payments found"
+        emptyIcon={
+          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+            <CreditCard className="w-8 h-8 text-white/40" />
           </div>
-        ) : payments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <CreditCard className="w-12 h-12 text-white/40 mb-4" />
-            <p className="text-white/60">No payments found</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-white/5 border-b border-white/10">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  {payments.map((payment: Payment) => (
-                    <tr key={payment.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <p className="text-sm font-medium text-white">{payment.user.username}</p>
-                          <p className="text-xs text-white/60">{payment.user.email}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-white/80 capitalize">
-                          {payment.payment_type === "subscription" ? "Subscription" : "One Time Post"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {payment.subscription?.plan ? (
-                          <span className="text-sm text-white/80">
-                            {payment.subscription.plan.display_name}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-white/40">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-white">{formatAmount(payment.amount)}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(payment.status)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-white/80">{formatDate(payment.created_at)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {pagination && pagination.total_pages > 1 && (
-              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-                <p className="text-sm text-white/60">
-                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, pagination.total_count)} of{" "}
-                  {pagination.total_count} payments
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage(page - 1)}
-                    disabled={page === 1}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors border border-white/20"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPage(page + 1)}
-                    disabled={page >= pagination.total_pages}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors border border-white/20"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+        }
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage="Failed to load payments. Please try again."
+        serverPagination={
+          pagination
+            ? {
+              totalCount: pagination.total_count,
+              currentPage: page,
+              pageSize: pageSize,
+              hasNext: page < pagination.total_pages,
+              hasPrevious: page > 1,
+              onPageChange: handlePageChange,
+              onLimitChange: handleLimitChange,
+              getPageNumbers,
+              handlePreviousPage,
+              handleNextPage,
+            }
+            : undefined
+        }
+      />
     </div>
   );
 }
-

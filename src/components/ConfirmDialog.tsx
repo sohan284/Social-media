@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { ReactNode } from "react";
 import CustomDialog from "@/components/ui/CustomDialog";
 
 interface ConfirmDialogProps {
   open: boolean;
-  title: string;
-  description?: string;
+  title: ReactNode;
+  description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "destructive";

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 interface CustomDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title?: string;
-  description?: string;
+  title?: ReactNode;
+  description?: ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "70vw" | "80vw" | "90vw" | "full";
@@ -87,7 +87,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             )}
           </DialogHeader>
         )}
-        
+
         <div className={cn("py-4", !title && !description && "pt-0")}>
           {children}
         </div>

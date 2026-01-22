@@ -90,7 +90,7 @@ export default function SubscriptionPlansModal({
           <>
             {/* Subscription Plans */}
             <div className="grid grid-cols-1 md:grid-cols-2  xl:grid-cols-4 gap-6">
-              {plans.map((plan,index) => {
+              {plans.map((plan, index) => {
                 const isRecommended = plan.is_recommended || false;
                 // Only show "Your Plan" if it's the current plan AND user has remaining posts
                 const isCurrentPlan = currentPlanName === plan.name.toLowerCase() && hasRemainingPosts;
@@ -99,13 +99,12 @@ export default function SubscriptionPlansModal({
                 return (
                   <div
                     key={plan.id}
-                    className={`relative p-6 rounded-xl border-2 transition-all duration-300 flex flex-col ${
-                      isCurrentPlan
+                    className={`relative p-6 rounded-xl border-2 transition-all duration-300 flex flex-col ${isCurrentPlan
                         ? "border-green-500 bg-green-500/10"
                         : isRecommended
-                        ? "border-purple-500 bg-purple-500/10"
-                        : "border-white/20 bg-white/5 hover:border-white/40"
-                    }`}
+                          ? "border-purple-500 bg-purple-500/10"
+                          : "border-white/20 bg-white/5 hover:border-white/40"
+                      }`}
                   >
                     {isCurrentPlan && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -121,7 +120,7 @@ export default function SubscriptionPlansModal({
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center gap-3 mb-4">
                       <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
                         {getPlanIcon(plan.name)}
@@ -163,21 +162,20 @@ export default function SubscriptionPlansModal({
                       )}
                     </div>
 
-                    {index > 0 && <button
+                    <button
                       onClick={() => handleSubscribe(plan)}
                       disabled={shouldDisableButton}
-                      className={`w-full px-4 py-2 text-white rounded-lg font-medium transition-all duration-300 ${
-                        isCurrentPlan
+                      className={`w-full px-4 py-2 text-white rounded-lg font-medium transition-all duration-300 ${isCurrentPlan
                           ? "bg-green-600 cursor-default"
                           : shouldDisableButton
-                          ? "bg-gray-600 cursor-not-allowed opacity-50"
-                          : isRecommended
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 cursor-pointer"
-                          : "bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer"
-                      }`}
+                            ? "bg-gray-600 cursor-not-allowed opacity-50"
+                            : isRecommended
+                              ? "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 cursor-pointer"
+                              : "bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer"
+                        }`}
                     >
                       {isCurrentPlan ? "Current Plan" : shouldDisableButton ? "Use Current Plan First" : "Subscribe"}
-                    </button>}
+                    </button>
                   </div>
                 );
               })}

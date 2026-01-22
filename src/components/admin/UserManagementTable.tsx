@@ -1,4 +1,4 @@
- "use client";
+"use client";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useGetUsersQuery, User, useBlockUserMutation, useUnblockUserMutation, useDeleteUserMutation } from "@/store/authApi";
@@ -6,18 +6,17 @@ import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
 import { SearchFilter } from "@/components/admin/SearchFilter";
-import { IoPersonOutline } from "react-icons/io5";
 import { getApiBaseUrl } from "@/lib/utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "sonner";
-import { Ban, UserCheck } from "lucide-react";
+import { Ban, UserCheck, User as UserIcon } from "lucide-react";
 
 export default function UserManagementTable() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [datePreset, setDatePreset] = useState<DateRangePreset>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  
+
   const { data, isLoading, isError } = useGetUsersQuery({
     status: statusFilter === "all" ? undefined : statusFilter,
     start_date: dateRange?.start_date,
@@ -27,7 +26,7 @@ export default function UserManagementTable() {
   const [blockUser] = useBlockUserMutation();
   const [unblockUser] = useUnblockUserMutation();
   const [deleteUser] = useDeleteUserMutation();
-  
+
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -50,7 +49,7 @@ export default function UserManagementTable() {
       const day = date.getDate();
       const month = date.toLocaleDateString("en-GB", { month: "short" });
       const year = date.getFullYear();
-      
+
       return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
@@ -77,7 +76,7 @@ export default function UserManagementTable() {
         setSelectedUser(null);
       }
     } catch (error: unknown) {
-      const errorMessage = 
+      const errorMessage =
         (error as { data?: { error?: string; message?: string } })?.data?.error ||
         (error as { message?: string })?.message ||
         "Failed to block user";
@@ -95,7 +94,7 @@ export default function UserManagementTable() {
         setSelectedUser(null);
       }
     } catch (error: unknown) {
-      const errorMessage = 
+      const errorMessage =
         (error as { data?: { error?: string; message?: string } })?.data?.error ||
         (error as { message?: string })?.message ||
         "Failed to unblock user";
@@ -113,7 +112,7 @@ export default function UserManagementTable() {
         setSelectedUser(null);
       }
     } catch (error: unknown) {
-      const errorMessage = 
+      const errorMessage =
         (error as { data?: { error?: string; message?: string } })?.data?.error ||
         (error as { message?: string })?.message ||
         "Failed to delete user";
@@ -133,7 +132,7 @@ export default function UserManagementTable() {
       accessor: (row) => {
         const avatarUrl = getAvatarUrl((row as { avatar?: string | null }).avatar);
         return (
-          <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/20 bg-slate-800 flex items-center justify-center">
+          <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white/20 bg-slate-800 flex items-center justify-center">
             {avatarUrl ? (
               <Image
                 src={avatarUrl}
@@ -143,7 +142,7 @@ export default function UserManagementTable() {
                 unoptimized
               />
             ) : (
-              <IoPersonOutline className="w-6 h-6 text-white" />
+              <UserIcon className="w-5 h-5 text-white/40" />
             )}
           </div>
         );
@@ -186,11 +185,10 @@ export default function UserManagementTable() {
         return (
           <div className="flex items-center justify-center">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                isActive
-                  ? "bg-green-500/20 text-green-300"
-                  : "bg-red-500/20 text-red-300"
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${isActive
+                ? "bg-green-500/20 text-green-300"
+                : "bg-red-500/20 text-red-300"
+                }`}
             >
               {isActive ? "Active" : "Inactive"}
             </span>
@@ -211,11 +209,11 @@ export default function UserManagementTable() {
       header: "Interests",
       accessor: (row) => {
         const interests = (row as { interests?: Record<string, Array<{ id: number; name: string }>> }).interests;
-        
+
         if (!interests || Object.keys(interests).length === 0) {
           return <span className="text-white/60">No interests</span>;
         }
-        
+
         // Color palette for different categories
         const categoryColors = [
           { bg: "bg-blue-500/20", text: "text-blue-300" },
@@ -229,7 +227,7 @@ export default function UserManagementTable() {
           { bg: "bg-cyan-500/20", text: "text-cyan-300" },
           { bg: "bg-green-500/20", text: "text-green-300" },
         ];
-        
+
         // Create array of interests with their category and color
         const interestsWithCategory: Array<{
           id: number;
@@ -237,7 +235,7 @@ export default function UserManagementTable() {
           category: string;
           colorIndex: number;
         }> = [];
-        
+
         const categoryNames = Object.keys(interests);
         categoryNames.forEach((categoryName, categoryIdx) => {
           const categoryInterests = interests[categoryName];
@@ -250,11 +248,11 @@ export default function UserManagementTable() {
             });
           });
         });
-        
+
         if (interestsWithCategory.length === 0) {
           return <span className="text-white/60">No interests</span>;
         }
-        
+
         return (
           <div className="max-w-xs">
             <div className="grid grid-cols-3 gap-1">
@@ -280,7 +278,7 @@ export default function UserManagementTable() {
       accessor: (row) => {
         const isActive = row.is_active !== false;
         const isAdmin = row.role === 'admin';
-        
+
         return (
           <div className="flex items-center justify-center space-x-3">
             {isActive ? (
@@ -291,11 +289,10 @@ export default function UserManagementTable() {
                   setBlockDialogOpen(true);
                 }}
                 disabled={isAdmin}
-                className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${
-                  isAdmin
-                    ? "opacity-50 cursor-not-allowed"
-                    : "cursor-pointer"
-                }`}
+                className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${isAdmin
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer"
+                  }`}
                 title={isAdmin ? "Cannot block admin users" : "Block User"}
               >
                 <Ban className="w-4 h-4" />
@@ -320,11 +317,10 @@ export default function UserManagementTable() {
                 setDeleteDialogOpen(true);
               }}
               disabled={isAdmin}
-              className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${
-                isAdmin
-                  ? "opacity-50 cursor-not-allowed"
-                  : "cursor-pointer"
-              }`}
+              className={`p-2 rounded-lg bg-white/10 hover:bg-white/20 transition ${isAdmin
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+                }`}
               title={isAdmin ? "Cannot delete admin users" : "Delete User"}
             >
               <svg
@@ -357,7 +353,7 @@ export default function UserManagementTable() {
         isLoading={isLoading}
         filters={
           <>
-        
+
             <TableFilters
               filters={[
                 {
@@ -395,7 +391,7 @@ export default function UserManagementTable() {
         isError={isError}
         errorMessage="Failed to load users. Please try again later"
       />
-      
+
       {/* Block User Confirmation Dialog */}
       <ConfirmDialog
         open={blockDialogOpen}
