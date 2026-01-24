@@ -439,7 +439,7 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
         {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
-          className="hidden lg:block rounded-lg w-[370px] sticky top-32 hover:overflow-y-auto overflow-y-hidden custom-scroll mr-5 mt-9 h-[calc(100vh-100px)]"
+          className="hidden lg:block rounded-lg w-[370px] sticky top-34 hover:overflow-y-auto overflow-y-hidden custom-scroll mr-5 mt-6 h-[calc(100vh-100px)]"
         >
         <div className="space-y-4">
           {/* Community Details */}

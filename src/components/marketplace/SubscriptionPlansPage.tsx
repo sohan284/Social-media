@@ -84,7 +84,7 @@ export default function SubscriptionPlansPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
                 {plans.map((plan) => {
                   const isRecommended = plan.is_recommended || false;
                   // Only show "Your Plan" if it's the current plan AND user has remaining posts

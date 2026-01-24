@@ -52,7 +52,7 @@ export default function PublicLayout({
               className="flex-1 scrollbar-hide h-[calc(100vh)] overflow-y-auto bg-cover bg-center bg-no-repeat relative"
             >
               <div className=" bg-[#06133F]/75 backdrop-blur-[12px]">
-                <div className="xl:max-w-[47vw] mx-auto pt-28 pb-4">
+                <div className="xl:max-w-[47vw] mx-auto pt-32 pb-4">
                   {children}
                 </div>
               </div>
@@ -80,7 +80,7 @@ export default function PublicLayout({
                   }}
                   className="bg-cover bg-center bg-no-repeat hidden xl:block fixed right-0 h-[calc(100vh)] p-10 shadow-md hover:overflow-y-auto overflow-y-hidden custom-scroll xl:w-[370px]"
                 >
-                  <div className="mt-20 ">
+                  <div className="mt-20">
                     <RightSidebar />
                   </div>
                 </aside>

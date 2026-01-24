@@ -79,7 +79,7 @@ const SidebarNavLinkContent = ({ className = "" }: { className?: string }) => {
 
   const safeHref = (href: string) => (href.startsWith("/") ? href : `/${href}`);
   return (
-    <nav className={`space-y-3 text-gray-700 mt-20 ${className}`}>
+    <nav className={`space-y-3 text-gray-700 mt-24 ${className}`}>
       <div className="bg-[#06133FBF] backdrop-blur-[1px] py-6 px-2 rounded-2xl">
         {menuItems.map((item) => (
           <Link
@@ -165,7 +165,7 @@ const SidebarNavLink = ({
       onClick={(e) => e.stopPropagation()}
     >
       {showMobileHeader && (
-        <div className="flex justify-between items-center mb-4 lg:hidden">
+        <div className="flex justify-between items-center mb-4 xl:hidden">
           <h2 className="font-semibold text-lg text-white">Menu</h2>
           {onClose && (
             <button onClick={onClose}>

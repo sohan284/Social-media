@@ -5,7 +5,7 @@ import HomeLayoutTwo from "../../../../components/Layouts/HomeLayoutTwo";
 import ProtectedLayout from "../../../../components/Layouts/ProtectedLayout";
 import { usePathname } from "next/navigation";
 
-export default function layout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
   // Use HomeLayoutTwo for profile and community details pages
