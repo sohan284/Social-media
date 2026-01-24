@@ -228,7 +228,7 @@ const Communities = () => {
   };
 
   const renderCommunitiesGrid = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2  2xl:grid-cols-3  gap-6">
       {filteredCommunities.map((community: CommunityItem) => {
         const isMember = community.is_member === true;
         const hasPendingRequest = (community as { user_has_pending_request?: boolean }).user_has_pending_request;

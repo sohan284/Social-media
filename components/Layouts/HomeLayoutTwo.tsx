@@ -80,7 +80,6 @@ export default function HomeLayoutTwo({
         isSidebarOpen={true}
         className="hidden lg:block px-6"
         showMobileHeader={false}
-        navClassName="pt-4 mt-20"
       />
 
       {/* Main Content */}
@@ -91,7 +90,7 @@ export default function HomeLayoutTwo({
       >
         <SearchProvider>
           <MessageProvider>
-            <div className=" mx-auto mt-24">
+            <div className=" mx-auto mt-28">
               <Navbar onMenuToggle={() => setIsSidebarOpen(prev => !prev)} />
               {children}
             </div>

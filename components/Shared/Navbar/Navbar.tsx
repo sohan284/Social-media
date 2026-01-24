@@ -19,8 +19,8 @@ import { useGetConversationsListQuery, useGetChatRoomsQuery } from "@/store/chat
 import { useSearch } from "@/contexts/SearchContext";
 import { useMessage } from "@/contexts/MessageContext";
 import { getStoredAccessToken } from "@/lib/auth";
-import bg from "../../../public/navigation.webp";
-
+import bg from "../../../public/banner.webp";
+import navTitle from "../../../public/navTitle.png";
 // Fallback hook for when SearchContext is not available
 const useSearchSafe = () => {
   try {
@@ -113,30 +113,30 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
 
   return (
     <nav style={{
-      backgroundImage: `linear-gradient(to right, rgba(6, 19, 63, 1), rgba(6, 19, 63, 0.1), rgba(6, 19, 63, 0.9)), url(${bg.src})`,
+      backgroundImage: `linear-gradient(to right, rgba(6, 19, 63, 1), rgba(6, 19, 63, 0.1), rgba(6, 19, 63, 0.5)), url(${bg.src})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundRepeat: "no-repeat",
       scrollbarGutter: "stable both-edges",
-    }} className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-40 border-b border-white/10">
+    }} className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-30 xl:z-40 border-b border-white/10">
       <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Toggle */}
           <button
             onClick={onMenuToggle}
-            className={`${pathname.startsWith('/main') ? 'lg:hidden' : 'xl:hidden'} text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200`}
+            className={` xl:hidden text-white p-2 hover:bg-gray-700 rounded-full transition-colors duration-200`}
           >
             <FaAlignRight size={24} />
           </button>
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 h-[100px]">
             <Link href="/">
-              <Image src="/logo.png" alt="logo" width={280} height={90} />
+              <Image src="/logo.png" alt="logo" className="h-full w-full " width={250} height={100} />
             </Link>
           </div>
         </div>
 
         {/* Search Bar - Only visible on home page for authenticated users, matches create post design */}
-        {isHomePage && isAuthenticated && (
+        {/* {isHomePage && isAuthenticated && (
           <div className="hidden md:flex md:absolute md:left-1/2 md:-translate-x-1/2 w-[35vw]  md:max-w-xl md:px-4">
             <div className="w-full bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl  p-1">
               <div className="relative flex items-center">
@@ -151,8 +151,10 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
               </div>
             </div>
           </div>
-        )}
-
+        )} */}
+       
+        <Image src={navTitle} alt="banner" className="h-[60px] w-[25vw] hidden lg:block opacity-90" width={800} height={80} />
+    
         {isAuthenticated ? (
           <div className="relative flex items-center gap-2 md:gap-4 text-white">
             <button
@@ -236,16 +238,16 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <div className="flex items-center flex-col gap-2 flex-shrink-0">
             <button
               onClick={() => router.push("/auth/login")}
-              className="px-4 md:px-6 py-2 md:py-2.5 rounded-full bg-transparent border border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300 cursor-pointer text-sm md:text-base font-medium"
+              className="px-6 md:px-8 py-2 md:py-2 rounded-full bg-gradient-to-b from-[#8081F9] via-[#8081F9] via-30% to-pink-400 hover:opacity-90 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
             >
               Login
             </button>
             <button
               onClick={() => router.push("/auth/sign-up")}
-              className="px-4 md:px-6 py-2 md:py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
+              className="px-4 md:px-6 py-2 md:py-2 rounded-full bg-gradient-to-t from-[#8081F9] via-[#8081F9] via-20% to-pink-400 hover:opacity-90 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
             >
               Sign Up
             </button>

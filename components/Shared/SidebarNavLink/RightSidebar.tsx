@@ -89,7 +89,7 @@ const RightSidebar = () => {
   };
 
   return (
-        <div className=' space-y-6'>
+        <div className='mt-24 space-y-6'>
             <div className='bg-[#06133FBF] backdrop-blur-[1px] py-6 px-4 rounded-2xl space-y-4 '>
                 <h1 className='text-white text-lg font-semibold'>Popular Communities</h1>
                 {isLoading ? (
