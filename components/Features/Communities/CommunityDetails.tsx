@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import Post from '../Main/Post/Post';
 import CreatePost from '../CreatePost/CreatePost';
 import EmptyPostsState from '../../Shared/EmptyPostsState';
+import ErrorState from '../../Shared/ErrorState';
 import { useCommunityPostsInfinite } from '@/hooks/useCommunityPostsInfinite';
 import bg from '../../../public/main-bg.jpg';
 
@@ -297,9 +298,10 @@ const CommunityDetails = ({ communityName }: CommunityDetailsProps) => {
 
     if (isPostsError) {
       return (
-        <p className="text-red-400 text-sm">
-          Failed to load posts. Please try again later.
-        </p>
+        <ErrorState
+          message="Failed to load posts. Please try again later."
+          onRetry={() => refetchPosts()}
+        />
       );
     }
 

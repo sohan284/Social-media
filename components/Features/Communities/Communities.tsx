@@ -16,6 +16,7 @@ import FriendsIcon from '../../Icons/FriendsIcon';
 import { toast } from 'sonner';
 import CommunityCard from '../../Shared/CommunityCard/CommunityCard';
 import PageHeader from '../../Shared/PageHeader/PageHeader';
+import ErrorState from '../../Shared/ErrorState';
 
 const Communities = () => {
   const router = useRouter();
@@ -200,14 +201,12 @@ const Communities = () => {
 
   const renderErrorState = () => {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <p className="text-red-400 text-lg mb-2">Failed to load communities</p>
-          <p className="text-white/60 text-sm">
-            Please try again later or refresh the page.
-          </p>
-        </div>
-      </div>
+      
+          <ErrorState
+            message="Failed to load communities. Please try again later."
+            onRetry={() => refetch()} 
+          />
+     
     );
   };
 

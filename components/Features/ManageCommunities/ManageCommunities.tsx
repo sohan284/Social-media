@@ -13,6 +13,7 @@ import JoinRequestsModal from "./JoinRequestsModal";
 import CommunityMembersModal from "./CommunityMembersModal";
 import InviteMemberModal from "./InviteMemberModal";
 import PageHeader from '../../Shared/PageHeader/PageHeader';
+import ErrorState from '../../Shared/ErrorState';
 
 const ManageCommunities = () => {
   const router = useRouter();
@@ -24,7 +25,7 @@ const ManageCommunities = () => {
   const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<CommunityItem | null>(null);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [selectedCommunityForInvite, setSelectedCommunityForInvite] = useState<CommunityItem | null>(null);
-  const { data: communitiesResponse, isLoading, isError } = useGetMyCommunitiesQuery();
+  const { data: communitiesResponse, isLoading, isError, refetch: refetchMyCommunities } = useGetMyCommunitiesQuery();
   const { data: currentUserResponse } = useGetCurrentUserProfileQuery();
   const [deleteCommunity, { isLoading: isDeleting }] = useDeleteCommunityMutation();
   const [joinCommunity, { isLoading: isJoining }] = useJoinCommunityMutation();
@@ -126,12 +127,10 @@ const ManageCommunities = () => {
   const renderErrorState = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <p className="text-red-400 text-lg mb-2">Failed to load communities</p>
-          <p className="text-white/60 text-sm">
-            Please try again later or refresh the page.
-          </p>
-        </div>
+        <ErrorState
+          message="Failed to load communities. Please try again later."
+          onRetry={() => refetchMyCommunities()}
+        />
       </div>
     );
   };

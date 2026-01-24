@@ -23,9 +23,10 @@ import {
 } from '@/store/categoryApi';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import ErrorState from '../../Shared/ErrorState';
 
 const Categories = () => {
-  const { data: categoriesResponse, isLoading, isError } = useGetCategoriesQuery();
+  const { data: categoriesResponse, isLoading, isError, refetch } = useGetCategoriesQuery();
   const [createCategory, { isLoading: isCreatingCategory }] = useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] = useUpdateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
@@ -224,10 +225,10 @@ const Categories = () => {
     return (
       <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
         <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
-          <div className="text-center py-12">
-            <p className="text-red-400 text-lg mb-2">Failed to load categories</p>
-            <p className="text-white/60 text-sm">Please try again later</p>
-          </div>
+            <ErrorState
+              message="Failed to load categories. Please try again later."
+              onRetry={() => refetch()}
+            />
         </div>
       </div>
     );

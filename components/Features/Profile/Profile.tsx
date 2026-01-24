@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FiMenu, FiX } from "react-icons/fi";
 import EmptyPostsState from "../../Shared/EmptyPostsState";
+import ErrorState from "../../Shared/ErrorState";
 import bg from "../../../public/main-bg.jpg";
 
 const Profile = () => {
@@ -212,9 +213,10 @@ const Profile = () => {
 
     if (isError) {
       return (
-        <p className="text-red-400 text-sm">
-          Failed to load posts. Please try again later.
-        </p>
+        <ErrorState
+          message="Failed to load posts. Please try again later."
+          onRetry={() => refetch()}
+        />
       );
     }
 
