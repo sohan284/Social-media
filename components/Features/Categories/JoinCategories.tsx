@@ -17,9 +17,10 @@ import {
   useUpdateUserProfileMutation 
 } from '@/store/authApi';
 import { toast } from 'sonner';
+import ErrorState from '../../Shared/ErrorState';
 
 const JoinCategories = () => {
-  const { data: categoriesResponse, isLoading, isError } = useGetCategoriesQuery();
+  const { data: categoriesResponse, isLoading, isError, refetch: refetchCategories } = useGetCategoriesQuery();
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const [updateUserProfile, { isLoading: isUpdating }] = useUpdateUserProfileMutation();
   
@@ -123,13 +124,12 @@ const JoinCategories = () => {
 
   if (isError) {
     return (
-      <div className="max-w-[1220px] mx-auto px-4 py-8 text-white">
-        <div className="bg-[#06133FBF] backdrop-blur-md rounded-2xl border border-white/20 shadow-lg p-6 md:p-10">
-          <div className="text-center py-12">
-            <p className="text-red-400 text-lg mb-2">Failed to load categories</p>
-            <p className="text-white/60 text-sm">Please try again later</p>
-          </div>
-        </div>
+      <div className="max-w-[1220px] mx-auto px-4 py-8 pb-[calc(100vh-500px)] text-white">
+        <ErrorState
+            message="Failed to load categories. Please try again later."
+            onRetry={() => refetchCategories()}
+          />
+       
       </div>
     );
   }

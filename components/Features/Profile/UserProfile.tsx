@@ -14,6 +14,7 @@ import { useMessage } from "@/contexts/MessageContext";
 import { FiMenu, FiX } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import EmptyPostsState from "../../Shared/EmptyPostsState";
+import ErrorState from "../../Shared/ErrorState";
 import { useUserPostsInfinite } from "@/hooks/useUserPostsInfinite";
 
 const UserProfile = () => {
@@ -216,9 +217,10 @@ const UserProfile = () => {
 
     if (isPostsError) {
       return (
-        <p className="text-red-400 text-sm">
-          Failed to load posts. Please try again later.
-        </p>
+        <ErrorState
+          message="Failed to load posts. Please try again later."
+          onRetry={() => refetchPosts()}
+        />
       );
     }
 

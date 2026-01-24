@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import EditProductModal from '@/components/admin/EditProductModal';
 import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
+import ErrorState from '../../../Shared/ErrorState';
 
 const Marketplace = () => {
     const { data: itemsResponse, isLoading, isError, refetch } = useGetMarketplaceItemsQuery();
@@ -135,11 +136,10 @@ const Marketplace = () => {
                     ))}
                 </div>
             ) : isError ? (
-                <div className="px-2 md:px-4 py-8 text-center">
-                    <p className="text-red-400 text-sm">
-                        Failed to load services. Please try again later.
-                    </p>
-                </div>
+                <ErrorState
+                    message="Failed to load services. Please try again later."
+                    onRetry={() => refetch()}
+                />
             ) : !items.length ? (
                 <div className="px-2 md:px-4 py-8 text-center">
                     <p className="text-white/60 text-sm">

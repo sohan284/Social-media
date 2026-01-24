@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { useGetMarketplaceCategoriesQuery } from '@/store/marketplaceApi';
+import ErrorState from '../../../Shared/ErrorState';
 
 const Categories = () => {
-    const { data: categoriesResponse, isLoading, isError } = useGetMarketplaceCategoriesQuery();
+    const { data: categoriesResponse, isLoading, isError, refetch } = useGetMarketplaceCategoriesQuery();
     const categories = categoriesResponse?.data || categoriesResponse?.results?.data || [];
 
     if (isLoading) {
@@ -27,9 +28,10 @@ const Categories = () => {
     if (isError) {
         return (
             <div className="px-4 py-8 text-center">
-                <p className="text-red-400 text-sm">
-                    Failed to load categories. Please try again later.
-                </p>
+                <ErrorState
+                    message="Failed to load categories. Please try again later."
+                    onRetry={() => refetch()}
+                />
             </div>
         );
     }

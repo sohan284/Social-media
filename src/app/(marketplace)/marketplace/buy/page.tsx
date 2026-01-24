@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ProductCard from '../../../../../components/Cards/ProductCard';
 import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
 import { useGetMarketplaceItemsQuery, useGetMarketplaceCategoriesQuery, MarketplaceItem } from '@/store/marketplaceApi';
+import ErrorState from '../../../../../components/Shared/ErrorState';
 
 const BuyPage = () => {
     const searchParams = useSearchParams();
@@ -21,7 +22,7 @@ const BuyPage = () => {
     } | null>(null);
 
     // Fetch all items and categories
-    const { data: itemsResponse, isLoading, isError } = useGetMarketplaceItemsQuery();
+    const { data: itemsResponse, isLoading, isError, refetch: refetchItems } = useGetMarketplaceItemsQuery();
     const { data: categoriesResponse } = useGetMarketplaceCategoriesQuery();
 
     // Get all categories to map names
@@ -160,11 +161,10 @@ const BuyPage = () => {
                         {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                     </div>
                 )}
-                <div className="px-2 md:px-4 py-8 text-center">
-                    <p className="text-red-400 text-sm">
-                        Failed to load services. Please try again later.
-                    </p>
-                </div>
+                <ErrorState
+                    message="Failed to load services. Please try again later."
+                    onRetry={() => refetchItems()}
+                />
             </div>
         );
     }

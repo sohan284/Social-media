@@ -11,6 +11,7 @@ import { FiEdit3, FiImage, FiLink } from "react-icons/fi";
 import { Loader2 } from "lucide-react";
 import { useSearch } from "@/contexts/SearchContext";
 import EmptyPostsState from "../../../Shared/EmptyPostsState";
+import ErrorState from "../../../Shared/ErrorState";
 import { useNewsFeedInfinite } from "@/hooks/useNewsFeedInfinite";
 
 // Fallback hook for when SearchContext is not available
@@ -33,6 +34,7 @@ const Home = () => {
     isFetchingNextPage,
     isLoading,
     isError,
+    refetch,
   } = useNewsFeedInfinite();
 
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
@@ -112,9 +114,10 @@ const Home = () => {
 
     if (isError) {
       return (
-        <p className="text-red-400 text-sm">
-          Failed to load posts. Please try again later.
-        </p>
+        <ErrorState
+          message="Failed to load posts. Please try again later."
+          onRetry={() => refetch()}
+        />
       );
     }
 

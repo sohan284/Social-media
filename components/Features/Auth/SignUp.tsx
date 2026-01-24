@@ -17,6 +17,7 @@ import {
 import { storeAuthTokens, getRoleFromToken } from "@/lib/auth";
 import { store } from "@/store/store";
 import { baseApi } from "@/store/baseApi";
+import ErrorState from "../../Shared/ErrorState";
 
 // Types for form data
 type SignUpForm = {
@@ -42,6 +43,7 @@ const SignUp = () => {
     data: categoriesData,
     isLoading: isCategoriesLoading,
     isError: isCategoriesError,
+    refetch: refetchCategories,
   } = useGetCategoriesQuery();
 
   const {
@@ -489,7 +491,10 @@ const SignUp = () => {
         {isCategoriesLoading ? (
           <p>Loading categories...</p>
         ) : isCategoriesError ? (
-          <p className="text-red-400">Failed to load categories.</p>
+          <ErrorState
+            message="Failed to load categories. Please try again later."
+            onRetry={() => refetchCategories()}
+          />
         ) : (
           categoriesData?.data?.map((category) => (
             <div key={category.id}>
