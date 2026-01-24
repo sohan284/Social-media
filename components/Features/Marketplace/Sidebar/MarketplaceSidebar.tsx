@@ -167,7 +167,7 @@ export default function MarketplaceSidebar({
           </ul>
           <Link
             href="/"
-            className="flex items-center gap-2 text-gray-100 hover:text-white hover:bg-[#fc859d3a] rounded-lg p-2 px-4 my-4"
+            className="flex items-center gap-2 text-gray-100 hover:text-white hover:bg-white/10 rounded-lg p-2 px-4 my-4"
           >
             <FaHome size={24} /> Home
           </Link>

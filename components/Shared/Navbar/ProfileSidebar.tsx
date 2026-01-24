@@ -185,7 +185,7 @@ const ProfileSidebar = ({
       onClick={handleClose}
     >
       <div
-        className={`fixed top-0 right-0 w-full max-w-xs h-full bg-[#1d293d] transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+        className={`fixed top-0 right-0 w-full max-w-xs h-full bg-[#06133FBF]/80 backdrop-blur-[17.5px] transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
           }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -242,7 +242,7 @@ const ProfileSidebar = ({
                 <Link
                   key={index}
                   href={safeHref(item.href)}
-                  className="w-full text-sm text-left p-3 hover:bg-[#06133FBF] rounded-lg transition-colors duration-200 flex items-center gap-3"
+                  className="w-full text-sm text-left p-3 hover:bg-white/10 rounded-lg transition-colors duration-200 flex items-center gap-3"
                 >
                   <IconComponent size={20} className="text-white" />
                   <span className="text-white font-medium">{item.label}</span>
@@ -252,7 +252,7 @@ const ProfileSidebar = ({
             {showSignOut && (
               <button
                 onClick={handleLogout}
-                className="w-full text-sm text-left p-3 hover:bg-[#400f0f] rounded-lg transition-colors duration-200 flex items-center gap-3 cursor-pointer text-white font-medium mt-2 border border-white/10"
+                className="w-full text-sm text-left p-3 hover:bg-red-700/60 rounded-lg transition-colors duration-200 flex items-center gap-3 cursor-pointer text-white font-medium mt-2 border border-white/10"
               >
                 <FiLogOut size={20} />
                 Sign Out

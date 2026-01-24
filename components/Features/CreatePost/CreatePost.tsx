@@ -300,7 +300,7 @@ const CreatePost = ({
 
   return (
     <div
-      className=" bg-cover bg-center bg-no-repeat p-4 pb-[30vh]"
+      className=" bg-cover bg-center bg-no-repeat p-4 pb-[calc(100vh-880px)]"
     >
       <div className="bg-[#06133FBF] max-w-[1220px] backdrop-blur-[17.5px] mx-auto border border-white/10 rounded-2xl ">
         <div className="p-6 md:p-8">
@@ -331,7 +331,7 @@ const CreatePost = ({
                 })}
               </div>
               {!isProfile &&  <div className="mb-6 md:mb-0 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-white mb-2">
+                <h1 className="text-3xl font-bold text-white  mb-2">
                   Create New Post
                 </h1>
                 <p className="text-gray-300">
