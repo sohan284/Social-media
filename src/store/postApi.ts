@@ -478,7 +478,7 @@ export const postApi = baseApi.injectEndpoints({
         const cachedUserPostsQueries: Array<number | string> = [];
         const cachedMyPostsQueries: Array<{ page?: number } | void> = [];
         const cachedPostByIdQueries: Array<number | string> = [];
-        
+
         // Find all cached queries
         if (state?.api?.queries) {
           Object.values(state.api.queries).forEach((queryState) => {
@@ -507,10 +507,10 @@ export const postApi = baseApi.injectEndpoints({
           // Update all cached getMyPosts queries with their specific arguments
           ...(cachedMyPostsQueries.length > 0
             ? cachedMyPostsQueries.map((args) =>
-                dispatch(postApi.util.updateQueryData("getMyPosts", args, updatePostInCache))
-              )
+              dispatch(postApi.util.updateQueryData("getMyPosts", args, updatePostInCache))
+            )
             : // Fallback: try updating with undefined if no cached queries found
-              [dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache))]),
+            [dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostInCache))]),
           // Update all cached getUserPosts queries
           ...cachedUserPostsQueries.map((userId) =>
             dispatch(postApi.util.updateQueryData("getUserPosts", userId, updatePostInCache))
@@ -528,10 +528,10 @@ export const postApi = baseApi.injectEndpoints({
           // If unliking, delete the like using ID from response
           if (isLiked === false) {
             const likeId = responseData?.data?.id || responseData?.data?.like_id || responseData.id || responseData.like_id;
-            
+
             if (likeId) {
               const { getStoredAccessToken } = await import("@/lib/auth");
-              
+
               const baseUrl = getApiBaseUrl();
               await fetch(`${baseUrl}api/likes/${likeId}/`, {
                 method: "DELETE",
@@ -564,7 +564,7 @@ export const postApi = baseApi.injectEndpoints({
       async onQueryStarted({ post }, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          
+
           // Update the post's comment count
           const updatePostCommentCount = (draft: GetPostsResponse) => {
             const updatePost = (posts: PostItem[] | undefined) => {
@@ -587,7 +587,7 @@ export const postApi = baseApi.injectEndpoints({
 
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostCommentCount));
           dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostCommentCount));
-          
+
         } catch {
           // Error already handled
         }
@@ -610,7 +610,7 @@ export const postApi = baseApi.injectEndpoints({
       async onQueryStarted({ postId }, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          
+
           // Update the post's comment count
           const updatePostCommentCount = (draft: GetPostsResponse) => {
             const updatePost = (posts: PostItem[] | undefined) => {
@@ -633,13 +633,13 @@ export const postApi = baseApi.injectEndpoints({
 
           dispatch(postApi.util.updateQueryData("getNewsFeed", undefined, updatePostCommentCount));
           dispatch(postApi.util.updateQueryData("getMyPosts", undefined, updatePostCommentCount));
-          
+
         } catch {
           // Error already handled
         }
       },
     }),
-    followUser: builder.mutation<{ success?: boolean; message?: string; id?: number | string; following_id?: number | string; [key: string]: unknown }, { userId: number | string }>({
+    followUser: builder.mutation<{ success?: boolean; message?: string; id?: number | string; following_id?: number | string;[key: string]: unknown }, { userId: number | string }>({
       query: ({ userId }) => ({
         url: `/api/follows/`,
         method: "POST",
@@ -647,7 +647,7 @@ export const postApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'Followers' }],
     }),
-    unfollowUser: builder.mutation<{ success?: boolean; message?: string; [key: string]: unknown }, { followingId: number | string }>({
+    unfollowUser: builder.mutation<{ success?: boolean; message?: string;[key: string]: unknown }, { followingId: number | string }>({
       query: ({ followingId }) => ({
         url: `/api/follows/${followingId}/`,
         method: "DELETE",
@@ -743,12 +743,12 @@ export const postApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: () => [{ type: 'PostReports' }, { type: 'UnifiedReports' }],
     }),
-    getUnifiedReports: builder.query<{ 
-      data?: UnifiedReportItem[]; 
+    getUnifiedReports: builder.query<{
+      data?: UnifiedReportItem[];
       results?: UnifiedReportItem[] | { data?: UnifiedReportItem[] };
-      count?: number; 
-      success?: boolean; 
-      message?: string 
+      count?: number;
+      success?: boolean;
+      message?: string
     }, { status?: string; start_date?: string; end_date?: string; search?: string } | void>({
       query: (params) => {
         const searchParams = new URLSearchParams();
@@ -812,49 +812,127 @@ export const postApi = baseApi.injectEndpoints({
       },
       invalidatesTags: () => [{ type: 'UserProfile' }],
     }),
+    blockUserGlobal: builder.mutation<{ success?: boolean; message?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/block/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["UnifiedReports"],
+    }),
+    blockUserLocal: builder.mutation<{ success?: boolean; message?: string }, { blockerId: number | string; blockedId: number | string }>({
+      query: ({ blockerId, blockedId }) => ({
+        url: `/api/chat/admin/block-local/`,
+        method: "POST",
+        body: { blocker_id: blockerId, blocked_id: blockedId },
+      }),
+      invalidatesTags: ["UnifiedReports"],
+    }),
+    unblockUserGlobal: builder.mutation<{ success?: boolean; message?: string }, { userId: number | string }>({
+      query: ({ userId }) => ({
+        url: `/auth/admin/users/${userId}/unblock/`,
+        method: "POST",
+      }),
+      invalidatesTags: ["UnifiedReports"],
+    }),
+    unblockUserLocal: builder.mutation<{ success?: boolean; message?: string }, { blockerId: number | string; blockedId: number | string }>({
+      query: ({ blockerId, blockedId }) => ({
+        url: `/api/chat/admin/unblock-local/`,
+        method: "POST",
+        body: { blocker_id: blockerId, blocked_id: blockedId },
+      }),
+      invalidatesTags: ["UnifiedReports"],
+    }),
+    getAdminChatHistory: builder.query<{ success?: boolean; data?: ChatMessage[]; count?: number }, { reporterId: number | string; reportedId: number | string }>({
+      query: ({ reporterId, reportedId }) => ({
+        url: `/api/chat/admin/history/?reporter_id=${reporterId}&reported_id=${reportedId}`,
+        method: "GET",
+      }),
+    }),
+    deletePostAsAdmin: builder.mutation<{ success?: boolean; message?: string }, { postId: number | string }>({
+      query: ({ postId }) => ({
+        url: `/api/posts/${postId}/`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["UnifiedReports"],
+    }),
   }),
 });
 
-export interface PostReportItem {
-  id?: number | string;
-  reporter?: number | string | {
-    id?: number | string;
-    username?: string;
+export interface ChatMessage {
+  id: number | string;
+  sender?: {
+    id: number | string;
+    username: string;
     display_name?: string;
     avatar?: string;
   };
-  reporter_name?: string;
-  reporter_id?: number | string;
+  receiver?: {
+    id: number | string;
+    username: string;
+    display_name?: string;
+    avatar?: string;
+  };
+  content?: string;
+  created_at: string;
+  is_read?: boolean;
+}
+
+export interface PostReportItem {
+  id: number | string;
+  reporter?: {
+    id: number | string;
+    username: string;
+    display_name?: string;
+    avatar?: string;
+    email?: string;
+    is_active?: boolean;
+    is_blocked_locally?: boolean;
+  };
   post?: number | string;
   post_id?: number | string;
   post_title?: string;
-  post_author?: string;
-  reason?: string;
+  post_author_details?: {
+    id: number | string;
+    username: string;
+    display_name?: string;
+    avatar?: string;
+    email?: string;
+    is_active?: boolean;
+    is_blocked_locally?: boolean;
+  };
+  reason: string;
   description?: string;
-  status?: string;
+  status: string;
   reviewed_by?: number | string;
-  reviewed_by_name?: string;
+  reviewed_by_details?: {
+    id: number | string;
+    username: string;
+    display_name?: string;
+    avatar?: string;
+  };
   reviewed_at?: string;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
   [key: string]: unknown;
 }
 
 export interface UnifiedReportItem extends PostReportItem {
-  report_type?: 'post' | 'user';
-  type_label?: string;
-  // User report specific fields
+  report_type: 'post' | 'user';
+  type_label: string;
   reported_user?: {
-    id?: number | string;
-    username?: string;
+    id: number | string;
+    username: string;
     display_name?: string;
     avatar?: string;
+    email?: string;
+    is_active?: boolean;
+    is_blocked_locally?: boolean;
   };
   reported_user_id?: number | string;
   admin_notes?: string;
 }
 
-export const { 
+export const {
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
@@ -885,4 +963,10 @@ export const {
   useGetPostByIdQuery,
   useApprovePostMutation,
   useSharePostMutation,
+  useBlockUserGlobalMutation,
+  useBlockUserLocalMutation,
+  useUnblockUserGlobalMutation,
+  useUnblockUserLocalMutation,
+  useGetAdminChatHistoryQuery,
+  useDeletePostAsAdminMutation,
 } = postApi;

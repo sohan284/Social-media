@@ -52,6 +52,9 @@ export interface GetMarketplaceItemsResponse {
     data?: MarketplaceItem[];
   };
   items?: MarketplaceItem[];
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
   [key: string]: unknown;
 }
 
@@ -129,14 +132,17 @@ export interface UpdateMarketplaceSubcategoryRequest {
 
 export const marketplaceApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getMarketplaceItems: builder.query<GetMarketplaceItemsResponse, { category?: string; subcategory?: string } | void>({
+    getMarketplaceItems: builder.query<GetMarketplaceItemsResponse, { category?: string; subcategory?: string; page?: number } | void>({
       query: (params) => {
         const queryParams = new URLSearchParams();
         if (params?.category) {
-          queryParams.append("category", params.category);
+          queryParams.append("sub_category__category__name", params.category);
         }
         if (params?.subcategory) {
-          queryParams.append("subcategory", params.subcategory);
+          queryParams.append("sub_category__name", params.subcategory);
+        }
+        if (params?.page) {
+          queryParams.append("page", params.page.toString());
         }
         const queryString = queryParams.toString();
         return {
@@ -145,6 +151,19 @@ export const marketplaceApi = baseApi.injectEndpoints({
         };
       },
       providesTags: ["MarketplaceItems"],
+      // Use serializeQueryArgs and merge for infinite scrolling if needed, 
+      // but following Profile.tsx pattern (manual merging in component) for consistency.
+      serializeQueryArgs: ({ endpointName, queryArgs }) => {
+        // Exclude page from cache key so we can merge manually in components
+        const { page, ...rest } = queryArgs || {};
+        return { endpointName, ...rest };
+      },
+      merge: (currentCache, newItems) => {
+        return newItems;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => {
+        return currentArg?.page !== previousArg?.page;
+      }
     }),
     createProduct: builder.mutation<CreateProductResponse, CreateProductRequest>({
       query: (data) => {
@@ -407,8 +426,8 @@ export interface PostCredit {
   created_at: string;
 }
 
-export const { 
-  useGetMarketplaceItemsQuery, 
+export const {
+  useGetMarketplaceItemsQuery,
   useCreateProductMutation,
   useGetMarketplaceCategoriesQuery,
   useCreateMarketplaceCategoryMutation,

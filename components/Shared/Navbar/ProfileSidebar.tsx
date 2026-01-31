@@ -12,10 +12,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { FaRegCircleUser } from "react-icons/fa6";
-import { IoPersonOutline } from "react-icons/io5";
+import { IoPersonOutline, IoPieChartOutline } from "react-icons/io5";
 import { UserProfile } from "@/store/authApi";
 import { useRouter } from "next/navigation";
-import { clearStoredTokens, getStoredAccessToken } from "@/lib/auth";
+import { clearStoredTokens, getRoleFromToken, getStoredAccessToken } from "@/lib/auth";
 import { store } from "@/store/store";
 import { baseApi } from "@/store/baseApi";
 
@@ -25,7 +25,6 @@ interface ProfileSidebarProps {
   isLoadingProfile: boolean;
   isError?: boolean;
 }
-
 const profileItems = [
   {
     label: "Profile",
@@ -59,6 +58,13 @@ const ProfileSidebar = ({
   const [isOpen, setIsOpen] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const router = useRouter();
+
+  const role = useMemo(() => {
+    const token = getStoredAccessToken();
+    return getRoleFromToken(token);
+  }, []);
+
+  const isAdmin = role === 'admin';
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -249,6 +255,16 @@ const ProfileSidebar = ({
                 </Link>
               );
             })}
+            {isAdmin && (
+              <Link
+                href="/dashboard"
+                className="w-full text-sm text-left p-3 hover:bg-white/10 rounded-lg transition-colors duration-200 flex items-center gap-3"
+              >
+                <IoPieChartOutline size={20} className="text-white" />
+                <span className="text-white font-medium">Dashboard</span>
+              </Link>
+            )
+            }
             {showSignOut && (
               <button
                 onClick={handleLogout}

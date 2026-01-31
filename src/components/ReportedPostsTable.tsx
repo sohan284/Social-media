@@ -1,15 +1,16 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useGetUnifiedReportsQuery, useReviewUnifiedReportMutation, useDeleteUnifiedReportMutation, UnifiedReportItem } from "@/store/postApi";
+import { useGetUnifiedReportsQuery, useReviewUnifiedReportMutation, useDeleteUnifiedReportMutation, useBlockUserGlobalMutation, useBlockUserLocalMutation, useUnblockUserGlobalMutation, useUnblockUserLocalMutation, UnifiedReportItem, useGetAdminChatHistoryQuery, useDeletePostAsAdminMutation, useGetPostByIdQuery } from "@/store/postApi";
 import { CustomTable, Column } from "@/components/admin/CustomTable";
 import { TableFilters } from "@/components/admin/TableFilters";
 import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
 import { SearchFilter } from "@/components/admin/SearchFilter";
-import { CheckCircle2, XCircle, Eye, Clock, FileText, User } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, ShieldAlert, UserX, UserMinus } from "lucide-react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import Image from "next/image";
 
 export default function ReportedPostsTable() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function ReportedPostsTable() {
   const [datePreset, setDatePreset] = useState<DateRangePreset>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  
+
   const { data, isLoading, isError, refetch } = useGetUnifiedReportsQuery({
     status: statusFilter === "all" ? undefined : statusFilter,
     start_date: dateRange?.start_date,
@@ -26,18 +27,14 @@ export default function ReportedPostsTable() {
   });
   const [reviewReport, { isLoading: isReviewing }] = useReviewUnifiedReportMutation();
   const [deleteReport] = useDeleteUnifiedReportMutation();
-  const [selectedReport, setSelectedReport] = useState<UnifiedReportItem | null>(null);
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [reportToDelete, setReportToDelete] = useState<{
-    id: number | string;
-    type: 'post' | 'user';
-    title: string;
-  } | null>(null);
+  const [blockGlobal, { isLoading: isBlockingGlobal }] = useBlockUserGlobalMutation();
+  const [blockLocal, { isLoading: isBlockingLocal }] = useBlockUserLocalMutation();
+  const [unblockGlobal, { isLoading: isUnblockingGlobal }] = useUnblockUserGlobalMutation();
+  const [unblockLocal, { isLoading: isUnblockingLocal }] = useUnblockUserLocalMutation();
 
   const reports = useMemo((): UnifiedReportItem[] => {
     if (!data) return [];
-    
+
     // Handle different response structures
     if (data.results) {
       if (typeof data.results === 'object' && !Array.isArray(data.results)) {
@@ -49,13 +46,33 @@ export default function ReportedPostsTable() {
         return data.results;
       }
     }
-    
+
     if (Array.isArray(data.data)) {
       return data.data;
     }
-    
+
     return [];
   }, [data]);
+
+  const [selectedReportId, setSelectedReportId] = useState<number | string | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'post' | 'user' | null>(null);
+
+  const selectedReport = useMemo(() => {
+    if (!selectedReportId || !selectedReportType) return null;
+    return reports.find(r => r.id === selectedReportId && r.report_type === selectedReportType) || null;
+  }, [reports, selectedReportId, selectedReportType]);
+
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<{
+    id: number | string;
+    type: 'post' | 'user';
+    title: string;
+  } | null>(null);
+  const [showPostContent, setShowPostContent] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+
+  const [deletePost, { isLoading: isDeletingPost }] = useDeletePostAsAdminMutation();
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -64,7 +81,7 @@ export default function ReportedPostsTable() {
       const day = date.getDate();
       const month = date.toLocaleDateString("en-GB", { month: "short" });
       const year = date.getFullYear();
-      
+
       return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
@@ -73,31 +90,26 @@ export default function ReportedPostsTable() {
 
   const getStatusBadge = (status: string | undefined) => {
     const statusColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-      pending: { 
-        bg: "bg-yellow-500/20", 
+      pending: {
+        bg: "bg-yellow-500/20",
         text: "text-yellow-300",
         icon: <Clock className="w-3 h-3" />
       },
-      reviewed: { 
-        bg: "bg-blue-500/20", 
-        text: "text-blue-300",
-        icon: <Eye className="w-3 h-3" />
-      },
-      resolved: { 
-        bg: "bg-green-500/20", 
+      resolved: {
+        bg: "bg-green-500/20",
         text: "text-green-300",
         icon: <CheckCircle2 className="w-3 h-3" />
       },
-      dismissed: { 
-        bg: "bg-gray-500/20", 
+      dismissed: {
+        bg: "bg-gray-500/20",
         text: "text-gray-300",
         icon: <XCircle className="w-3 h-3" />
       },
     };
-    
+
     const statusKey = (status || "pending").toLowerCase();
     const colors = statusColors[statusKey] || statusColors.pending;
-    
+
     return (
       <div className="flex items-center justify-center gap-1.5">
         {colors.icon}
@@ -123,7 +135,7 @@ export default function ReportedPostsTable() {
     return reasonLabels[reason || "other"] || "Other";
   };
 
-  const handleReview = async (reportId: number | string, reportType: 'post' | 'user', status: 'reviewed' | 'resolved' | 'dismissed') => {
+  const handleReview = async (reportId: number | string, reportType: 'post' | 'user', status: 'resolved' | 'dismissed') => {
     try {
       await reviewReport({ reportId, reportType, status }).unwrap();
       toast.success(`Report marked as ${status}`);
@@ -138,7 +150,8 @@ export default function ReportedPostsTable() {
   };
 
   const handleRowClick = (report: UnifiedReportItem) => {
-    setSelectedReport(report);
+    setSelectedReportId(report.id!);
+    setSelectedReportType(report.report_type);
     setDetailsModalOpen(true);
   };
 
@@ -152,7 +165,7 @@ export default function ReportedPostsTable() {
     e.stopPropagation();
     if (!report.id) return;
     const reportType = report.report_type || 'post';
-    const reportTitle = report.report_type === 'post' 
+    const reportTitle = report.report_type === 'post'
       ? report.post_title || 'Post Report'
       : getReportedItemName(report) || 'User Report';
     setReportToDelete({ id: report.id, type: reportType as 'post' | 'user', title: reportTitle });
@@ -163,9 +176,9 @@ export default function ReportedPostsTable() {
     if (!reportToDelete) return;
 
     try {
-      await deleteReport({ 
-        reportId: reportToDelete.id, 
-        reportType: reportToDelete.type 
+      await deleteReport({
+        reportId: reportToDelete.id,
+        reportType: reportToDelete.type
       }).unwrap();
       toast.success("Report deleted successfully!");
       setDeleteDialogOpen(false);
@@ -181,24 +194,70 @@ export default function ReportedPostsTable() {
   };
 
   const getReporterName = (report: UnifiedReportItem) => {
-    if (report.report_type === 'user' && report.reporter) {
-      if (typeof report.reporter === 'object' && report.reporter !== null && !Array.isArray(report.reporter)) {
-        return report.reporter.username || report.reporter.display_name || "N/A";
-      }
-    }
-    return report.reporter_name || "N/A";
+    return report.reporter?.display_name || report.reporter?.username || "N/A";
   };
 
   const getReportedItemName = (report: UnifiedReportItem) => {
     if (report.report_type === 'post') {
       return report.post_title || "N/A";
     } else {
-      if (report.reported_user) {
-        if (typeof report.reported_user === 'object') {
-          return report.reported_user.username || report.reported_user.display_name || "N/A";
-        }
-      }
-      return "N/A";
+      return report.reported_user?.display_name || report.reported_user?.username || "N/A";
+    }
+  };
+
+  const handleBlockGlobal = async (userId: number | string) => {
+    try {
+      await blockGlobal({ userId }).unwrap();
+      toast.success("User blocked globally successfully!");
+    } catch (error: any) {
+      toast.error("Failed to block user globally", {
+        description: error.data?.error || error.data?.message || "Something went wrong"
+      });
+    }
+  };
+
+  const handleBlockLocal = async (blockerId: number | string, blockedId: number | string) => {
+    try {
+      await blockLocal({ blockerId, blockedId }).unwrap();
+      toast.success("User blocked from the reporter successfully!");
+    } catch (error: any) {
+      toast.error("Failed to block user locally", {
+        description: error.data?.error || error.data?.message || "Something went wrong"
+      });
+    }
+  };
+
+  const handleUnblockGlobal = async (userId: number | string) => {
+    try {
+      await unblockGlobal({ userId }).unwrap();
+      toast.success("User unblocked globally successfully!");
+    } catch (error: any) {
+      toast.error("Failed to unblock user globally", {
+        description: error.data?.error || error.data?.message || "Something went wrong"
+      });
+    }
+  };
+
+  const handleUnblockLocal = async (blockerId: number | string, blockedId: number | string) => {
+    try {
+      await unblockLocal({ blockerId, blockedId }).unwrap();
+      toast.success("User unblocked for the reporter successfully!");
+    } catch (error: any) {
+      toast.error("Failed to unblock user locally", {
+        description: error.data?.error || error.data?.message || "Something went wrong"
+      });
+    }
+  };
+
+  const handleDeletePost = async (postId: number | string) => {
+    try {
+      await deletePost({ postId }).unwrap();
+      toast.success("Post deleted successfully!");
+      setDetailsModalOpen(false);
+    } catch (error: any) {
+      toast.error("Failed to delete post", {
+        description: error.data?.error || error.data?.message || "Something went wrong"
+      });
     }
   };
 
@@ -227,8 +286,8 @@ export default function ReportedPostsTable() {
       accessor: (row) => {
         if (row.report_type === 'post') {
           return (
-            <div 
-              className="max-w-xs truncate cursor-pointer hover:text-blue-400 transition-colors" 
+            <div
+              className="max-w-xs truncate cursor-pointer hover:text-blue-400 transition-colors"
               title={row.post_title || "N/A"}
               onClick={(e) => {
                 e.stopPropagation();
@@ -260,8 +319,8 @@ export default function ReportedPostsTable() {
       accessor: (row) => {
         if (row.report_type === 'post') {
           return (
-            <div className="max-w-xs truncate" title={row.post_author || "N/A"}>
-              {row.post_author || "N/A"}
+            <div className="max-w-xs truncate" title={row.post_author_details?.username || "N/A"}>
+              {row.post_author_details?.display_name || row.post_author_details?.username || "N/A"}
             </div>
           );
         } else {
@@ -293,8 +352,8 @@ export default function ReportedPostsTable() {
     {
       header: "Reviewed By",
       accessor: (row) => (
-        <div className="max-w-xs truncate" title={row.reviewed_by_name || "Not reviewed"}>
-          {row.reviewed_by_name || "—"}
+        <div className="max-w-xs truncate" title={row.reviewed_by_details?.username || "Not reviewed"}>
+          {row.reviewed_by_details?.username || "—"}
         </div>
       ),
     },
@@ -310,21 +369,10 @@ export default function ReportedPostsTable() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleReview(row.id!, reportType as 'post' | 'user', 'reviewed');
-                  }}
-                  disabled={isReviewing}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  title="Mark as Reviewed"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
                     handleReview(row.id!, reportType as 'post' | 'user', 'resolved');
                   }}
                   disabled={isReviewing}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="p-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   title="Mark as Resolved"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -335,7 +383,7 @@ export default function ReportedPostsTable() {
                     handleReview(row.id!, reportType as 'post' | 'user', 'dismissed');
                   }}
                   disabled={isReviewing}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="p-2 rounded-lg bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   title="Dismiss"
                 >
                   <XCircle className="w-4 h-4" />
@@ -343,7 +391,7 @@ export default function ReportedPostsTable() {
               </>
             )}
             {!isPending && (
-              <span className="text-xs text-white/40">Reviewed</span>
+              <span className="text-xs text-white/40">Handled</span>
             )}
             <button
               onClick={(e) => handleDeleteClick(row, e)}
@@ -386,7 +434,6 @@ export default function ReportedPostsTable() {
                     options: [
                       { label: "All", value: "all" },
                       { label: "Pending", value: "pending" },
-                      { label: "Reviewed", value: "reviewed" },
                       { label: "Resolved", value: "resolved" },
                       { label: "Dismissed", value: "dismissed" },
                     ],
@@ -424,131 +471,219 @@ export default function ReportedPostsTable() {
 
       {/* Report Details Modal */}
       {detailsModalOpen && selectedReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1F2149] border border-white/20 rounded-xl p-6 max-w-2xl w-[90vw] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Report Details</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-[#1F2149] border border-white/20 rounded-2xl w-full max-w-4xl shadow-2xl relative flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/20">
+                  <ShieldAlert className="w-6 h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white leading-tight">Report Review</h3>
+                  <p className="text-sm text-white/50">{selectedReport.type_label || (selectedReport.report_type === 'post' ? 'Post Report' : 'User Report')}</p>
+                </div>
+              </div>
               <button
                 onClick={() => setDetailsModalOpen(false)}
-                className="text-white/60 hover:text-white transition-colors cursor-pointer"
+                className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-all cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-white/60">Report Type</label>
-                <div className="flex items-center gap-2 mt-1">
-                  {selectedReport.report_type === 'post' ? (
-                    <FileText className="w-4 h-4 text-blue-400" />
-                  ) : (
-                    <User className="w-4 h-4 text-purple-400" />
-                  )}
-                  <p className="text-white font-medium">{selectedReport.type_label || (selectedReport.report_type === 'post' ? 'Post Report' : 'User Report')}</p>
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                {/* Reporter Card */}
+                <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+                  <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4">Reporter Information</h4>
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30">
+                      <Image
+                        src={selectedReport.reporter?.avatar || "/sheep.jpg"}
+                        alt="Avatar"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-white leading-none mb-1">{selectedReport.reporter?.display_name || "Anonymous"}</p>
+                      <p className="text-sm text-purple-400 font-medium tracking-tight">@{selectedReport.reporter?.username || "unknown"}</p>
+                      <p className="text-xs text-white/40 mt-1">{selectedReport.reporter?.email || "No email available"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reported User/Author Card */}
+                <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+                  <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4">
+                    {selectedReport.report_type === 'post' ? 'Post Author Details' : 'Reported User Details'}
+                  </h4>
+                  {(() => {
+                    const reportedUser = selectedReport.report_type === 'post'
+                      ? selectedReport.post_author_details
+                      : selectedReport.reported_user;
+
+                    return (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-red-500/30">
+                            <Image
+                              src={reportedUser?.avatar || "/sheep.jpg"}
+                              alt="Avatar"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold text-white leading-none mb-1">{reportedUser?.display_name || "N/A"}</p>
+                            <p className="text-sm text-red-400 font-medium tracking-tight">@{reportedUser?.username || "unknown"}</p>
+                            <p className="text-xs text-white/40 mt-1">{reportedUser?.email || "No email available"}</p>
+                          </div>
+                        </div>
+
+                        {/* Blocking Actions */}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {reportedUser?.is_active !== false ? (
+                            <button
+                              onClick={() => reportedUser?.id && handleBlockGlobal(reportedUser.id)}
+                              disabled={isBlockingGlobal}
+                              className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                            >
+                              <UserX className="w-4 h-4" />
+                              {isBlockingGlobal ? "Blocking..." : "Block Global"}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => reportedUser?.id && handleUnblockGlobal(reportedUser.id)}
+                              disabled={isUnblockingGlobal}
+                              className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-400 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              {isUnblockingGlobal ? "Unblocking..." : "Unblock Global"}
+                            </button>
+                          )}
+
+                          {reportedUser?.is_blocked_locally !== true ? (
+                            <button
+                              onClick={() => reportedUser?.id && selectedReport.reporter?.id && handleBlockLocal(selectedReport.reporter.id, reportedUser.id)}
+                              disabled={isBlockingLocal}
+                              className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                            >
+                              <UserMinus className="w-4 h-4" />
+                              {isBlockingLocal ? "Blocking..." : "Block Local"}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => reportedUser?.id && selectedReport.reporter?.id && handleUnblockLocal(selectedReport.reporter.id, reportedUser.id)}
+                              disabled={isUnblockingLocal}
+                              className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                            >
+                              <User className="w-4 h-4" />
+                              {isUnblockingLocal ? "Unblocking..." : "Unblock Local"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
-              {selectedReport.report_type === 'post' ? (
-                <>
+              {/* Report Context */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/10 mb-8">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <label className="text-sm text-white/60">Post Title</label>
-                    <p className="text-white font-medium">{selectedReport.post_title || "N/A"}</p>
-                    {selectedReport.post_id && (
-                      <button
-                        onClick={() => handleViewPost(selectedReport.post_id!)}
-                        className="mt-1 text-sm text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
-                      >
-                        View Post →
-                      </button>
+                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1">Reason for Report</h4>
+                    <p className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-bold inline-block border border-purple-500/30">
+                      {getReasonLabel(selectedReport.reason)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1">Status</h4>
+                    <div className="inline-block">{getStatusBadge(selectedReport.status)}</div>
+                  </div>
+                </div>
+
+                {selectedReport.report_type === 'post' && selectedReport.post_id && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowPostContent(!showPostContent)}
+                      className="w-full p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition flex items-center justify-between cursor-pointer"
+                    >
+                      <div>
+                        <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1">Reported Post</h4>
+                        <p className="text-white font-bold text-lg">{selectedReport.post_title || "View Post Content"}</p>
+                      </div>
+                      <div className="text-white/40">{showPostContent ? '▼' : '▶'}</div>
+                    </button>
+
+                    {showPostContent && (
+                      <PostContentPreview
+                        postId={selectedReport.post_id}
+                        onDelete={() => handleDeletePost(selectedReport.post_id!)}
+                        isDeleting={isDeletingPost}
+                      />
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-white/60">Reporter</label>
-                      <p className="text-white">{getReporterName(selectedReport)}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-white/60">Post Author</label>
-                      <p className="text-white">{selectedReport.post_author || "N/A"}</p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-white/60">Reporter</label>
-                    <p className="text-white">{getReporterName(selectedReport)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-white/60">Reported User</label>
-                    <p className="text-white">{getReportedItemName(selectedReport)}</p>
-                  </div>
-                </div>
-              )}
+                )}
 
-              <div className="grid grid-cols-2 gap-4">
+                {selectedReport.report_type === 'user' && selectedReport.reporter?.id && selectedReport.reported_user?.id && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowChatHistory(!showChatHistory)}
+                      className="w-full p-4 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition flex items-center justify-between cursor-pointer"
+                    >
+                      <div>
+                        <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-1">Chat History</h4>
+                        <p className="text-white font-bold text-sm">View conversation between users</p>
+                      </div>
+                      <div className="text-white/40">{showChatHistory ? '▼' : '▶'}</div>
+                    </button>
+
+                    {showChatHistory && (
+                      <ChatHistoryPreview
+                        reporterId={selectedReport.reporter.id}
+                        reportedId={selectedReport.reported_user.id}
+                      />
+                    )}
+                  </div>
+                )}
+
                 <div>
-                  <label className="text-sm text-white/60">Reason</label>
-                  <p className="text-white">{getReasonLabel(selectedReport.reason)}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-white/60">Status</label>
-                  <div className="mt-1">{getStatusBadge(selectedReport.status)}</div>
+                  <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Detailed Description</h4>
+                  <p className="text-white/80 leading-relaxed text-base italic border-l-4 border-purple-500/50 pl-4 py-1">
+                    {selectedReport.description || "No description provided by the reporter."}
+                  </p>
                 </div>
               </div>
 
-              {selectedReport.description && (
-                <div>
-                  <label className="text-sm text-white/60">Description</label>
-                  <p className="text-white bg-white/5 p-3 rounded-lg mt-1">
-                    {selectedReport.description}
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-white/60">Reported At</label>
-                  <p className="text-white text-sm">{formatDate(selectedReport.created_at)}</p>
+              {/* metadata */}
+              <div className="flex flex-wrap gap-6 text-sm text-white/40">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span>Reported on: {formatDate(selectedReport.created_at)}</span>
                 </div>
                 {selectedReport.reviewed_at && (
-                  <div>
-                    <label className="text-sm text-white/60">Reviewed At</label>
-                    <p className="text-white text-sm">{formatDate(selectedReport.reviewed_at)}</p>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    <span>Resolved on: {formatDate(selectedReport.reviewed_at)}</span>
+                  </div>
+                )}
+                {selectedReport.reviewed_by_details && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span>Handling Admin: @{selectedReport.reviewed_by_details.username}</span>
                   </div>
                 )}
               </div>
+            </div>
 
-              {selectedReport.reviewed_by_name && (
-                <div>
-                  <label className="text-sm text-white/60">Reviewed By</label>
-                  <p className="text-white">{selectedReport.reviewed_by_name}</p>
-                </div>
-              )}
-
-              {selectedReport.admin_notes && (
-                <div>
-                  <label className="text-sm text-white/60">Admin Notes</label>
-                  <p className="text-white bg-white/5 p-3 rounded-lg mt-1">
-                    {selectedReport.admin_notes}
-                  </p>
-                </div>
-              )}
-
-              {selectedReport.status === 'pending' && (
-                <div className="flex gap-2 pt-4 border-t border-white/10">
-                  <button
-                    onClick={() => {
-                      const reportType = selectedReport.report_type || 'post';
-                      handleReview(selectedReport.id!, reportType as 'post' | 'user', 'reviewed');
-                      setDetailsModalOpen(false);
-                    }}
-                    disabled={isReviewing}
-                    className="flex-1 px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    Mark as Reviewed
-                  </button>
+            {/* Modal Actions */}
+            <div className="p-6 border-t border-white/10 flex gap-3">
+              {selectedReport.status === 'pending' ? (
+                <>
                   <button
                     onClick={() => {
                       const reportType = selectedReport.report_type || 'post';
@@ -556,7 +691,7 @@ export default function ReportedPostsTable() {
                       setDetailsModalOpen(false);
                     }}
                     disabled={isReviewing}
-                    className="flex-1 px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-3 px-6 rounded-xl bg-green-500 hover:bg-green-400 text-white font-bold transition shadow-lg shadow-green-500/20 disabled:opacity-50 cursor-pointer"
                   >
                     Mark as Resolved
                   </button>
@@ -567,11 +702,18 @@ export default function ReportedPostsTable() {
                       setDetailsModalOpen(false);
                     }}
                     disabled={isReviewing}
-                    className="flex-1 px-4 py-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30 text-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-3 px-6 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition disabled:opacity-50 cursor-pointer"
                   >
-                    Dismiss
+                    Dismiss Report
                   </button>
-                </div>
+                </>
+              ) : (
+                <button
+                  onClick={() => setDetailsModalOpen(false)}
+                  className="w-full py-3 px-6 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition cursor-pointer"
+                >
+                  Close Review
+                </button>
               )}
             </div>
           </div>
@@ -593,6 +735,90 @@ export default function ReportedPostsTable() {
         }}
       />
     </>
+  );
+}
+
+// Post Content Preview Component
+function PostContentPreview({ postId, onDelete, isDeleting }: { postId: number | string; onDelete: () => void; isDeleting: boolean }) {
+  const { data: postData, isLoading, isError } = useGetPostByIdQuery(postId);
+
+  if (isLoading) {
+    return <div className="mt-4 p-4 bg-white/5 rounded-xl text-white/60 text-center">Loading post content...</div>;
+  }
+
+  if (isError || !postData) {
+    return <div className="mt-4 p-4 bg-red-500/10 rounded-xl text-red-400 text-center">Failed to load post content</div>;
+  }
+
+  const post: any = (postData as any).data || postData;
+
+  return (
+    <div className="mt-4 p-6 bg-white/5 rounded-xl border border-white/10">
+      <div className="mb-4">
+        <h5 className="text-white font-bold text-xl mb-2">{post.title}</h5>
+        <p className="text-white/80 leading-relaxed">{post.content}</p>
+      </div>
+
+      {post.media && post.media.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {post.media.map((mediaUrl: string, idx: number) => (
+            <div key={idx} className="relative w-full h-48 rounded-lg overflow-hidden">
+              <Image src={mediaUrl} alt={`Post media ${idx + 1}`} fill className="object-cover" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-4 text-sm text-white/40 mb-4">
+        <span>👍 {post.likes_count || 0} likes</span>
+        <span>💬 {post.comments_count || 0} comments</span>
+        <span>🔄 {post.shares_count || 0} shares</span>
+      </div>
+
+      <button
+        onClick={onDelete}
+        disabled={isDeleting}
+        className="w-full py-3 px-6 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold transition shadow-lg shadow-red-500/20 disabled:opacity-50 cursor-pointer"
+      >
+        {isDeleting ? "Deleting..." : "Delete This Post"}
+      </button>
+    </div>
+  );
+}
+
+// Chat History Preview Component
+function ChatHistoryPreview({ reporterId, reportedId }: { reporterId: number | string; reportedId: number | string }) {
+  const { data: chatData, isLoading, isError } = useGetAdminChatHistoryQuery({ reporterId, reportedId });
+
+  if (isLoading) {
+    return <div className="mt-4 p-4 bg-white/5 rounded-xl text-white/60 text-center">Loading chat history...</div>;
+  }
+
+  if (isError || !chatData) {
+    return <div className="mt-4 p-4 bg-yellow-500/10 rounded-xl text-yellow-400 text-center">Failed to load chat history</div>;
+  }
+
+  const messages = chatData.data || [];
+
+  if (messages.length === 0) {
+    return <div className="mt-4 p-4 bg-white/5 rounded-xl text-white/60 text-center">No chat history found between these users</div>;
+  }
+
+  return (
+    <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10 max-h-96 overflow-y-auto custom-scrollbar">
+      <p className="text-xs text-white/40 mb-4">Showing last {messages.length} messages</p>
+      <div className="space-y-3">
+        {messages.slice().reverse().map((msg: any) => (
+          <div key={msg.id} className="p-3 bg-white/5 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-bold text-purple-400">@{msg.sender?.username || "Unknown"}</span>
+              <span className="text-xs text-white/40">{new Date(msg.created_at).toLocaleString()}</span>
+            </div>
+            <p className="text-white/80 text-sm">{msg.content}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
