@@ -281,8 +281,8 @@ const Profile = () => {
                 <button
                   onClick={() => setActiveTab("overview")}
                   className={`px-6 py-3 rounded-lg cursor-pointer ${activeTab === "overview"
-                      ? "bg-white text-black"
-                      : "border border-white/10 text-white"
+                    ? "bg-white text-black"
+                    : "border border-white/10 text-white"
                     }`}
                 >
                   Overview
@@ -290,8 +290,8 @@ const Profile = () => {
                 <button
                   onClick={() => setActiveTab("posts")}
                   className={`px-6 py-3 rounded-lg cursor-pointer ${activeTab === "posts"
-                      ? "bg-white text-black"
-                      : "border border-white/10 text-white"
+                    ? "bg-white text-black"
+                    : "border border-white/10 text-white"
                     }`}
                 >
                   Posts
