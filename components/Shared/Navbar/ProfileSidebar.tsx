@@ -176,7 +176,7 @@ const ProfileSidebar = ({
     (profile?.avatar as string) ||
     null;
   const profileName =
-    profile?.full_name ||
+    profile?.display_name ||
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
     profile?.username ||
     "";

@@ -24,33 +24,33 @@ const UserProfile = () => {
   const { openMessagePopup } = useMessage();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  
+
   // Get current user to check if viewing own profile
   const { data: currentUserProfile } = useGetCurrentUserProfileQuery();
   const currentUserId = currentUserProfile?.data?.id;
-  
+
   // Get all users to find user by username (using public endpoint that allows authenticated users)
   const { data: usersResponse } = useGetPublicUsersQuery();
-  
+
   // Resolve user ID from username or ID
   const userId = useMemo(() => {
     // If username is a number, treat it as ID
     if (!isNaN(Number(username))) {
       return username;
     }
-    
+
     // Otherwise, find user by username
-    const user = usersResponse?.data?.find((u: { username?: string; id?: string | number }) => 
+    const user = usersResponse?.data?.find((u: { username?: string; id?: string | number }) =>
       u.username === username
     );
-    
+
     return user?.id || username; // Fallback to username if not found
   }, [username, usersResponse]);
-  
+
   const { data: userProfileResponse, isLoading: isProfileLoading, refetch: refetchProfile } = useGetUserProfileQuery(userId, {
     skip: !userId || !username,
   });
-  
+
   // Use infinite query for user posts
   const {
     data: postsResponse,
@@ -64,7 +64,7 @@ const UserProfile = () => {
 
   // Track if initial load is complete
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
-  
+
   // Mark initial load as complete once we have data and are not loading
   useEffect(() => {
     if (!isPostsLoading && postsResponse && postsResponse.pages && postsResponse.pages.length > 0 && !isInitialLoadComplete) {
@@ -81,9 +81,9 @@ const UserProfile = () => {
   const allPosts = useMemo((): PostItem[] => {
     return postsResponse?.posts || [];
   }, [postsResponse]);
-  
+
   const shouldObserve = hasNextPage && !isPostsLoading && allPosts.length > 0 && hasInitialData && isInitialLoadComplete;
-  
+
   const { ref, inView } = useInView({
     threshold: 0,
     rootMargin: "100px", // Small margin to start loading before reaching exact bottom
@@ -96,14 +96,14 @@ const UserProfile = () => {
       fetchNextPage();
     }
   }, [inView, shouldObserve, isFetchingNextPage, isInitialLoadComplete, fetchNextPage]);
-  
+
   const [toggleFollow, { isLoading: isTogglingFollow }] = useToggleFollowMutation();
   const [updatePost] = useUpdatePostMutation();
-  
+
   const userProfile = userProfileResponse?.data;
   const isFollowing = userProfile?.is_following || false;
   const isOwnProfile = currentUserId && userId && String(currentUserId) === String(userId);
-  
+
   // Separate approved posts and drafts (only for own profile)
   const { approvedPosts, draftPosts } = useMemo(() => {
     const allPosts: PostItem[] = (() => {
@@ -116,49 +116,49 @@ const UserProfile = () => {
       }
       return [];
     })();
-    
+
     const approved = allPosts.filter(p => p.status === 'approved' || !p.status);
     const drafts = isOwnProfile ? allPosts.filter(p => p.status === 'draft') : [];
-    
+
     return { approvedPosts: approved, draftPosts: drafts };
   }, [postsResponse, isOwnProfile]);
-  
+
   const handlePublishDraft = async (postId: number | string) => {
     try {
-      await updatePost({ 
-        postId, 
-        data: { status: "approved" } 
+      await updatePost({
+        postId,
+        data: { status: "approved" }
       }).unwrap();
       toast.success("Post published successfully!");
       refetchPosts();
     } catch (error: unknown) {
-      const errorMessage = 
+      const errorMessage =
         (error as { data?: { error?: string; message?: string } })?.data?.error ||
         (error as { data?: { error?: string; message?: string } })?.data?.message ||
         "Failed to publish post";
       toast.error(errorMessage);
     }
   };
-  
+
   const posts = useMemo((): PostItem[] => {
     if (!postsResponse) return [];
-    
+
     if (Array.isArray(postsResponse)) {
       return postsResponse;
     }
-    
+
     if (typeof postsResponse === 'object' && postsResponse !== null) {
       if (Array.isArray((postsResponse as { posts?: PostItem[] }).posts)) {
         return (postsResponse as { posts: PostItem[] }).posts;
       }
     }
-    
+
     return [];
   }, [postsResponse]);
 
   const handleFollowToggle = async () => {
     if (!userId) return;
-    
+
     try {
       await toggleFollow({ userId }).unwrap();
       refetchProfile();
@@ -174,10 +174,10 @@ const UserProfile = () => {
 
   const handleSendMessage = () => {
     // Find user data from users list
-    const user = usersResponse?.data?.find((u: { id?: string | number; username?: string }) => 
+    const user = usersResponse?.data?.find((u: { id?: string | number; username?: string }) =>
       String(u.id) === String(userId) || u.username === username
     );
-    
+
     if (user) {
       // Open message popup with the selected user
       openMessagePopup({
@@ -240,7 +240,7 @@ const UserProfile = () => {
           {approvedPosts.map((post) => (
             <Post key={post.id} post={post} profile={currentUserProfile?.data} />
           ))}
-          
+
           {/* Draft Posts Section (only for own profile) */}
           {isOwnProfile && draftPosts.length > 0 && (
             <>
@@ -265,8 +265,8 @@ const UserProfile = () => {
         </div>
         {/* Infinite scroll trigger - Only render when initial load is complete */}
         {hasNextPage && allPosts.length > 0 && isInitialLoadComplete && (
-          <div 
-            ref={ref} 
+          <div
+            ref={ref}
             className="h-20 flex flex-col items-center justify-center py-4 w-full gap-2"
             style={{ minHeight: '80px' }}
           >
@@ -313,7 +313,7 @@ const UserProfile = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Posts Skeleton */}
           <div className="mt-6 space-y-6">
             {Array.from({ length: 3 }).map((_, idx) => (
@@ -342,7 +342,7 @@ const UserProfile = () => {
             ))}
           </div>
         </div>
-        
+
         {/* Sidebar Skeleton */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
@@ -404,43 +404,43 @@ const UserProfile = () => {
     <>
       <div className="mx-auto flex gap-10 pt-6 lg:p-4">
         <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-lg p-4 xl:p-10 ">
-        <div className="max-w-[47vw] mx-auto">
-        <div className="border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between mb-4 lg:mb-0">
-              <div className="flex-1">
-                <UserProfileHeader 
-                  userId={userId}
-                  username={userProfile.username || username}
-                  isFollowing={isFollowing}
-                  isOwnProfile={isOwnProfile}
-                  onFollowToggle={handleFollowToggle}
-                  onSendMessage={handleSendMessage}
-                  isTogglingFollow={isTogglingFollow}
-                />
+          <div className="max-w-[47vw] mx-auto">
+            <div className="border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between mb-4 lg:mb-0">
+                <div className="flex-1">
+                  <UserProfileHeader
+                    userId={userId}
+                    username={userProfile.username || username}
+                    isFollowing={isFollowing}
+                    isOwnProfile={isOwnProfile}
+                    onFollowToggle={handleFollowToggle}
+                    onSendMessage={handleSendMessage}
+                    isTogglingFollow={isTogglingFollow}
+                  />
+                </div>
+                {/* Mobile Sidebar Toggle Button */}
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Open sidebar"
+                >
+                  <FiMenu size={24} className="text-white" />
+                </button>
               </div>
-              {/* Mobile Sidebar Toggle Button */}
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                aria-label="Open sidebar"
-              >
-                <FiMenu size={24} className="text-white" />
-              </button>
+            </div>
+
+            <div className="mt-6 space-y-6 ">
+              {renderPosts()}
             </div>
           </div>
+        </div>
 
-          <div className="mt-6 space-y-6 ">
-            {renderPosts()}
-          </div>
-        </div>
-        </div>
-        
         {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
           className="h-[90vh] hidden lg:block rounded-lg w-[370px] sticky top-18 hover:overflow-y-auto overflow-y-hidden custom-scroll"
         >
-          <UserProfileSidebar 
+          <UserProfileSidebar
             userId={userId}
             userProfile={userProfile}
             isOwnProfile={isOwnProfile}
@@ -455,15 +455,13 @@ const UserProfile = () => {
       {/* Mobile Sidebar Drawer */}
       {isSidebarOpen && (
         <div
-          className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${
-            isClosing ? "opacity-0" : "opacity-100"
-          }`}
+          className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${isClosing ? "opacity-0" : "opacity-100"
+            }`}
           onClick={handleCloseSidebar}
         >
           <div
-            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
-              isClosing ? "translate-x-full" : "translate-x-0"
-            }`}
+            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${isClosing ? "translate-x-full" : "translate-x-0"
+              }`}
             onClick={(e) => e.stopPropagation()}
             style={{ scrollbarGutter: "stable both-edges" }}
           >
@@ -481,7 +479,7 @@ const UserProfile = () => {
 
             {/* Sidebar Content */}
             <div className="overflow-y-auto h-[calc(100vh-64px)] custom-scroll p-4">
-              <UserProfileSidebar 
+              <UserProfileSidebar
                 userId={userId}
                 userProfile={userProfile}
                 isOwnProfile={isOwnProfile}

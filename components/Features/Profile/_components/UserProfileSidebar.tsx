@@ -22,8 +22,8 @@ interface UserProfileSidebarProps {
     isTogglingFollow: boolean;
 }
 
-const UserProfileSidebar = ({ 
-    userId, 
+const UserProfileSidebar = ({
+    userId,
     userProfile,
     isOwnProfile,
     onFollowToggle,
@@ -35,7 +35,7 @@ const UserProfileSidebar = ({
     const { data: fullProfileResponse } = useGetUserProfileByIdQuery(userId, {
         skip: !userId,
     });
-    
+
     const fullProfile = fullProfileResponse?.data;
     const displayName = fullProfile?.display_name || fullProfile?.username || userProfile.username;
     const coverPhoto = fullProfileResponse?.cover_photo;
@@ -70,7 +70,7 @@ const UserProfileSidebar = ({
                     </div>
                 </div>
             </div>
-            
+
             {!isOwnProfile && (
                 <div className='bg-[#06133F]/75 backdrop-blur-[17.5px] rounded-2xl p-4'>
                     <h3 className='text-white text-lg font-semibold mb-4'>Actions</h3>
@@ -78,11 +78,10 @@ const UserProfileSidebar = ({
                         <button
                             onClick={onFollowToggle}
                             disabled={isTogglingFollow}
-                            className={`w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 ${
-                                isFollowing
-                                    ? "bg-white/10 border border-white/20 text-white hover:bg-white/20"
-                                    : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                            }`}
+                            className={`w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 ${isFollowing
+                                ? "bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                                : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                                }`}
                         >
                             {isTogglingFollow ? (
                                 "Loading..."
@@ -98,7 +97,7 @@ const UserProfileSidebar = ({
                                 </>
                             )}
                         </button>
-                        
+
                         <button
                             onClick={onSendMessage}
                             className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 cursor-pointer bg-white/10 border border-white/20 text-white hover:bg-white/20 flex items-center justify-center gap-2"
@@ -106,7 +105,7 @@ const UserProfileSidebar = ({
                             <IoChatbubbleOutline size={18} />
                             Send Message
                         </button>
-                        
+
                         <button
                             onClick={() => setShowReportModal(true)}
                             className="w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 cursor-pointer bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 flex items-center justify-center gap-2"
@@ -117,7 +116,7 @@ const UserProfileSidebar = ({
                     </div>
                 </div>
             )}
-            
+
             <ReportUserModal
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}

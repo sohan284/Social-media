@@ -25,20 +25,20 @@ const Profile = () => {
   const [hasMore, setHasMore] = useState(true);
   const observerTargetOverview = useRef<HTMLDivElement>(null);
   const observerTargetPosts = useRef<HTMLDivElement>(null);
-  
+
   const { data: postsResponse, isLoading, isError, refetch } = useGetMyPostsQuery(
     { page: currentPage }
   );
   const { data: profileResponse } = useGetCurrentUserProfileQuery();
   const [updatePost] = useUpdatePostMutation();
   const profile = profileResponse?.data;
-  
+
   // Extract posts from response and handle pagination
   useEffect(() => {
     if (!postsResponse) return;
 
     let newPosts: PostItem[] = [];
-    
+
     // Handle different response structures
     if (Array.isArray(postsResponse.data)) {
       newPosts = postsResponse.data;
@@ -85,7 +85,7 @@ const Profile = () => {
   // Intersection Observer for infinite scrolling (Overview tab)
   useEffect(() => {
     if (activeTab !== "overview") return;
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoading) {
@@ -110,7 +110,7 @@ const Profile = () => {
   // Intersection Observer for infinite scrolling (Posts tab)
   useEffect(() => {
     if (activeTab !== "posts") return;
-    
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoading) {
@@ -136,15 +136,15 @@ const Profile = () => {
   const { approvedPosts, draftPosts } = useMemo(() => {
     const approved = allLoadedPosts.filter(p => p.status === 'approved' || !p.status);
     const drafts = allLoadedPosts.filter(p => p.status === 'draft');
-    
+
     return { approvedPosts: approved, draftPosts: drafts };
   }, [allLoadedPosts]);
-  
+
   const handlePublishDraft = async (postId: number | string) => {
     try {
-      await updatePost({ 
-        postId, 
-        data: { status: "approved" } 
+      await updatePost({
+        postId,
+        data: { status: "approved" }
       }).unwrap();
       toast.success("Post published successfully!");
       // Reset and refetch from page 1
@@ -153,7 +153,7 @@ const Profile = () => {
       setHasMore(true);
       refetch();
     } catch (error: unknown) {
-      const errorMessage = 
+      const errorMessage =
         (error as { data?: { error?: string; message?: string } })?.data?.error ||
         (error as { data?: { error?: string; message?: string } })?.data?.message ||
         "Failed to publish post";
@@ -235,14 +235,14 @@ const Profile = () => {
         {approvedPosts.map((post) => (
           <Post key={post.id} post={post} profile={profile} />
         ))}
-        
+
         {approvedPosts.length === 0 && (
           <EmptyPostsState
             message="No published posts yet"
             showCreateButton={false}
           />
         )}
-        
+
         {/* Infinite scroll trigger */}
         <div ref={observerTargetOverview} className="h-10 flex items-center justify-center">
           {isLoading && hasMore && (
@@ -263,107 +263,105 @@ const Profile = () => {
       <div className="mx-auto  flex gap-10">
         <div className="w-full bg-[#06133F]/75 backdrop-blur-[17.5px] min-h-[calc(100vh-80px)] pt-10 p-4 xl:p-10 ">
           <div className="xl:max-w-[47vw] mx-auto">
-          <div className="border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between mb-4 lg:mb-0">
-              <div className="flex-1">
-                <ProfileHeader onAvatarClick={openModal} />
+            <div className="border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between mb-4 lg:mb-0">
+                <div className="flex-1">
+                  <ProfileHeader onAvatarClick={openModal} />
+                </div>
+                {/* Mobile Sidebar Toggle Button */}
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  aria-label="Open sidebar"
+                >
+                  <FiMenu size={24} className="text-white" />
+                </button>
               </div>
-              {/* Mobile Sidebar Toggle Button */}
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-                aria-label="Open sidebar"
-              >
-                <FiMenu size={24} className="text-white" />
-              </button>
+              <div className="flex items-center gap-2 mt-4 overflow-x-hidden">
+                <button
+                  onClick={() => setActiveTab("overview")}
+                  className={`px-6 py-3 rounded-lg cursor-pointer ${activeTab === "overview"
+                      ? "bg-white text-black"
+                      : "border border-white/10 text-white"
+                    }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab("posts")}
+                  className={`px-6 py-3 rounded-lg cursor-pointer ${activeTab === "posts"
+                      ? "bg-white text-black"
+                      : "border border-white/10 text-white"
+                    }`}
+                >
+                  Posts
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 mt-4 overflow-x-hidden">
-              <button
-                onClick={() => setActiveTab("overview")}
-                className={`px-6 py-3 rounded-lg cursor-pointer ${
-                  activeTab === "overview"
-                    ? "bg-white text-black"
-                    : "border border-white/10 text-white"
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab("posts")}
-                className={`px-6 py-3 rounded-lg cursor-pointer ${
-                  activeTab === "posts"
-                    ? "bg-white text-black"
-                    : "border border-white/10 text-white"
-                }`}
-              >
-                Posts
-              </button>
-            </div>
-          </div>
 
-          <div className=" space-y-6">
-            {activeTab === "posts" ? (
-              <div className="space-y-6">
-                <CreatePost isProfile={true} onSuccess={() => {
-                  // Reset and refetch from page 1 when new post is created
-                  setCurrentPage(1);
-                  setAllLoadedPosts([]);
-                  setHasMore(true);
-                  refetch();
-                }} />
-                
-                {/* Draft Posts Section - Below CreatePost Form */}
-                {draftPosts.length > 0 && (
-                  <div className="border-t border-white/10 pt-6 mt-6">
-                    <h3 className="text-lg font-semibold text-white/70 mb-4">Drafts</h3>
-                    <div className="space-y-6">
-                      {draftPosts.map((post) => (
-                        <div key={post.id} className="relative">
-                          <Post post={post} profile={profile} />
-                          <button
-                            onClick={() => handlePublishDraft(post.id)}
-                            className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
-                          >
-                            Publish
-                          </button>
+            <div className=" space-y-6">
+              {activeTab === "posts" ? (
+                <div className="space-y-6">
+                  <CreatePost isProfile={true} onSuccess={() => {
+                    // Reset and refetch from page 1 when new post is created
+                    setCurrentPage(1);
+                    setAllLoadedPosts([]);
+                    setHasMore(true);
+                    refetch();
+                  }} />
+
+                  {/* Draft Posts Section - Below CreatePost Form */}
+                  {draftPosts.length > 0 && (
+                    <div className="border-t border-white/10 pt-6 mt-6">
+                      <h3 className="text-lg font-semibold text-white/70 mb-4">Drafts</h3>
+                      <div className="space-y-6">
+                        {draftPosts.map((post) => (
+                          <div key={post.id} className="relative">
+                            <Post post={post} profile={profile} />
+                            <button
+                              onClick={() => handlePublishDraft(post.id)}
+                              className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-medium transition-all duration-300 z-10"
+                            >
+                              Publish
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Approved Posts in Posts Tab */}
+                  {approvedPosts.length > 0 && (
+                    <div className="border-t border-white/10 pt-6 mt-6">
+                      <h3 className="text-lg font-semibold text-white/70 mb-4">Published Posts</h3>
+                      <div className="space-y-6">
+                        {approvedPosts.map((post) => (
+                          <Post key={post.id} post={post} profile={profile} />
+                        ))}
+                      </div>
+                      {/* Infinite scroll trigger */}
+                      <div ref={observerTargetPosts} className="h-10 flex items-center justify-center">
+                        {isLoading && hasMore && (
+                          <div className="text-white/60 text-sm">Loading more posts...</div>
+                        )}
+                      </div>
+                      {!hasMore && allLoadedPosts.length > 0 && (
+                        <div className="text-center text-white/40 text-sm py-4">
+                          No more posts to load
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Approved Posts in Posts Tab */}
-                {approvedPosts.length > 0 && (
-                  <div className="border-t border-white/10 pt-6 mt-6">
-                    <h3 className="text-lg font-semibold text-white/70 mb-4">Published Posts</h3>
-                    <div className="space-y-6">
-                      {approvedPosts.map((post) => (
-                        <Post key={post.id} post={post} profile={profile} />
-                      ))}
-                    </div>
-                    {/* Infinite scroll trigger */}
-                    <div ref={observerTargetPosts} className="h-10 flex items-center justify-center">
-                      {isLoading && hasMore && (
-                        <div className="text-white/60 text-sm">Loading more posts...</div>
                       )}
                     </div>
-                    {!hasMore && allLoadedPosts.length > 0 && (
-                      <div className="text-center text-white/40 text-sm py-4">
-                        No more posts to load
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="mt-6 space-y-6">
-                {renderPosts()}
-              </div>
-            )}
-          </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-6 space-y-6">
+                  {renderPosts()}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        
+
         {/* Desktop Sidebar */}
         <div
           style={{ scrollbarGutter: "stable both-edges" }}
@@ -376,15 +374,13 @@ const Profile = () => {
       {/* Mobile Sidebar Drawer */}
       {isSidebarOpen && (
         <div
-          className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${
-            isClosing ? "opacity-0" : "opacity-100"
-          }`}
+          className={`fixed top-0 right-0 h-full w-full bg-black/50 z-50 duration-300 transition-all lg:hidden ${isClosing ? "opacity-0" : "opacity-100"
+            }`}
           onClick={handleCloseSidebar}
         >
           <div
-            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${
-              isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
-            }`}
+            className={`fixed top-0 right-0 h-full w-[370px] bg-[#06133F]/95 backdrop-blur-[17.5px] shadow-2xl transition-transform duration-300 ease-in-out ${isOpen && !isClosing ? "translate-x-0" : "translate-x-full"
+              }`}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundImage: `url(${bg.src})`,

@@ -34,7 +34,7 @@ const NotificationDropdown = ({
 
   const hasNextPage = data?.next !== null && data?.next !== undefined;
   const showViewMore = hasNextPage && notifications.length > 0;
-  
+
   // Check if there are any unread notifications
   const hasUnreadNotifications = notifications.some((n: NotificationItem) => !n.is_read);
 
@@ -84,24 +84,26 @@ const NotificationDropdown = ({
   };
 
   const getNotificationTitle = (notification: NotificationItem) => {
+    console.log(notification);
+
     const senderName = notification.sender_name ?? "Someone";
-    
+
     if (notification.notification_type === "follow") {
       return `${senderName} following you`;
     }
-    
+
     if (notification.notification_type === "like") {
       return `${senderName} like your post`;
     }
-    
+
     if (notification.notification_type === "comment") {
       return `${senderName} commented on your post`;
     }
-    
+
     if (notification.notification_type === "community_invite") {
       return `${senderName} invited you to join`;
     }
-    
+
     return "New notification";
   };
 
@@ -109,15 +111,15 @@ const NotificationDropdown = ({
     if (notification.notification_type === "community_invite" && notification.community_title) {
       return notification.community_title;
     }
-    
+
     if (notification.notification_type === "like" && notification.post_title) {
       return notification.post_title;
     }
-    
+
     if (notification.post_title) {
       return notification.post_title;
     }
-    
+
     return "";
   };
 
@@ -207,10 +209,9 @@ const NotificationDropdown = ({
                     key={notification.id}
                     className={`
                       px-4 py-3 cursor-pointer transition-colors flex gap-3 relative
-                      ${
-                        isUnread
-                          ? "bg-gray-800/40 hover:bg-gray-800/70 border-l-2 border-[#ff4500]"
-                          : "bg-transparent hover:bg-gray-800/30 opacity-70"
+                      ${isUnread
+                        ? "bg-gray-800/40 hover:bg-gray-800/70 border-l-2 border-[#ff4500]"
+                        : "bg-transparent hover:bg-gray-800/30 opacity-70"
                       }
                     `}
                     onClick={() => handleNotificationClick(notification)}
@@ -222,19 +223,17 @@ const NotificationDropdown = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className={`text-xs line-clamp-1 ${
-                          isUnread
+                        className={`text-xs line-clamp-1 ${isUnread
                             ? "font-semibold text-white"
                             : "font-normal text-gray-400"
-                        }`}
+                          }`}
                       >
                         {getNotificationTitle(notification)}
                       </p>
                       {getNotificationSubtitle(notification) && (
                         <p
-                          className={`text-xs mt-0.5 line-clamp-2 ${
-                            isUnread ? "text-gray-300" : "text-gray-500"
-                          }`}
+                          className={`text-xs mt-0.5 line-clamp-2 ${isUnread ? "text-gray-300" : "text-gray-500"
+                            }`}
                         >
                           {getNotificationSubtitle(notification)}
                         </p>

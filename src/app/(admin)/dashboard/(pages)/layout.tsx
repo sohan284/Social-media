@@ -20,6 +20,7 @@ import {
   UsersRound,
   MessageSquare,
   CreditCard,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { useGetCurrentUserProfileQuery } from "@/store/authApi";
@@ -54,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Fetch current user profile - MUST be called before any conditional returns
-  const { data: profileResponse } = useGetCurrentUserProfileQuery();
+  const { data: profileResponse, refetch: refetchProfile } = useGetCurrentUserProfileQuery();
   const profile = profileResponse?.data;
 
   // Get username from token or profile
@@ -298,6 +299,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
 
           <div className="flex-1 flex justify-end lg:mr-[2.5vw]">
+
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
