@@ -120,7 +120,7 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
       scrollbarGutter: "stable both-edges",
     }} className="py-2.5 px-2 md:px-4 bg-[#06133f] fixed top-0 left-0 right-0 z-30 xl:z-40 border-b border-white/10">
       <div className="relative flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center md:w-[300px] gap-3">
           {/* Mobile Menu Toggle */}
           <button
             onClick={onMenuToggle}
@@ -135,124 +135,108 @@ const Navbar = ({ onMenuToggle }: NavbarProps) => {
           </div>
         </div>
 
-        {/* Search Bar - Only visible on home page for authenticated users, matches create post design */}
-        {/* {isHomePage && isAuthenticated && (
-          <div className="hidden md:flex md:absolute md:left-1/2 md:-translate-x-1/2 w-[35vw]  md:max-w-xl md:px-4">
-            <div className="w-full bg-[#06133FBF] backdrop-blur-[17.5px] border border-white/10 rounded-2xl  p-1">
-              <div className="relative flex items-center">
-                <GoSearch className="absolute left-3 text-white/60" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search posts by title or content..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-black/30 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300"
-                />
-              </div>
-            </div>
-          </div>
-        )} */}
-       
         <Image src={navTitle} alt="banner" className="h-[60px] w-[25vw] hidden lg:block opacity-90" width={800} height={80} />
-    
-        {isAuthenticated ? (
-          <div className="relative flex items-center gap-2 md:gap-4 text-white">
-            <button
-              onClick={() => router.push("/main/create-post")}
-              className="hidden md:flex items-center gap-3 text-sm cursor-pointer"
-            >
-              <FiPlus size={24} /> Create Post
-            </button>
 
-            {/* Mobile Create Post Button */}
-            <button
-              onClick={() => router.push("/main/create-post")}
-              className="md:hidden cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
-            >
-              <FiPlus size={20} />
-            </button>
+        <div className="md:w-[300px]">
+          {isAuthenticated ? (
+            <div className="relative flex items-center gap-2 md:gap-4 text-white">
+              <button
+                onClick={() => router.push("/main/create-post")}
+                className="hidden md:flex items-center gap-3 text-sm cursor-pointer"
+              >
+                <FiPlus size={24} /> Create Post
+              </button>
 
-            <button
-              onClick={() => {
-                if (isMessagePopupOpen) {
-                  closeMessagePopup();
-                } else {
-                  openMessagePopup();
-                }
-                setIsNotificationOpen(false);
-              }}
-              className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
-            >
-              <AiOutlineMessage size={20} className="md:w-6 md:h-6" />
-              {/* Message notification badge */}
-              {unreadMessageCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#ff4500] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 font-medium">
-                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                </span>
-              )}
-            </button>
-            <div className="relative">
+              {/* Mobile Create Post Button */}
+              <button
+                onClick={() => router.push("/main/create-post")}
+                className="md:hidden cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200"
+              >
+                <FiPlus size={20} />
+              </button>
+
               <button
                 onClick={() => {
-                  setIsNotificationOpen(!isNotificationOpen);
-                  closeMessagePopup();
+                  if (isMessagePopupOpen) {
+                    closeMessagePopup();
+                  } else {
+                    openMessagePopup();
+                  }
+                  setIsNotificationOpen(false);
                 }}
                 className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
               >
-                <NotificationIcon />
-                {/* Notification badge */}
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                <AiOutlineMessage size={20} className="md:w-6 md:h-6" />
+                {/* Message notification badge */}
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#ff4500] text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 font-medium">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
                   </span>
                 )}
               </button>
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setIsNotificationOpen(!isNotificationOpen);
+                    closeMessagePopup();
+                  }}
+                  className="cursor-pointer p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 relative"
+                >
+                  <NotificationIcon />
+                  {/* Notification badge */}
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                    </span>
+                  )}
+                </button>
 
-              {/* Notification Dropdown */}
-              <NotificationDropdown
-                isOpen={isNotificationOpen}
-                onClose={() => setIsNotificationOpen(false)}
-              />
-            </div>
-            {/* profile */}
-            <button
-              className="cursor-pointer"
-              onClick={() => setIsProfileSidebarOpen(true)}
-              aria-label="Open profile"
-            >
-              <div className="h-[30px] w-[30px] rounded-full overflow-hidden border border-white/30">
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt={profile?.username ? `${profile.username} avatar` : "profile"}
-                    width={30}
-                    height={30}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center">
-                    <IoPersonOutline className="text-white" size={16} />
-                  </div>
-                )}
+                {/* Notification Dropdown */}
+                <NotificationDropdown
+                  isOpen={isNotificationOpen}
+                  onClose={() => setIsNotificationOpen(false)}
+                />
               </div>
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center flex-col gap-2 flex-shrink-0">
-            <button
-              onClick={() => router.push("/auth/login")}
-              className="px-6 md:px-8 py-2 md:py-2 rounded-full bg-gradient-to-b from-[#8081F9] via-[#8081F9] via-30% to-pink-400 hover:opacity-90 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
-            >
-              Login
-            </button>
-            <button
-              onClick={() => router.push("/auth/sign-up")}
-              className="px-4 md:px-6 py-2 md:py-2 rounded-full bg-gradient-to-t from-[#8081F9] via-[#8081F9] via-20% to-pink-400 hover:opacity-90 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
-            >
-              Sign Up
-            </button>
-          </div>
-        )}
+              {/* profile */}
+              <button
+                className="cursor-pointer"
+                onClick={() => setIsProfileSidebarOpen(true)}
+                aria-label="Open profile"
+              >
+                <div className="h-[30px] w-[30px] rounded-full overflow-hidden border border-white/30">
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt={profile?.username ? `${profile.username} avatar` : "profile"}
+                      width={30}
+                      height={30}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-[#6c3f79] via-[#995a98] to-[#6c3f79] flex items-center justify-center">
+                      <IoPersonOutline className="text-white" size={16} />
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center flex-col gap-2 flex-shrink-0">
+              <button
+                onClick={() => router.push("/auth/login")}
+                className="px-6 md:px-8 py-2 md:py-2 rounded-full bg-gradient-to-b from-[#8081F9] via-[#8081F9] via-30% to-pink-400 hover:opacity-90 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => router.push("/auth/sign-up")}
+                className="px-4 md:px-6 py-2 md:py-2 rounded-full bg-gradient-to-t from-[#8081F9] via-[#8081F9] via-20% to-pink-400 hover:opacity-90 text-white transition-all duration-300 cursor-pointer text-sm md:text-base font-semibold shadow-lg shadow-purple-500/20"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Profile Sidebar - Only show for authenticated users */}

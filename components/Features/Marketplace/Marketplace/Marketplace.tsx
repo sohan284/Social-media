@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import ProductCard from '../../../Cards/ProductCard';
 import { useGetMarketplaceItemsQuery, useDeleteProductMutation, MarketplaceItem } from '@/store/marketplaceApi';
 import { useGetCurrentUserProfileQuery } from '@/store/authApi';
@@ -12,7 +12,8 @@ import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
 import ErrorState from '../../../Shared/ErrorState';
 
 const Marketplace = () => {
-    const { data: itemsResponse, isLoading, isError, refetch } = useGetMarketplaceItemsQuery();
+    const [currentPage, setCurrentPage] = useState(1);
+    const { data: itemsResponse, isLoading, isError, refetch } = useGetMarketplaceItemsQuery({ page: currentPage });
     const { data: userProfile } = useGetCurrentUserProfileQuery();
     const [deleteProduct] = useDeleteProductMutation();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -47,22 +48,6 @@ const Marketplace = () => {
         return userProfile?.data?.username || null;
     }, [userProfile]);
 
-    // Filter only published items for browse
-    const items = useMemo(() => {
-        if (!itemsResponse) return [];
-        const allItems = (
-            itemsResponse.data ??
-            itemsResponse.results?.data ??
-            itemsResponse.items ??
-            []
-        );
-        // Only show published items in browse
-        return allItems.filter((item) => {
-            const status = (item as MarketplaceItem & { status?: string }).status;
-            return status === "published";
-        });
-    }, [itemsResponse]);
-
     const handleEditClick = (item: MarketplaceItem) => {
         setProductToEdit(item as MarketplaceItem & {
             status?: string;
@@ -79,7 +64,6 @@ const Marketplace = () => {
         setProductToDelete({ id: item.id, name: productName });
         setDeleteDialogOpen(true);
     };
-
 
     const handleViewDetails = (item: MarketplaceItem) => {
         setProductToView(item as MarketplaceItem & {
@@ -112,8 +96,24 @@ const Marketplace = () => {
     };
 
     const handleProductUpdated = () => {
+        setCurrentPage(1);
         refetch();
     };
+
+    // Calculate items to display (only published)
+    const items = useMemo(() => {
+        if (!itemsResponse) return [];
+        const rawItems = (
+            itemsResponse.data ??
+            itemsResponse.results?.data ??
+            itemsResponse.items ??
+            []
+        );
+        return rawItems.filter((item) => {
+            const status = (item as MarketplaceItem & { status?: string }).status;
+            return status === "published";
+        });
+    }, [itemsResponse]);
 
     // Check if current user owns the product
     const isProductOwner = (item: MarketplaceItem) => {
@@ -125,11 +125,11 @@ const Marketplace = () => {
     return (
         <>
             {isLoading ? (
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-2 md:px-4'>
-                    {Array.from({ length: 12 }).map((_, index) => (
+                <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 px-2 md:px-4'>
+                    {Array.from({ length: 20 }).map((_, index) => (
                         <div
                             key={index}
-                            className="animate-pulse rounded-2xl bg-white/5 border border-white/10 aspect-square"
+                            className="animate-pulse rounded-2xl bg-white/5 border border-white/10 aspect-square max-h-[350px] w-full"
                         >
                             <div className="w-full h-full bg-white/10 rounded-2xl" />
                         </div>
@@ -138,7 +138,10 @@ const Marketplace = () => {
             ) : isError ? (
                 <ErrorState
                     message="Failed to load services. Please try again later."
-                    onRetry={() => refetch()}
+                    onRetry={() => {
+                        setCurrentPage(1);
+                        refetch();
+                    }}
                 />
             ) : !items.length ? (
                 <div className="px-2 md:px-4 py-8 text-center">
@@ -147,27 +150,53 @@ const Marketplace = () => {
                     </p>
                 </div>
             ) : (
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4 px-2 md:px-4'>
-                    {items.map((item) => {
-                        const isOwner = isProductOwner(item);
-                        return (
-                            <ProductCard
-                                key={item.id}
-                                id={item.id}
-                                title={(item.title || (item as { name?: string }).name) as string | undefined}
-                                image={item.image || item.images?.[0]}
-                                description={item.description}
-                                location={item.location}
-                                link={item.link}
-                                seller={item.seller}
-                                user_name={(item as { user_name?: string }).user_name}
-                                isOwner={isOwner}
-                                onEdit={isOwner ? () => handleEditClick(item) : undefined}
-                                onDelete={isOwner ? () => handleDeleteClick(item) : undefined}
-                                onViewDetails={() => handleViewDetails(item)}
-                            />
-                        );
-                    })}
+                <div className="flex flex-col gap-8 pb-12">
+                    <div className='grid grid-cols-1 2xl:grid-cols-2 gap-4 px-2 md:px-4'>
+                        {items.map((item, index) => {
+                            const isOwner = isProductOwner(item);
+                            return (
+                                <ProductCard
+                                    key={item.id}
+                                    id={item.id}
+                                    index={index}
+                                    title={(item.title || (item as { name?: string }).name) as string | undefined}
+                                    image={item.image || item.images?.[0]}
+                                    description={item.description}
+                                    location={item.location}
+                                    link={item.link}
+                                    seller={item.seller}
+                                    user_name={(item as { user_name?: string }).user_name}
+                                    isOwner={isOwner}
+                                    onEdit={isOwner ? () => handleEditClick(item) : undefined}
+                                    onDelete={isOwner ? () => handleDeleteClick(item) : undefined}
+                                    onViewDetails={() => handleViewDetails(item)}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {(itemsResponse?.next || itemsResponse?.previous) && (
+                        <div className="flex items-center justify-center gap-4 mt-8 pb-8">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={!itemsResponse?.previous || isLoading}
+                                className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-white/60 text-sm">
+                                Page {currentPage}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                disabled={!itemsResponse?.next || isLoading}
+                                className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

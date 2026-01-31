@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard from '../../../../../components/Cards/ProductCard';
 import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
@@ -11,18 +11,9 @@ const BuyPage = () => {
     const searchParams = useSearchParams();
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
-    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-    const [productToView, setProductToView] = useState<MarketplaceItem & {
-        status?: string;
-        name?: string;
-        user_name?: string;
-        location?: string;
-        description?: string;
-        link?: string;
-    } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
-    // Fetch all items and categories
-    const { data: itemsResponse, isLoading, isError, refetch: refetchItems } = useGetMarketplaceItemsQuery();
+    // Fetch categories for mapping names
     const { data: categoriesResponse } = useGetMarketplaceCategoriesQuery();
 
     // Get all categories to map names
@@ -53,7 +44,7 @@ const BuyPage = () => {
         if (!subcategoryParam || !selectedCategoryName) return null;
         const category = categories.find((cat) => cat.name === selectedCategoryName);
         if (!category) return null;
-        
+
         const camelCaseSubcategory = subcategoryParam;
         return category.subcategories.find((sub) => {
             const camelCase = sub.name
@@ -68,54 +59,42 @@ const BuyPage = () => {
         })?.name || null;
     }, [subcategoryParam, selectedCategoryName, categories]);
 
-    // Get all items from response
-    const allItems = useMemo(() => {
+    // Fetch items with server-side filtering and pagination
+    const { data: itemsResponse, isLoading, isError, refetch: refetchItems } = useGetMarketplaceItemsQuery({
+        page: currentPage,
+        category: selectedCategoryName || undefined,
+        subcategory: selectedSubcategoryName || undefined
+    });
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [categoryParam, subcategoryParam]);
+
+    // Calculate items to display (only published)
+    const items = useMemo(() => {
         if (!itemsResponse) return [];
-        return (
+        const rawItems = (
             itemsResponse.data ??
             itemsResponse.results?.data ??
             itemsResponse.items ??
             []
         );
-    }, [itemsResponse]);
-
-    // Filter items by category, subcategory, and status (only published)
-    const items = useMemo(() => {
-        if (!allItems.length) return [];
-        
-        // First filter by status - only show published items
-        let filtered = allItems.filter((item) => {
+        return rawItems.filter((item) => {
             const status = (item as MarketplaceItem & { status?: string }).status;
             return status === "published";
         });
+    }, [itemsResponse]);
 
-        // Filter by category if selected
-        if (selectedCategoryName) {
-            filtered = filtered.filter((item) => {
-                // Check both category and category_name fields (case-insensitive)
-                const itemCategory = (item.category_name || item.category || '').toLowerCase().trim();
-                const selectedCategory = selectedCategoryName.toLowerCase().trim();
-                return itemCategory === selectedCategory;
-            });
-        }
-
-        // Filter by subcategory if selected
-        if (selectedSubcategoryName) {
-            filtered = filtered.filter((item) => {
-                // Check sub_category_name, subcategory_name, and subcategory fields (case-insensitive)
-                const itemSubcategory = (
-                    item.sub_category_name || 
-                    item.subcategory_name || 
-                    item.subcategory || 
-                    ''
-                ).toLowerCase().trim();
-                const selectedSubcategory = selectedSubcategoryName.toLowerCase().trim();
-                return itemSubcategory === selectedSubcategory;
-            });
-        }
-
-        return filtered;
-    }, [allItems, selectedCategoryName, selectedSubcategoryName]);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+    const [productToView, setProductToView] = useState<MarketplaceItem & {
+        status?: string;
+        name?: string;
+        user_name?: string;
+        location?: string;
+        description?: string;
+        link?: string;
+    } | null>(null);
 
     const handleViewDetails = (item: MarketplaceItem) => {
         setProductToView(item as MarketplaceItem & {
@@ -129,7 +108,7 @@ const BuyPage = () => {
         setIsDetailsModalOpen(true);
     };
 
-    if (isLoading) {
+    if (isLoading && currentPage === 1) {
         return (
             <div>
                 {(selectedCategoryName || selectedSubcategoryName) && (
@@ -138,11 +117,11 @@ const BuyPage = () => {
                         {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                     </div>
                 )}
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 px-2 md:px-4'>
-                    {Array.from({ length: 12 }).map((_, index) => (
+                <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 px-2 md:px-4'>
+                    {Array.from({ length: 20 }).map((_, index) => (
                         <div
                             key={index}
-                            className="animate-pulse rounded-2xl bg-white/5 border border-white/10 aspect-square"
+                            className="animate-pulse rounded-2xl bg-white/5 border border-white/10 aspect-square max-h-[350px] w-full"
                         >
                             <div className="w-full h-full bg-white/10 rounded-2xl" />
                         </div>
@@ -163,13 +142,16 @@ const BuyPage = () => {
                 )}
                 <ErrorState
                     message="Failed to load services. Please try again later."
-                    onRetry={() => refetchItems()}
+                    onRetry={() => {
+                        setCurrentPage(1);
+                        refetchItems();
+                    }}
                 />
             </div>
         );
     }
 
-    if (!items.length) {
+    if (!items.length && !isLoading) {
         return (
             <div>
                 {(selectedCategoryName || selectedSubcategoryName) && (
@@ -190,18 +172,19 @@ const BuyPage = () => {
     }
 
     return (
-        <div>
+        <div className="flex flex-col gap-8 pb-12">
             {(selectedCategoryName || selectedSubcategoryName) && (
                 <div className='mb-4 px-2 md:px-4 text-sm text-gray-300'>
                     {selectedCategoryName && <span>Category: <span className='font-semibold text-white'>{selectedCategoryName}</span></span>}
                     {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                 </div>
             )}
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 px-2 md:px-4'>
-                {items.map((item) => (
+            <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 px-2 md:px-4'>
+                {items.map((item, index) => (
                     <ProductCard
                         key={item.id}
                         id={item.id}
+                        index={index}
                         title={(item.title || (item as { name?: string }).name) as string | undefined}
                         image={item.image || item.images?.[0]}
                         description={item.description}
@@ -213,6 +196,29 @@ const BuyPage = () => {
                     />
                 ))}
             </div>
+
+            {/* Pagination Controls */}
+            {(itemsResponse?.next || itemsResponse?.previous) && (
+                <div className="flex items-center justify-center gap-4 mt-8 pb-8">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={!itemsResponse?.previous || isLoading}
+                        className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                    >
+                        Previous
+                    </button>
+                    <span className="text-white/60 text-sm">
+                        Page {currentPage}
+                    </span>
+                    <button
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        disabled={!itemsResponse?.next || isLoading}
+                        className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
 
             {/* Service Details Modal */}
             <ProductDetailsModal
