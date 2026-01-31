@@ -12,6 +12,7 @@ import { Column, DataTable } from "@/components/DataTable";
 import { DateFilter, DateRangePreset, DateRange } from "@/components/admin/DateFilter";
 import { useGetDashboardAnalyticsQuery, useGetPostAnalyticsQuery, useGetUserAnalyticsQuery, useGetServiceAnalyticsQuery, useGetSubscriptionAnalyticsQuery } from "@/store/dashboardApi";
 import { getApiBaseUrl } from "@/lib/utils";
+import { RefreshCw } from "lucide-react";
 
 interface PostData {
   postHead: string;
@@ -27,14 +28,14 @@ interface PostData {
 const getDateRangeForPreset = (preset: DateRangePreset): DateRange | undefined => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   const formatDate = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-  
+
   switch (preset) {
     case "all":
       return undefined;
@@ -100,8 +101,8 @@ const getDateRangeForPreset = (preset: DateRangePreset): DateRange | undefined =
 };
 
 export default function AdminDashboardHome() {
-  const { data: analyticsData, isLoading, isError } = useGetDashboardAnalyticsQuery();
-  
+  const { data: analyticsData, isLoading, isError, refetch: refetchData } = useGetDashboardAnalyticsQuery();
+  const [loading, setLoading] = useState(false);
   // Date filter state using DateFilter component
   const [postDatePreset, setPostDatePreset] = useState<DateRangePreset>("this-month");
   const [postDateRange, setPostDateRange] = useState<DateRange | undefined>(() => getDateRangeForPreset("this-month"));
@@ -111,52 +112,52 @@ export default function AdminDashboardHome() {
   const [serviceDateRange, setServiceDateRange] = useState<DateRange | undefined>(() => getDateRangeForPreset("this-month"));
   const [subscriptionDatePreset, setSubscriptionDatePreset] = useState<DateRangePreset>("this-month");
   const [subscriptionDateRange, setSubscriptionDateRange] = useState<DateRange | undefined>(() => getDateRangeForPreset("this-month"));
-  
+
   // Initialize date ranges when presets change
   useEffect(() => {
     if (postDatePreset !== "custom") {
       setPostDateRange(getDateRangeForPreset(postDatePreset));
     }
   }, [postDatePreset]);
-  
+
   useEffect(() => {
     if (userDatePreset !== "custom") {
       setUserDateRange(getDateRangeForPreset(userDatePreset));
     }
   }, [userDatePreset]);
-  
+
   useEffect(() => {
     if (serviceDatePreset !== "custom") {
       setServiceDateRange(getDateRangeForPreset(serviceDatePreset));
     }
   }, [serviceDatePreset]);
-  
+
   useEffect(() => {
     if (subscriptionDatePreset !== "custom") {
       setSubscriptionDateRange(getDateRangeForPreset(subscriptionDatePreset));
     }
   }, [subscriptionDatePreset]);
-  
-  const { data: postAnalyticsData, isLoading: isLoadingPostAnalytics } = useGetPostAnalyticsQuery({
+
+  const { data: postAnalyticsData, isLoading: isLoadingPostAnalytics, refetch: refetchPostAnalytics } = useGetPostAnalyticsQuery({
     start_date: postDateRange?.start_date,
     end_date: postDateRange?.end_date,
   });
-  
-  const { data: userAnalyticsData, isLoading: isLoadingUserAnalytics } = useGetUserAnalyticsQuery({
+
+  const { data: userAnalyticsData, isLoading: isLoadingUserAnalytics, refetch: refetchUserAnalytics } = useGetUserAnalyticsQuery({
     start_date: userDateRange?.start_date,
     end_date: userDateRange?.end_date,
   });
-  
-  const { data: serviceAnalyticsData, isLoading: isLoadingServiceAnalytics } = useGetServiceAnalyticsQuery({
+
+  const { data: serviceAnalyticsData, isLoading: isLoadingServiceAnalytics, refetch: refetchServiceAnalytics } = useGetServiceAnalyticsQuery({
     start_date: serviceDateRange?.start_date,
     end_date: serviceDateRange?.end_date,
   });
-  
-  const { data: subscriptionAnalyticsData, isLoading: isLoadingSubscriptionAnalytics } = useGetSubscriptionAnalyticsQuery({
+
+  const { data: subscriptionAnalyticsData, isLoading: isLoadingSubscriptionAnalytics, refetch: refetchSubscriptionAnalytics } = useGetSubscriptionAnalyticsQuery({
     start_date: subscriptionDateRange?.start_date,
     end_date: subscriptionDateRange?.end_date,
   });
-  
+
   // Format date helper
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -165,7 +166,7 @@ export default function AdminDashboardHome() {
       const day = date.getDate();
       const month = date.toLocaleDateString("en-GB", { month: "short" });
       const year = date.getFullYear();
-      
+
       return `${day} ${month} ${year}`;
     } catch {
       return "N/A";
@@ -230,7 +231,7 @@ export default function AdminDashboardHome() {
       media?: string[];
     }>): PostData[] => {
       if (!posts || !Array.isArray(posts)) return [];
-      
+
       return posts.map((post) => {
         let avatarUrl: string | undefined;
         if (typeof post.avatar === 'string') {
@@ -240,7 +241,7 @@ export default function AdminDashboardHome() {
         } else if (post.media && Array.isArray(post.media) && post.media[0] && typeof post.media[0] === 'string') {
           avatarUrl = post.media[0];
         }
-        
+
         return {
           postHead: post.title || "Untitled Post",
           postDate: formatDate(post.created_at),
@@ -420,32 +421,56 @@ export default function AdminDashboardHome() {
   }
 
   const data = analyticsData.data;
+  const handleRefresh = async () => {
+    if (loading) return;
 
+    setLoading(true);
+
+    // wait 2 seconds (spin time)
+    setTimeout(() => {
+      refetchData();
+      refetchPostAnalytics();
+      refetchUserAnalytics();
+      refetchServiceAnalytics();
+      refetchSubscriptionAnalytics();
+      setLoading(false);
+    }, 2000);
+  };
   return (
     <div className="space-y-8 pb-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] overflow-y-auto">
       {/* MAIN KPI CARDS - Top Row */}
+      <button
+        onClick={handleRefresh}
+        disabled={loading}
+        className="mr-8 cursor-pointer z-50 rounded-full absolute top-8 md:top-10 right-48 md:right-64 lg:right-80 disabled:opacity-60"
+      >
+        <RefreshCw
+          className={`w-6 h-6 transition-transform ${loading ? "animate-spin" : ""
+            }`}
+        />
+      </button>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { 
-            title: "Total Users", 
+          {
+            title: "Total Users",
             count: formatNumber(data.total_users),
             subtitle: `${data.user_activity.active_users_30d} active (30d)`,
             color: "#6B83FA"
           },
-          { 
-            title: "Total Posts", 
+          {
+            title: "Total Posts",
             count: formatNumber(data.total_posts),
             subtitle: `${formatNumber(data.recent_activity_7d.new_posts)} new (7d)`,
             color: "#517EE0"
           },
-          { 
-            title: "Total Engagement", 
+          {
+            title: "Total Engagement",
             count: formatNumber(data.total_engagement),
             subtitle: `${formatNumber(data.total_likes)} likes, ${formatNumber(data.total_comments)} comments, ${formatNumber(data.total_shares)} shares`,
             color: "#10B981"
           },
-          { 
-            title: "Total Communities", 
+          {
+            title: "Total Communities",
             count: formatNumber(data.total_communities),
             subtitle: `${formatNumber(data.recent_activity_7d.new_communities)} new (7d)`,
             color: "#ff4db8"
@@ -472,7 +497,7 @@ export default function AdminDashboardHome() {
           { title: "Total Comments", value: formatNumber(data.total_comments), color: "#3B82F6" },
           { title: "Total Shares", value: formatNumber(data.total_shares), color: "#10B981" },
           { title: "Total Services", value: formatNumber(data.total_products), color: "#F59E0B" },
-         { title: "Active (7d)", value: formatNumber(data.user_activity.active_users_7d), color: "#EC4899" },
+          { title: "Active (7d)", value: formatNumber(data.user_activity.active_users_7d), color: "#EC4899" },
         ].map((item) => (
           <div key={item.title} className="rounded-lg border border-white/10 bg-black/20 backdrop-blur-sm p-4">
             <p className="text-white/60 text-xs mb-1">{item.title}</p>
@@ -481,7 +506,7 @@ export default function AdminDashboardHome() {
               {item.title === "Total Comments" && "All comments made on posts"}
               {item.title === "Total Shares" && "All posts shared by users"}
               {item.title === "Total Services" && "Total services promoted in marketplace"}
-             {item.title === "Active (7d)" && "Users active in the last 7 days"}
+              {item.title === "Active (7d)" && "Users active in the last 7 days"}
             </p>
             <p className="text-xl font-semibold text-white">{item.value}</p>
           </div>
@@ -752,35 +777,35 @@ export default function AdminDashboardHome() {
           <h3 className="text-lg font-semibold text-white mb-1">Top 10 Most Liked Posts</h3>
           <p className="text-sm text-white/50 mb-4">Posts ranked by total number of likes received. Shows the most popular content based on user appreciation.</p>
           <div className="max-h-[350px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <DataTable 
-            title="" 
-            columns={postColumns} 
-            data={mostLikedPosts} 
-          />
+            <DataTable
+              title=""
+              columns={postColumns}
+              data={mostLikedPosts}
+            />
           </div>
         </div>
-        
+
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
           <h3 className="text-lg font-semibold text-white mb-1">Top 10 Most Commented Posts</h3>
           <p className="text-sm text-white/50 mb-4">Posts ranked by total number of comments. Highlights content that generates the most discussion and conversation.</p>
           <div className="max-h-[350px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <DataTable 
-            title="" 
-            columns={postColumns} 
-              data={mostCommentedPosts} 
+            <DataTable
+              title=""
+              columns={postColumns}
+              data={mostCommentedPosts}
             />
           </div>
         </div>
-        
+
         <div className="border border-white/20 rounded-xl p-6 bg-black/30 backdrop-blur-sm">
           <h3 className="text-lg font-semibold text-white mb-1">Top 10 Most Shared Posts</h3>
           <p className="text-sm text-white/50 mb-4">Posts ranked by total number of shares. Identifies content that users find most valuable to share with others.</p>
           <div className="max-h-[350px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <DataTable 
-            title="" 
-            columns={postColumns} 
-            data={mostSharedPosts} 
-          />
+            <DataTable
+              title=""
+              columns={postColumns}
+              data={mostSharedPosts}
+            />
           </div>
         </div>
       </div>

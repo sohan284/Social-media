@@ -45,7 +45,7 @@ export const notificationApi = baseApi.injectEndpoints({
       merge: (currentCache, newItems) => {
         const currentData = currentCache?.data ?? currentCache?.results?.data ?? currentCache?.notifications ?? [];
         const newData = newItems?.data ?? newItems?.results?.data ?? newItems?.notifications ?? [];
-        
+
         // Merge arrays and remove duplicates
         const merged = [...currentData];
         const existingIds = new Set(merged.map(n => n.id));
@@ -54,7 +54,7 @@ export const notificationApi = baseApi.injectEndpoints({
             merged.push(item);
           }
         });
-        
+
         return {
           ...newItems,
           data: merged,
@@ -65,6 +65,7 @@ export const notificationApi = baseApi.injectEndpoints({
       forceRefetch({ currentArg, previousArg }) {
         return currentArg?.page !== previousArg?.page;
       },
+      providesTags: ['Notifications'],
     }),
     markNotificationAsRead: builder.mutation<
       NotificationItem,
@@ -159,6 +160,7 @@ export const notificationApi = baseApi.injectEndpoints({
         url: "/api/notifications/unread_count/",
         method: "GET",
       }),
+      providesTags: ['Notifications'],
     }),
   }),
 });
