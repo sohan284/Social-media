@@ -439,10 +439,11 @@ export default function AdminDashboardHome() {
   return (
     <div className="space-y-8 pb-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] overflow-y-auto">
       {/* MAIN KPI CARDS - Top Row */}
+
       <button
         onClick={handleRefresh}
         disabled={loading}
-        className="mr-8 cursor-pointer z-50 rounded-full absolute top-8 md:top-10 right-48 md:right-64 lg:right-80 disabled:opacity-60"
+        className="bg-[#6B83FA] px-4 py-3 md:py-4 rounded-[10px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors cursor-pointer absolute top-4 md:top-7 right-4 cursor-pointer z-30"
       >
         <RefreshCw
           className={`w-6 h-6 transition-transform ${loading ? "animate-spin" : ""

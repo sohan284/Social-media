@@ -303,7 +303,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[20px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors cursor-pointer"
+                className="bg-[#6B83FA] px-6 md:px-8 py-3 md:py-4 rounded-[10px] flex items-center text-base md:text-xl hover:bg-[#5a6fe8] transition-colors cursor-pointer mr-16 lg:mr-3"
               >
                 <span>Hi {username}</span>
                 <ChevronDown className={`w-5 h-5 md:w-6 md:h-6 ml-2 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
@@ -311,7 +311,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-black/30 backdrop-blur-sm rounded-lg shadow-lg border border-gray-400 py-2 z-50">
+                <div className="absolute right-14 mt-2 w-48 bg-black/30 backdrop-blur-sm rounded-lg shadow-lg border border-gray-400 py-2 z-50">
                   <button
                     onClick={handleHome}
                     className="w-full px-4 py-2 text-left text-gray-100 hover:bg-gray-700 cursor-pointer flex items-center gap-2 transition-colors"
