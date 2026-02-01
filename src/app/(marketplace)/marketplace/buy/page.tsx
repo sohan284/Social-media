@@ -117,7 +117,7 @@ const BuyPage = () => {
                         {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                     </div>
                 )}
-                <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 px-2 md:px-4'>
+                <div className='grid grid-cols-1 2xl:grid-cols-2 gap-6 px-2 md:px-4'>
                     {Array.from({ length: 20 }).map((_, index) => (
                         <div
                             key={index}
@@ -179,7 +179,7 @@ const BuyPage = () => {
                     {selectedSubcategoryName && <span className='ml-4'>Subcategory: <span className='font-semibold text-white'>{selectedSubcategoryName}</span></span>}
                 </div>
             )}
-            <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 px-2 md:px-4'>
+            <div className='grid grid-cols-1 2xl:grid-cols-2 gap-6 px-2 md:px-4'>
                 {items.map((item, index) => (
                     <ProductCard
                         key={item.id}

@@ -99,6 +99,10 @@ export default function ProductDetailsModal({
                   {status}
                 </span>
               </div>
+              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+                <h3 className="text-sm font-medium text-white/60 mb-1">Location</h3>
+                <p className="text-lg font-medium text-white">{product.location || "N/A"}</p>
+              </div>
             </div>
 
             {/* Right Column */}
@@ -117,10 +121,7 @@ export default function ProductDetailsModal({
                 </p>
               </div>
 
-              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                <h3 className="text-sm font-medium text-white/60 mb-1">Location</h3>
-                <p className="text-lg font-medium text-white">{product.location || "N/A"}</p>
-              </div>
+              
 
               <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                 <h3 className="text-sm font-medium text-white/60 mb-1">Seller</h3>

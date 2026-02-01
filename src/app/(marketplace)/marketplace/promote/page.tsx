@@ -517,7 +517,7 @@ export default function PromoteServicePage() {
       {draftItems.length > 0 && (
         <div className="w-full backdrop-blur-[17px] rounded-2xl p-4 md:p-6 border border-white/20 shadow-lg">
           <h2 className="text-2xl font-semibold mb-4">My Drafts</h2>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
             {draftItems.map((item) => (
               <div key={item.id} className="relative">
                 <ProductCard
