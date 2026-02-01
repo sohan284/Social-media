@@ -135,7 +135,6 @@ export default function AdminLoginPage() {
       let errorMessage = "Invalid admin credentials";
       
       if (err && typeof err === 'object') {
-        // RTK Query error format: { data: {...}, status: number }
         const rtkError = err as { 
           data?: { 
             error?: string; 
