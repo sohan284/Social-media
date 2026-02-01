@@ -1160,7 +1160,7 @@ const Post = ({ post, profile }: PostProps) => {
           )}
           <div className="flex flex-col sm:flex-row items-center md:gap-3.5 text-sm text-white">
             <p>{post?.user_name || post?.username || "Author Name"}</p>
-            <p className="text-white/70 text-xs sm:text-sm">{createdAt}</p>
+            <p className="text-white/70 text-xs sm:text-sm ml-1">{createdAt}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
