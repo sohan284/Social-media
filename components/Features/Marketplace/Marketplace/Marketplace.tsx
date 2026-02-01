@@ -125,7 +125,7 @@ const Marketplace = () => {
     return (
         <>
             {isLoading ? (
-                <div className='grid grid-cols-1 xl:grid-cols-2 gap-6 px-2 md:px-4'>
+                <div className='grid grid-cols-1 2xl:grid-cols-2 gap-6 px-2 md:px-4'>
                     {Array.from({ length: 20 }).map((_, index) => (
                         <div
                             key={index}
